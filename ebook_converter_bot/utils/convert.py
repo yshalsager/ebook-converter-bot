@@ -28,7 +28,7 @@ class Converter:
         await process.wait()
         output = await process.stdout.read()
         output = output.decode().strip()
-        logger.debug(output)
+        logger.info(output)
         return process.returncode
 
     async def _convert_to_kfx(self, input_file):
