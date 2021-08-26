@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  ebook_converter_bot:
+    container_name: ebook_converter_bot
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: bash -c "python3 -m ebook_converter_bot"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Africa/Cairo
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped

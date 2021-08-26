@@ -1,0 +1,67 @@
+[Software\\Amazon\\Kindle Previewer 3] 1629896074
+#time=1d799b05ab37d7e
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3"
+
+[Software\\Classes\\.epub] 1629896074
+#time=1d799b05ab3919c
+@="Epub.file"
+
+[Software\\Classes\\.htm] 1629896074
+#time=1d799b05ab39746
+@="Htm.file"
+
+[Software\\Classes\\.html] 1629896074
+#time=1d799b05ab39ce6
+@="Html.file"
+
+[Software\\Classes\\.kpf] 1629896074
+#time=1d799b05ab38418
+@="Kpf.file"
+
+[Software\\Classes\\.mobi] 1629896074
+#time=1d799b05ab389c2
+@="Mobi.file"
+
+[Software\\Classes\\.opf] 1629896074
+#time=1d799b05ab3a7fe
+@="Opf.file"
+
+[Software\\Classes\\.prc] 1629896074
+#time=1d799b05ab3ad8a
+@="Prc.file"
+
+[Software\\Classes\\.xhtml] 1629896074
+#time=1d799b05ab3a272
+@="Xhtml.file"
+
+[Software\\Classes\\Epub.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab395fc
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
+
+[Software\\Classes\\Htm.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab39ba6
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
+
+[Software\\Classes\\Html.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab3a128
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
+
+[Software\\Classes\\Kpf.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab38878
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
+
+[Software\\Classes\\Mobi.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab39052
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
+
+[Software\\Classes\\Opf.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab3ac40
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
+
+[Software\\Classes\\Prc.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab3b1c2
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
+
+[Software\\Classes\\Xhtml.file\\shell\\Open with Kindle Previewer 3\\command] 1629896074
+#time=1d799b05ab3a6be
+@="C:\\users\\root\\Local Settings\\Application Data\\Amazon\\Kindle Previewer 3\\Kindle Previewer 3.exe \"%1\""
