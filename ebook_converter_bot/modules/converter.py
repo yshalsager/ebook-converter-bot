@@ -1,4 +1,5 @@
 """Converter"""
+import asyncio
 from pathlib import Path
 
 from telethon import events, Button
@@ -44,7 +45,11 @@ async def file_converter(event: events.NewMessage.Event):
          Button.inline("txtz", data=f"txtz|{downloaded}"),
          Button.inline("zip", data=f"zip|{downloaded}")]
     ]
-    await reply.edit(_("Select the format you want to convert to."), buttons=buttons)
+    reply = await reply.edit(_("Select the format you want to convert to."), buttons=buttons)
+    await asyncio.sleep(30)
+    await reply.delete()
+    if Path(downloaded).exists():
+        Path(downloaded).unlink()
 
 
 @BOT.on(events.CallbackQuery())
