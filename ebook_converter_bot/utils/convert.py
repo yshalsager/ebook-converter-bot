@@ -50,11 +50,11 @@ class Converter:
     async def convert_ebook(self, input_file, output_type):
         input_type = input_file.lower().split('.')[-1]
         output_file = input_file.replace(input_type, output_type)
-        if output_type == "kfx" and input_type in self.to_kfx_allowed_types:
-            await self._convert_to_kfx(input_file)
-            return output_file
-        elif input_file == "kfx" and input_type in self.from_kfx_allowed_types:
+        if input_type in self.from_kfx_allowed_types:
             await self._convert_from_kfx_to_epub(input_file)
+            return output_file
+        elif output_type == "kfx" and input_type in self.to_kfx_allowed_types:
+            await self._convert_to_kfx(input_file)
             return output_file
         elif output_type in self.supported_output_types:
             await self._run_command(
