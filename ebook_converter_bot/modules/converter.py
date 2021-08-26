@@ -26,6 +26,9 @@ async def file_converter(event: events.NewMessage.Event):
         return
     reply = await event.reply(_("Downloading the file..."))
     downloaded = await event.message.download_media(f"/tmp/{event.message.file.name}")
+    if " " in downloaded:
+        Path(downloaded).rename(downloaded.replace(' ', '_'))
+        downloaded = downloaded.replace(' ', '_')
     random_id = ''.join(sample(digits, 6))
     queue.update({random_id: downloaded})
     file_type = downloaded.lower().split('.')[-1]
