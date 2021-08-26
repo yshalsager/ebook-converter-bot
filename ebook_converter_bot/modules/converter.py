@@ -26,35 +26,37 @@ async def file_converter(event: events.NewMessage.Event):
         return
     reply = await event.reply(_("Downloading the file..."))
     downloaded = await event.message.download_media(f"/tmp/{event.message.file.name}")
-    random_id = ''.join(sample(digits, 5))
+    random_id = ''.join(sample(digits, 6))
     queue.update({random_id: downloaded})
-    buttons = [
-        [Button.inline("azw3", data=f"azw3|{random_id}"),
-         Button.inline("docx", data=f"docx|{random_id}"),
-         Button.inline("epub", data=f"epub|{random_id}"),
-         Button.inline("fb2", data=f"fb2|{random_id}")],
-        [Button.inline("htmlz", data=f"htmlz|{random_id}"),
-         Button.inline("kfx", data=f"kfx|{random_id}"),
-         Button.inline("lit", data=f"lit|{random_id}"),
-         Button.inline("lrf", data=f"lrf|{random_id}")],
-        [Button.inline("mobi", data=f"mobi|{random_id}"),
-         Button.inline("oeb", data=f"oeb|{random_id}"),
-         Button.inline("pdb", data=f"pdb|{random_id}"),
-         Button.inline("pdf", data=f"pdf|{random_id}")],
-        [Button.inline("pmlz", data=f"pmlz|{random_id}"),
-         Button.inline("rb", data=f"rb|{random_id}"),
-         Button.inline("rtf", data=f"rtf|{random_id}"),
-         Button.inline("snb", data=f"snb|{random_id}")],
-        [Button.inline("tcr", data=f"tcr|{random_id}"),
-         Button.inline("txt", data=f"txt|{random_id}"),
-         Button.inline("txtz", data=f"txtz|{random_id}"),
-         Button.inline("zip", data=f"zip|{random_id}")]
-    ]
-    reply = await reply.edit(_("Select the format you want to convert to."), buttons=buttons)
+    file_type = downloaded.lower().split('.')[-1]
+    if file_type in converter.kfx_input_allowed_types:
+        buttons = [Button.inline("epub", data=f"epub|{random_id}")]
+    else:
+        buttons = [Button.inline("azw3", data=f"azw3|{random_id}"),
+                   Button.inline("docx", data=f"docx|{random_id}"),
+                   Button.inline("epub", data=f"epub|{random_id}"),
+                   Button.inline("fb2", data=f"fb2|{random_id}"),
+                   Button.inline("htmlz", data=f"htmlz|{random_id}"),
+                   Button.inline("kfx", data=f"kfx|{random_id}"),
+                   Button.inline("lit", data=f"lit|{random_id}"),
+                   Button.inline("lrf", data=f"lrf|{random_id}"),
+                   Button.inline("mobi", data=f"mobi|{random_id}"),
+                   Button.inline("oeb", data=f"oeb|{random_id}"),
+                   Button.inline("pdb", data=f"pdb|{random_id}"),
+                   Button.inline("pmlz", data=f"pmlz|{random_id}"),
+                   Button.inline("rb", data=f"rb|{random_id}"),
+                   Button.inline("rtf", data=f"rtf|{random_id}"),
+                   Button.inline("snb", data=f"snb|{random_id}"),
+                   Button.inline("tcr", data=f"tcr|{random_id}"),
+                   Button.inline("txt", data=f"txt|{random_id}"),
+                   Button.inline("txtz", data=f"txtz|{random_id}"),
+                   Button.inline("zip", data=f"zip|{random_id}")]
+
+    reply = await reply.edit(_("Select the format you want to convert to:"), buttons=[buttons[i::5] for i in range(5)])
     await asyncio.sleep(30)
     await reply.delete()
     if Path(downloaded).exists():
-        Path(downloaded).unlink()
+        Path(downloaded).unlink(missing_ok=True)
 
 
 @BOT.on(events.CallbackQuery())
@@ -67,7 +69,10 @@ async def converter_callback(event: events.CallbackQuery.Event):
     del queue[random_id]
     reply = await event.reply(_(f"Converting the file to {output_type}..."))
     output_file = await converter.convert_ebook(input_file, output_type)
-    await reply.edit(_("Done! Uploading the converted file..."))
-    await event.client.send_file(event.chat, output_file, force_document=True)
-    Path(input_file).unlink()
-    Path(output_file).unlink()
+    if Path(output_file).exists():
+        await reply.edit(_("Done! Uploading the converted file..."))
+        await event.client.send_file(event.chat, output_file, force_document=True)
+    else:
+        await reply.edit(_("Failed to convert the file :("))
+    Path(input_file).unlink(missing_ok=True)
+    Path(output_file).unlink(missing_ok=True)

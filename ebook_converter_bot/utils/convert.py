@@ -11,13 +11,14 @@ class Converter:
         self._convert_command = Template("ebook-convert $input_file $output_file")
         self._kfx_input_convert_command = Template('calibre-debug -r "KFX Input" -- "$input_file"')  # KFX to EPUB
         self._kfx_output_convert_command = Template('calibre-debug -r "KFX Output" -- "$input_file"')
-        self.to_kfx_allowed_types = ["epub", "opf", "mobi", "doc", "docx", "kpf", "kfx-zip"]
-        self.from_kfx_allowed_types = ["azw8", "kfx", "kfx-zip"]
-        self.supported_input_types = ['azw', 'azw3', 'azw4', 'cb7', 'cbc', 'cbr', 'cbz', 'chm', 'djvu', 'docx', 'doc',
-                                      'epub', 'fb2', 'fbz', 'html', 'htmlz', 'kfx', 'kpf', 'lit', 'lrf', 'mobi', 'odt',
-                                      'opf', 'pdb', 'pdf', 'pml', 'prc', 'rb', 'rtf', 'snb', 'tcr', 'txt', 'txtz']
+        self.kfx_output_allowed_types = ['epub', 'opf', 'mobi', 'doc', 'docx', 'kpf', 'kfx-zip']
+        self.kfx_input_allowed_types = ['azw8', 'kfx', 'kfx-zip']
+        self.supported_input_types = ['azw', 'azw3', 'azw4', 'azw8', 'cb7', 'cbc', 'cbr', 'cbz', 'chm', 'djvu', 'docx',
+                                      'doc', 'epub', 'fb2', 'fbz', 'html', 'htmlz', 'kfx', 'kfx-zip', 'kpf', 'lit',
+                                      'lrf', 'mobi', 'odt', 'opf', 'pdb', 'pml', 'prc', 'rb', 'rtf', 'snb', 'tcr',
+                                      'txt', 'txtz']
         self.supported_output_types = ['azw3', 'docx', 'epub', 'fb2', 'htmlz', 'kfx', 'lit', 'lrf', 'mobi', 'oeb',
-                                       'pdb', 'pdf', 'pmlz', 'rb', 'rtf', 'snb', 'tcr', 'txt', 'txtz', 'zip']
+                                       'pdb', 'pmlz', 'rb', 'rtf', 'snb', 'tcr', 'txt', 'txtz', 'zip']
 
     async def is_supported_input_type(self, input_file):
         return input_file.lower().split('.')[-1] in self.supported_input_types
@@ -50,10 +51,10 @@ class Converter:
     async def convert_ebook(self, input_file, output_type):
         input_type = input_file.lower().split('.')[-1]
         output_file = input_file.replace(input_type, output_type)
-        if input_type in self.from_kfx_allowed_types:
+        if input_type in self.kfx_input_allowed_types:
             await self._convert_from_kfx_to_epub(input_file)
             return output_file
-        elif output_type == "kfx" and input_type in self.to_kfx_allowed_types:
+        elif output_type == "kfx" and input_type in self.kfx_output_allowed_types:
             await self._convert_to_kfx(input_file)
             return output_file
         elif output_type in self.supported_output_types:
