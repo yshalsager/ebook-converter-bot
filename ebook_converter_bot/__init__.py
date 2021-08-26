@@ -17,6 +17,10 @@ BOT_TOKEN = CONFIG['tg_bot_token']
 BOT_ID = CONFIG['tg_bot_id']
 TG_BOT_ADMINS = CONFIG['tg_bot_admins']
 
+# locale
+LOCALE_PATH = WORK_DIR / "data/locales"
+LANGUAGES = ['ar', 'en']
+
 # Logging
 LOG_FILE = PARENT_DIR / 'last_run.log'
 LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s [%(module)s.%(funcName)s:%(lineno)d]: %(message)s"

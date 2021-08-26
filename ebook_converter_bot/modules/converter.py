@@ -2,6 +2,7 @@
 from telethon import events
 
 from ebook_converter_bot.bot import BOT
+from ebook_converter_bot.utils.i18n import translate as _
 from ebook_converter_bot.utils.supported_types import is_supported_input_type
 
 
@@ -9,4 +10,5 @@ from ebook_converter_bot.utils.supported_types import is_supported_input_type
 async def file_converter(event):
     """Send a message when the command /start is sent."""
     if is_supported_input_type(event.message.file.name):
-        await event.reply("Supported type!")
+        # Supported Type string
+        await event.reply(_("File type is a supported type!"))
