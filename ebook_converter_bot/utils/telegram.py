@@ -13,6 +13,7 @@ from telethon.errors import (
     SlowModeWaitError,
     FloodWaitError
 )
+from telethon.tl.types import User
 
 
 def tg_exceptions_handler(func):
@@ -40,4 +41,8 @@ def get_chat_type(event: events.NewMessage.Event) -> int:
 
 
 def get_chat_name(event: events.NewMessage.Event) -> str:
-    return event.chat.first_name if not event.chat.last_name else f"{event.chat.first_name} {event.chat.last_name}"
+    if isinstance(event.chat, User):
+        return event.chat.first_name \
+            if not hasattr(event.chat, 'last_name') \
+            else f"{event.chat.first_name} {event.chat.last_name}"
+    return event.chat.title
