@@ -143,3 +143,4 @@ config.json
 *.session
 *.session-journal
 *.pickle
+/*.sh
