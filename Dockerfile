@@ -63,6 +63,6 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/inst
 COPY poetry.lock pyproject.toml ./
 RUN poetry install --no-dev
 
-COPY . .
+#COPY . .
 
 #CMD ['python3', '-m', 'ebook_converter_bot']

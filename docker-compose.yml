@@ -5,10 +5,13 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    command: bash -c "python3 -m ebook_converter_bot"
+    command: bash -c "cd app && python3 -m ebook_converter_bot"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Africa/Cairo
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
+    volumes:
+      - "./:/opt/app/app"
+
