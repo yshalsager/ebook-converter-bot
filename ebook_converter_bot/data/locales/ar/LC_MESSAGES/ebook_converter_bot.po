@@ -64,7 +64,7 @@ msgstr "**غُيرت لغة البوت إلى**: {} ({})"
 #. Unsupported file
 #: ebook_converter_bot/modules/converter.py:34
 msgid "The file you sent is not a supported type!"
-msgstr "الملف الذي أرسلته نوعه غير مدعوم!"
+msgstr "نوع الملف الذي أرسلته غير مدعوم!"
 
 #. 100 MB
 #: ebook_converter_bot/modules/converter.py:37
