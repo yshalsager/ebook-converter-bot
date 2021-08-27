@@ -20,6 +20,10 @@ TG_BOT_ADMINS = CONFIG['tg_bot_admins']
 # locale
 LOCALE_PATH = WORK_DIR / "data/locales"
 LANGUAGES = ['ar', 'en']
+_ = json.loads(Path(WORK_DIR / "data/locales/locales.json").read_text(encoding="utf-8-sig"))
+LOCALES = [_[i] for i in LANGUAGES]
+for code, locale in zip(LANGUAGES, LOCALES):
+    locale["code"] = code
 
 # Logging
 LOG_FILE = PARENT_DIR / 'last_run.log'

@@ -8,19 +8,85 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-26 14:55+0200\n"
+"POT-Creation-Date: 2021-08-27 20:44+0200\n"
 "PO-Revision-Date: 2021-08-26 13:52+0200\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: yshalsager <ysh-alsager@hotmail.com>\n"
 "Language-Team: Arabic <LL@li.org>\n"
 "Language: Arabic\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ebook_converter_bot/modules/main.py:14
-msgid "Hi!"
-msgstr "أهلا!"
+# python-brace-format
+#: ebook_converter_bot/modules/main.py:17
+msgid ""
+"Hello {}!\n"
+"\n"
+"         This bot allows you to convert E-Books to various formats, for "
+"example, from EPUB to KFX!\n"
+"         It currently supports 34 input formats and 19 output formats, "
+"thanks to calibre powerful         convert features.\n"
+"\n"
+"         The bot is open source, you can find the source code of it [here]"
+"(https://github.com/yshalsager/ebook-converter-bot).\n"
+"         Developed by: [yshalsager](https://t.me/yshalsager/)."
+msgstr ""
+"مرحبا يا {}!\n"
+"\n"
+"        هذا البوت يتيح لك تحويل الكتب الإلكترونية إلى العديد من الصيغ، على "
+"سبيل المثال من EPUB إلى KFX!\n"
+"\n"
+"        يدعم البوت حاليا 34 صيغة للتحويل منها و19 صيغة للتحويل إليها، وذلك "
+"بفضل ميزات التحويل الرائعة الموجودة ببرنامج calibre. \n"
+"\n"
+"        هذا البوت مفتوح المصدر، يمكنك الإطلاع على الكود الخاص به من [هنا]"
+"(https://github.com/yshalsager/ebook-converter-bot).\n"
+"\n"
+"        طُور هذا البوت بواسطة: [yshalsager](https://t.me/yshalsager/)."
 
-#: ebook_converter_bot/modules/converter.py:15
-msgid "File type is a supported type!"
-msgstr "نوع الملف مدعوم!"
+#: ebook_converter_bot/modules/preferences.py:16
+msgid "**Available bot preferences:**"
+msgstr "**الإعدادات المتوفرة للبوت:**"
+
+#: ebook_converter_bot/modules/preferences.py:27
+#: ebook_converter_bot/modules/preferences.py:43
+msgid "Back"
+msgstr "رجوع"
+
+#: ebook_converter_bot/modules/preferences.py:28
+msgid "**Select Bot language**"
+msgstr "**اختر لغة البوت**"
+
+#: ebook_converter_bot/modules/preferences.py:41
+msgid "**Language has been set to**: {} ({})"
+msgstr "**غُيرت لغة البوت إلى**: {} ({})"
+
+#. Unsupported file
+#: ebook_converter_bot/modules/converter.py:34
+msgid "The file you sent is not a supported type!"
+msgstr "الملف الذي أرسلته نوعه غير مدعوم!"
+
+#. 100 MB
+#: ebook_converter_bot/modules/converter.py:37
+msgid "Files larger than 100 MB are not supported!"
+msgstr "الملفات التي حجمها أكبر من 100 ميجابايت ليست مدعومة!"
+
+#: ebook_converter_bot/modules/converter.py:39
+msgid "Downloading the file..."
+msgstr "جاري تحميل الملف..."
+
+#: ebook_converter_bot/modules/converter.py:70
+msgid "Select the format you want to convert to:"
+msgstr "اختر الصيغة التي تود التحويل إليها:"
+
+#: ebook_converter_bot/modules/converter.py:90
+msgid "Converting the file to {}..."
+msgstr "جاري تحويل الملف إلى {}..."
+
+#: ebook_converter_bot/modules/converter.py:93
+msgid "Done! Uploading the converted file..."
+msgstr "اكتمل التحويل! جاري رفع الملف المحول..."
+
+#: ebook_converter_bot/modules/converter.py:99
+msgid "Failed to convert the file (`{}`) to {} :("
+msgstr "فشل تحويل الملف (`{}`) إلى {} :("

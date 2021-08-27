@@ -11,4 +11,9 @@ TRANSLATIONS: Dict[str, GNUTranslations] = {
 
 
 def translate(string, lang='en') -> str:
-    return TRANSLATIONS[lang].gettext(string)
+    if not lang:
+        lang = 'en'
+    translated = TRANSLATIONS[lang].gettext(string)
+    while '  ' in translated:
+        translated = translated.replace('  ', ' ')
+    return translated

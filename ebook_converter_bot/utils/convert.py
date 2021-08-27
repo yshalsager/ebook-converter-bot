@@ -7,18 +7,25 @@ logger = logging.getLogger(__name__)
 
 
 class Converter:
+    supported_input_types = ['azw', 'azw3', 'azw4', 'azw8', 'cb7', 'cbc', 'cbr', 'cbz', 'chm', 'djvu', 'docx',
+                             'doc', 'epub', 'fb2', 'fbz', 'html', 'htmlz', 'kfx', 'kfx-zip', 'kpf', 'lit',
+                             'lrf', 'mobi', 'odt', 'opf', 'pdb', 'pml', 'prc', 'rb', 'rtf', 'snb', 'tcr',
+                             'txt', 'txtz']
+    supported_output_types = ['azw3', 'docx', 'epub', 'fb2', 'htmlz', 'kfx', 'lit', 'lrf', 'mobi', 'oeb',
+                              'pdb', 'pmlz', 'rb', 'rtf', 'snb', 'tcr', 'txt', 'txtz', 'zip']
+
     def __init__(self):
         self._convert_command = Template("ebook-convert $input_file $output_file")
+        # TODO: Add the ability to use converter options
+        # https://manual.calibre-ebook.com/generated/en/ebook-convert.html
         self._kfx_input_convert_command = Template('calibre-debug -r "KFX Input" -- "$input_file"')  # KFX to EPUB
         self._kfx_output_convert_command = Template('calibre-debug -r "KFX Output" -- "$input_file"')
         self.kfx_output_allowed_types = ['epub', 'opf', 'mobi', 'doc', 'docx', 'kpf', 'kfx-zip']
         self.kfx_input_allowed_types = ['azw8', 'kfx', 'kfx-zip']
-        self.supported_input_types = ['azw', 'azw3', 'azw4', 'azw8', 'cb7', 'cbc', 'cbr', 'cbz', 'chm', 'djvu', 'docx',
-                                      'doc', 'epub', 'fb2', 'fbz', 'html', 'htmlz', 'kfx', 'kfx-zip', 'kpf', 'lit',
-                                      'lrf', 'mobi', 'odt', 'opf', 'pdb', 'pml', 'prc', 'rb', 'rtf', 'snb', 'tcr',
-                                      'txt', 'txtz']
-        self.supported_output_types = ['azw3', 'docx', 'epub', 'fb2', 'htmlz', 'kfx', 'lit', 'lrf', 'mobi', 'oeb',
-                                       'pdb', 'pmlz', 'rb', 'rtf', 'snb', 'tcr', 'txt', 'txtz', 'zip']
+
+    @classmethod
+    def get_supported_types(cls):
+        return sorted(list(set(cls.supported_input_types + cls.supported_output_types)))
 
     async def is_supported_input_type(self, input_file):
         return input_file.lower().split('.')[-1] in self.supported_input_types

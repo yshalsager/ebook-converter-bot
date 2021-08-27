@@ -138,6 +138,7 @@ cython_debug/
 
 # project files
 config.json
+*.db
 *.log
 *.session
 *.session-journal

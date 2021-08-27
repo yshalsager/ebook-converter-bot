@@ -8,7 +8,9 @@ from pathlib import Path
 from telethon.sync import TelegramClient
 
 from ebook_converter_bot import API_KEY, API_HASH, BOT_TOKEN
+from ebook_converter_bot.db.curd import generate_analytics_columns
 from ebook_converter_bot.modules import ALL_MODULES
+from ebook_converter_bot.utils.convert import Converter
 from ebook_converter_bot.utils.loader import load_modules
 
 LOGGER = logging.getLogger(__name__)
@@ -19,6 +21,7 @@ BOT_INFO = {}
 
 def main():
     """Main"""
+    generate_analytics_columns(Converter.get_supported_types())
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run())
 
