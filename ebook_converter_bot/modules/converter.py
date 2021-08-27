@@ -31,7 +31,7 @@ async def file_converter(event: events.NewMessage.Event):
         file = event.message.file
     if not await converter.is_supported_input_type(file.name):
         # Unsupported file
-        await event.reply(_("The file you sent is not a supported type!"), lang=lang)
+        await event.reply(_("The file you sent is not a supported type!", lang=lang))
         return
     if file.size > 104857600:  # 100 MB
         await event.reply(_("Files larger than 100 MB are not supported!", lang=lang))
