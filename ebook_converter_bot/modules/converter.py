@@ -14,22 +14,29 @@ converter = Converter()
 queue = {}
 
 
-@BOT.on(events.NewMessage(func=lambda x: x.message.file))
+@BOT.on(events.NewMessage(func=lambda x: x.message.file and x.is_private))
+@BOT.on(events.NewMessage(pattern='/convert', func=lambda x: x.message.is_reply))
 async def file_converter(event: events.NewMessage.Event):
     """Convert ebook to another format"""
-    if not await converter.is_supported_input_type(event.message.file.name):
+    if event.pattern_match:
+        message = await event.get_reply_message()
+        file = message.file
+    else:
+        message = event.message
+        file = event.message.file
+    if not await converter.is_supported_input_type(file.name):
         # Unsupported file
         await event.reply(_("The file you sent is not a supported type!"))
         return
-    if event.message.file.size > 104857600:  # 100 MB
+    if file.size > 104857600:  # 100 MB
         await event.reply(_("Files larger than 100 MB are not supported!"))
         return
     reply = await event.reply(_("Downloading the file..."))
-    downloaded = await event.message.download_media(f"/tmp/{event.message.file.name}")
+    downloaded = await message.download_media(f"/tmp/{file.name}")
     if " " in downloaded:
         Path(downloaded).rename(downloaded.replace(' ', '_'))
         downloaded = downloaded.replace(' ', '_')
-    random_id = ''.join(sample(digits, 6))
+    random_id = ''.join(sample(digits, 8))
     queue.update({random_id: downloaded})
     file_type = downloaded.lower().split('.')[-1]
     if file_type in converter.kfx_input_allowed_types:
