@@ -3,12 +3,11 @@
 # This file is distributed under the same license as the PACKAGE package.
 # yshalsager <ysh-alsager@hotmail.com>, 2021.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-28 20:02+0200\n"
+"POT-Creation-Date: 2021-08-28 21:32+0200\n"
 "PO-Revision-Date: 2021-08-26 13:52+0200\n"
 "Last-Translator: yshalsager <ysh-alsager@hotmail.com>\n"
 "Language-Team: Arabic <LL@li.org>\n"
@@ -45,19 +44,23 @@ msgstr ""
 "        طُور هذا البوت بواسطة: [yshalsager](https://t.me/yshalsager/)."
 
 #: ebook_converter_bot/modules/preferences.py:16
+msgid "Language"
+msgstr "اللغة"
+
+#: ebook_converter_bot/modules/preferences.py:17
 msgid "**Available bot preferences:**"
 msgstr "**الإعدادات المتوفرة للبوت:**"
 
-#: ebook_converter_bot/modules/preferences.py:27
-#: ebook_converter_bot/modules/preferences.py:43
+#: ebook_converter_bot/modules/preferences.py:28
+#: ebook_converter_bot/modules/preferences.py:44
 msgid "Back"
 msgstr "رجوع"
 
-#: ebook_converter_bot/modules/preferences.py:28
+#: ebook_converter_bot/modules/preferences.py:29
 msgid "**Select Bot language**"
 msgstr "**اختر لغة البوت**"
 
-#: ebook_converter_bot/modules/preferences.py:41
+#: ebook_converter_bot/modules/preferences.py:42
 msgid "**Language has been set to**: {} ({})"
 msgstr "**غُيرت لغة البوت إلى**: {} ({})"
 
@@ -75,19 +78,19 @@ msgstr "الملفات التي حجمها أكبر من 100 ميجابايت ل
 msgid "Downloading the file..."
 msgstr "جاري تحميل الملف..."
 
-#: ebook_converter_bot/modules/converter.py:70
+#: ebook_converter_bot/modules/converter.py:66
 msgid "Select the format you want to convert to:"
 msgstr "اختر الصيغة التي تود التحويل إليها:"
 
-#: ebook_converter_bot/modules/converter.py:90
+#: ebook_converter_bot/modules/converter.py:86
 msgid "Converting the file to {}..."
 msgstr "جاري تحويل الملف إلى {}..."
 
-#: ebook_converter_bot/modules/converter.py:93
+#: ebook_converter_bot/modules/converter.py:89
 msgid "Done! Uploading the converted file..."
 msgstr "اكتمل التحويل! جاري رفع الملف المحول..."
 
-#: ebook_converter_bot/modules/converter.py:99
+#: ebook_converter_bot/modules/converter.py:95
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "فشل تحويل الملف (`{}`) إلى {} :("
 
@@ -95,16 +98,19 @@ msgstr "فشل تحويل الملف (`{}`) إلى {} :("
 msgid ""
 "**Bot Usage:**\n"
 "\n"
-"Forward any supported file to the bot and choose the required format to convert to, and in few seconds the bot will reply you with the converted file."
-"\n"
-"The bot works in groups too. Reply with /convert to any file then do the same steps as in private."
-"\n"
-"You can change the preferences of the bot such as language using /settings or /preferences commands."
+"Forward any supported file to the bot and choose the required format to "
+"convert to, and in few seconds the bot will reply you with the converted "
+"file.\n"
+"The bot works in groups too. Reply with /convert to any file then do the "
+"same steps as in private.\n"
+"You can change the preferences of the bot such as language using /settings "
+"or /preferences commands."
 msgstr ""
 "**كيفية استخدام البوت:**\n"
 "\n"
-"لاستخدام البوت ما عليك سوى ارسال الملف المراد تحويله إلى البوت وسيطلب منك اختيار الصيغة المحول لها ثم سيرسل الملف المحول."
-"\n"
-"ويمكن أيضا استخدام البوت في المجموعات بالرد على أي ملف بالأمر /convert وعمل نفس الخطوات كما بالرسائل الخاصة"
-"\n"
-"كما يمكن تغيير إعدادات البوت مثل اللغة باستخدام الأوامر /settings أو /preferences."
+"لاستخدام البوت ما عليك سوى ارسال الملف المراد تحويله إلى البوت وسيطلب منك "
+"اختيار الصيغة المحول لها ثم سيرسل الملف المحول.\n"
+"ويمكن أيضا استخدام البوت في المجموعات بالرد على أي ملف بالأمر /convert وعمل "
+"نفس الخطوات كما بالرسائل الخاصة\n"
+"كما يمكن تغيير إعدادات البوت مثل اللغة باستخدام الأوامر /settings أو /"
+"preferences."

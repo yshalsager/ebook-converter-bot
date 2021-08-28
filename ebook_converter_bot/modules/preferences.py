@@ -12,8 +12,9 @@ from ebook_converter_bot.utils.telegram import tg_exceptions_handler
 @tg_exceptions_handler
 async def preferences_handler(event: events.NewMessage.Event):
     """Set chat preferences."""
-    buttons = [Button.inline("Language", data="update_language")]
-    message = _("**Available bot preferences:**", get_lang(event.chat_id))
+    lang = get_lang(event.chat_id)
+    buttons = [Button.inline(_("Language", lang), data="update_language")]
+    message = _("**Available bot preferences:**", lang)
     await event.respond(message, buttons=buttons) \
         if not hasattr(event, 'data') else await event.edit(message, buttons=buttons)
 
