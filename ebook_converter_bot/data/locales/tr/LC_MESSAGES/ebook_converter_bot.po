@@ -32,14 +32,11 @@ msgid ""
 msgstr ""
 "Merhaba {}!\n"
 "\n"
-"         Bu bot, EPUB türünü KFX formatına dönüştürmek gibi çeşitli türler "
-"arasında dönüştürme yapmanızı sağlar! \n"
-"         Calibre'nin güçlü dönüştürme özellikleri sayesinde "
-"Güncel olarak 34 giriş ve 19 çıkış türü desteklenmektedir.\n"
+"Bu bot, EPUB türünü KFX formatına dönüştürmek gibi çeşitli türler arasında dönüştürme yapmanızı sağlar! \n"
+"Calibre'nin güçlü dönüştürme özellikleri sayesinde Güncel olarak 34 giriş ve 19 çıkış türü desteklenmektedir.\n"
 "\n"
-"         Bu bot açık kaynaklıdır. Kaynağı [burada] "
-"(https://github.com/yshalsager/ebook-converter-bot) bulabilirsiniz.\n"
-"         Geliştiren: [yshalsager](https://t.me/yshalsager/)."
+"Bu bot açık kaynaklıdır. Kaynağı [burada](https://github.com/yshalsager/ebook-converter-bot) bulabilirsiniz.\n"
+"Geliştiren: [yshalsager](https://t.me/yshalsager/)."
 
 #: ebook_converter_bot/modules/preferences.py:16
 msgid "Language"
@@ -47,7 +44,7 @@ msgstr "Dil"
 
 #: ebook_converter_bot/modules/preferences.py:17
 msgid "**Available bot preferences:**"
-msgstr "*Kullanılabilir bot tercihleri:**"
+msgstr "**Kullanılabilir bot tercihleri:**"
 
 #: ebook_converter_bot/modules/preferences.py:28
 #: ebook_converter_bot/modules/preferences.py:44
@@ -60,7 +57,7 @@ msgstr "**Bot dilini seçiniz**"
 
 #: ebook_converter_bot/modules/preferences.py:42
 msgid "**Language has been set to**: {} ({})"
-msgstr "*Seçilen dil**: {} ({})"
+msgstr "**Seçilen dil**: {} ({})"
 
 #. Unsupported file
 #: ebook_converter_bot/modules/converter.py:34
