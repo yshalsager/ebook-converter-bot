@@ -1,6 +1,7 @@
 import logging
 from asyncio import create_subprocess_shell
 from asyncio.subprocess import PIPE, Process, STDOUT
+from pathlib import Path
 from string import Template
 
 logger = logging.getLogger(__name__)
@@ -64,8 +65,10 @@ class Converter:
             if output_type == "epub":
                 return output_file
             # 2nd step conversion
+            epub_file = input_file.replace(input_type, "epub")
             await self._run_command(self._convert_command.safe_substitute(
-                input_file=input_file.replace(input_type, "epub"), output_file=output_file))
+                input_file=epub_file, output_file=output_file))
+            Path(epub_file).unlink()
             return output_file
         elif output_type == "kfx" and input_type in self.kfx_output_allowed_types:
             await self._convert_to_kfx(input_file)
