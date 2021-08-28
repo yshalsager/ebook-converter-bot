@@ -20,8 +20,8 @@ class Converter:
         # TODO: Add the ability to use converter options
         # https://manual.calibre-ebook.com/generated/en/ebook-convert.html
         self._kfx_input_convert_command = Template(
-            'WINEDEBUG=-all calibre-debug -r "KFX Input" -- "$input_file"')  # KFX to EPUB
-        self._kfx_output_convert_command = Template('WINEDEBUG=-all calibre-debug -r "KFX Output" -- "$input_file"')
+            'calibre-debug -r "KFX Input" -- "$input_file"')  # KFX to EPUB
+        self._kfx_output_convert_command = Template('calibre-debug -r "KFX Output" -- "$input_file"')
         self.kfx_output_allowed_types = ['epub', 'opf', 'mobi', 'doc', 'docx', 'kpf', 'kfx-zip']
         self.kfx_input_allowed_types = ['azw8', 'kfx', 'kfx-zip']
 
@@ -37,7 +37,7 @@ class Converter:
         process: Process = await create_subprocess_shell(command, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
         await process.wait()
         output = await process.stdout.read()
-        output = output.decode().strip()
+        output = '\n'.join([i for i in output.decode().strip().splitlines() if ":fixme:" not in i])
         logger.info(output)
         return process.returncode
 
