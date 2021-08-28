@@ -42,7 +42,10 @@ def get_chat_type(event: events.NewMessage.Event) -> int:
 
 def get_chat_name(event: events.NewMessage.Event) -> str:
     if isinstance(event.chat, User):
-        return event.chat.first_name \
-            if not hasattr(event.chat, 'last_name') \
-            else f"{event.chat.first_name} {event.chat.last_name}"
+        name = ''
+        if event.chat.first_name:
+            name += event.chat.first_name.strip()
+        if event.chat.last_name:
+            name += ' ' + event.chat.last_name.strip()
+        return name
     return event.chat.title
