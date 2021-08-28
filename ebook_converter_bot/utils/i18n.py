@@ -10,7 +10,7 @@ TRANSLATIONS: Dict[str, GNUTranslations] = {
 }
 
 
-def translate(string, lang='en') -> str:
+def translate(string, lang) -> str:
     if not lang:
         lang = 'en'
     translated = TRANSLATIONS[lang].gettext(string)

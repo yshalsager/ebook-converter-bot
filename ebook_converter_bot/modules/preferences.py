@@ -13,7 +13,7 @@ from ebook_converter_bot.utils.telegram import tg_exceptions_handler
 async def preferences_handler(event: events.NewMessage.Event):
     """Set chat preferences."""
     buttons = [Button.inline("Language", data="update_language")]
-    message = _("**Available bot preferences:**", lang=get_lang(event.chat_id))
+    message = _("**Available bot preferences:**", get_lang(event.chat_id))
     await event.respond(message, buttons=buttons) \
         if not hasattr(event, 'data') else await event.edit(message, buttons=buttons)
 
@@ -24,8 +24,8 @@ async def update_language_callback(event: events.CallbackQuery.Event):
     """Update language handler"""
     lang = get_lang(event.chat_id)
     buttons = [Button.inline(f"{i['name']} ({i['nativeName']})", data=f"setlanguage_{i['code']}") for i in LOCALES
-               ] + [Button.inline(_("Back", lang=lang), data="update_preferences")]
-    await event.edit(_("**Select Bot language**", lang=lang),
+               ] + [Button.inline(_("Back", lang), data="update_preferences")]
+    await event.edit(_("**Select Bot language**", lang),
                      buttons=[buttons[i::5] for i in range(5)])
 
 
@@ -39,5 +39,5 @@ async def set_language_callback(event: events.CallbackQuery.Event):
     language_name = language['name']
     language_native_name = language['nativeName']
     await event.edit(_("**Language has been set to**: {} ({})",
-                       lang=get_lang(event.chat_id)).format(language_name, language_native_name),
+                       get_lang(event.chat_id)).format(language_name, language_native_name),
                      buttons=[Button.inline(_("Back"), data="update_language")])

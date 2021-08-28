@@ -31,12 +31,12 @@ async def file_converter(event: events.NewMessage.Event):
         file = event.message.file
     if not await converter.is_supported_input_type(file.name):
         # Unsupported file
-        await event.reply(_("The file you sent is not a supported type!", lang=lang))
+        await event.reply(_("The file you sent is not a supported type!", lang))
         return
     if file.size > 104857600:  # 100 MB
-        await event.reply(_("Files larger than 100 MB are not supported!", lang=lang))
+        await event.reply(_("Files larger than 100 MB are not supported!", lang))
         return
-    reply = await event.reply(_("Downloading the file...", lang=lang))
+    reply = await event.reply(_("Downloading the file...", lang))
     downloaded = await message.download_media(f"/tmp/{file.name}")
     if " " in downloaded:
         Path(downloaded).rename(downloaded.replace(' ', '_'))
@@ -67,7 +67,7 @@ async def file_converter(event: events.NewMessage.Event):
                    Button.inline("txtz", data=f"txtz|{random_id}"),
                    Button.inline("zip", data=f"zip|{random_id}")]
 
-    reply = await reply.edit(_("Select the format you want to convert to:", lang=lang),
+    reply = await reply.edit(_("Select the format you want to convert to:", lang),
                              buttons=[buttons[i::5] for i in range(5)])
     await asyncio.sleep(30)
     await reply.delete()
@@ -87,16 +87,16 @@ async def converter_callback(event: events.CallbackQuery.Event):
     if not input_file or not Path(input_file).exists():
         return
     del queue[random_id]
-    reply = await event.reply(_("Converting the file to {}...", lang=lang).format(output_type))
+    reply = await event.reply(_("Converting the file to {}...", lang).format(output_type))
     output_file = await converter.convert_ebook(input_file, output_type)
     if Path(output_file).exists():
-        await reply.edit(_("Done! Uploading the converted file...", lang=lang))
+        await reply.edit(_("Done! Uploading the converted file...", lang))
         await event.client.send_file(event.chat, output_file, force_document=True)
         converted = True
     else:
         input_file_name = input_file.split('/')[-1]
         await reply.edit(
-            _("Failed to convert the file (`{}`) to {} :(", lang=lang).format(input_file_name, output_type))
+            _("Failed to convert the file (`{}`) to {} :(", lang).format(input_file_name, output_type))
     Path(input_file).unlink(missing_ok=True)
     Path(output_file).unlink(missing_ok=True)
     if converted:
