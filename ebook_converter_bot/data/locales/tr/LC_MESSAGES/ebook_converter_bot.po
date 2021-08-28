@@ -1,0 +1,116 @@
+# Turkish translations.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# berkantkz <berkantkorkmaz@outlook.com>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-08-28 22:48+0200\n"
+"PO-Revision-Date: 2021-08-28 22:48+0200\n"
+"Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
+"Language-Team: - \n"
+"Language: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# python-brace-format
+#: ebook_converter_bot/modules/main.py:17
+msgid ""
+"Hello {}!\n"
+"\n"
+"         This bot allows you to convert E-Books to various formats, for "
+"example, from EPUB to KFX!\n"
+"         It currently supports 34 input formats and 19 output formats, "
+"thanks to calibre powerful         convert features.\n"
+"\n"
+"         The bot is open source, you can find the source code of it [here]"
+"(https://github.com/yshalsager/ebook-converter-bot).\n"
+"         Developed by: [yshalsager](https://t.me/yshalsager/)."
+msgstr ""
+"Merhaba {}!\n"
+"\n"
+"         Bu bot, EPUB türünü KFX formatına dönüştürmek gibi çeşitli türler "
+"arasında dönüştürme yapmanızı sağlar! \n"
+"         Calibre'nin güçlü dönüştürme özellikleri sayesinde "
+"Güncel olarak 34 giriş ve 19 çıkış türü desteklenmektedir.\n"
+"\n"
+"         Bu bot açık kaynaklıdır. Kaynağı [burada] "
+"(https://github.com/yshalsager/ebook-converter-bot) bulabilirsiniz.\n"
+"         Geliştiren: [yshalsager](https://t.me/yshalsager/)."
+
+#: ebook_converter_bot/modules/preferences.py:16
+msgid "Language"
+msgstr "Dil"
+
+#: ebook_converter_bot/modules/preferences.py:17
+msgid "**Available bot preferences:**"
+msgstr "*Kullanılabilir bot tercihleri:**"
+
+#: ebook_converter_bot/modules/preferences.py:28
+#: ebook_converter_bot/modules/preferences.py:44
+msgid "Back"
+msgstr "Geri"
+
+#: ebook_converter_bot/modules/preferences.py:29
+msgid "**Select Bot language**"
+msgstr "**Bot dilini seçiniz**"
+
+#: ebook_converter_bot/modules/preferences.py:42
+msgid "**Language has been set to**: {} ({})"
+msgstr "*Seçilen dil**: {} ({})"
+
+#. Unsupported file
+#: ebook_converter_bot/modules/converter.py:34
+msgid "The file you sent is not a supported type!"
+msgstr "Gönderdiğiniz dosya türü desteklenmemektedir!"
+
+#. 100 MB
+#: ebook_converter_bot/modules/converter.py:37
+msgid "Files larger than 100 MB are not supported!"
+msgstr "100 MB üzerindeki dosyalar desteklenmemektedir!"
+
+#: ebook_converter_bot/modules/converter.py:39
+msgid "Downloading the file..."
+msgstr "Dosya indiriliyor..."
+
+#: ebook_converter_bot/modules/converter.py:66
+msgid "Select the format you want to convert to:"
+msgstr "Dönüştürmek istediğiniz türü seçiniz:"
+
+#: ebook_converter_bot/modules/converter.py:86
+msgid "Converting the file to {}..."
+msgstr "Dosya {} türüne dönüştürülüyor..."
+
+#: ebook_converter_bot/modules/converter.py:89
+msgid "Done! Uploading the converted file..."
+msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
+
+#: ebook_converter_bot/modules/converter.py:95
+msgid "Failed to convert the file (`{}`) to {} :("
+msgstr "(`{}`) dosyası {} dosyasına dönüştürülürken hata oluştu :("
+
+#: ebook_converter_bot/modules/help.py:15
+msgid ""
+"**Bot Usage:**\n"
+"\n"
+"Forward any supported file to the bot and choose the required format to "
+"convert to, and in few seconds the bot will reply you with the converted "
+"file.\n"
+"The bot works in groups too. Reply with /convert to any file then do the "
+"same steps as in private.\n"
+"You can change the preferences of the bot such as language using /settings "
+"or /preferences commands."
+msgstr ""
+"**Bot kullanımı:**\n"
+"\n"
+"Desteklenen herhangi bir türdeki dosyayı bota iletin ve ardından"
+"dönüştürülecek dosya türünü seçin. Bot, birkaç saniye içerisinde "
+"dönüştürülmüş dosya ile size geri dönüş yapacaktır.\n"
+"Bot, gruplarda da çalışmaktadır. Dönüştürmek istediğiniz dosyanın bulunduğu iletiyi "
+"alıntılayarak /convert iletisini girin ve sonrasında "
+"özel sohbette uyguladığınız adımların aynısını uygulayın.\n"
+"Botun dil vb. ayarlarını değiştirmek için /settings "
+"ya da /preferences emirlerini kullanabilirsiniz."
