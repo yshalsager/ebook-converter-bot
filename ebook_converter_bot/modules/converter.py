@@ -43,29 +43,25 @@ async def file_converter(event: events.NewMessage.Event):
         downloaded = downloaded.replace(' ', '_')
     random_id = ''.join(sample(digits, 8))
     queue.update({random_id: downloaded})
-    file_type = downloaded.lower().split('.')[-1]
-    if file_type in converter.kfx_input_allowed_types:
-        buttons = [Button.inline("epub", data=f"epub|{random_id}")]
-    else:
-        buttons = [Button.inline("azw3", data=f"azw3|{random_id}"),
-                   Button.inline("docx", data=f"docx|{random_id}"),
-                   Button.inline("epub", data=f"epub|{random_id}"),
-                   Button.inline("fb2", data=f"fb2|{random_id}"),
-                   Button.inline("htmlz", data=f"htmlz|{random_id}"),
-                   Button.inline("kfx", data=f"kfx|{random_id}"),
-                   Button.inline("lit", data=f"lit|{random_id}"),
-                   Button.inline("lrf", data=f"lrf|{random_id}"),
-                   Button.inline("mobi", data=f"mobi|{random_id}"),
-                   Button.inline("oeb", data=f"oeb|{random_id}"),
-                   Button.inline("pdb", data=f"pdb|{random_id}"),
-                   Button.inline("pmlz", data=f"pmlz|{random_id}"),
-                   Button.inline("rb", data=f"rb|{random_id}"),
-                   Button.inline("rtf", data=f"rtf|{random_id}"),
-                   Button.inline("snb", data=f"snb|{random_id}"),
-                   Button.inline("tcr", data=f"tcr|{random_id}"),
-                   Button.inline("txt", data=f"txt|{random_id}"),
-                   Button.inline("txtz", data=f"txtz|{random_id}"),
-                   Button.inline("zip", data=f"zip|{random_id}")]
+    buttons = [Button.inline("azw3", data=f"azw3|{random_id}"),
+               Button.inline("docx", data=f"docx|{random_id}"),
+               Button.inline("epub", data=f"epub|{random_id}"),
+               Button.inline("fb2", data=f"fb2|{random_id}"),
+               Button.inline("htmlz", data=f"htmlz|{random_id}"),
+               Button.inline("kfx", data=f"kfx|{random_id}"),
+               Button.inline("lit", data=f"lit|{random_id}"),
+               Button.inline("lrf", data=f"lrf|{random_id}"),
+               Button.inline("mobi", data=f"mobi|{random_id}"),
+               Button.inline("oeb", data=f"oeb|{random_id}"),
+               Button.inline("pdb", data=f"pdb|{random_id}"),
+               Button.inline("pmlz", data=f"pmlz|{random_id}"),
+               Button.inline("rb", data=f"rb|{random_id}"),
+               Button.inline("rtf", data=f"rtf|{random_id}"),
+               Button.inline("snb", data=f"snb|{random_id}"),
+               Button.inline("tcr", data=f"tcr|{random_id}"),
+               Button.inline("txt", data=f"txt|{random_id}"),
+               Button.inline("txtz", data=f"txtz|{random_id}"),
+               Button.inline("zip", data=f"zip|{random_id}")]
 
     reply = await reply.edit(_("Select the format you want to convert to:", lang),
                              buttons=[buttons[i::5] for i in range(5)])

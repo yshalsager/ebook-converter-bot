@@ -60,6 +60,11 @@ class Converter:
         output_file = input_file.replace(input_type, output_type)
         if input_type in self.kfx_input_allowed_types:
             await self._convert_from_kfx_to_epub(input_file)
+            if output_type == "epub":
+                return output_file
+            # 2nd step conversion
+            await self._run_command(self._convert_command.safe_substitute(
+                input_file=input_file.replace(input_type, "epub"), output_file=output_file))
             return output_file
         elif output_type == "kfx" and input_type in self.kfx_output_allowed_types:
             await self._convert_to_kfx(input_file)
@@ -69,6 +74,5 @@ class Converter:
                 self._convert_command.safe_substitute(
                     input_file=input_file,
                     output_file=output_file
-                )
-            )
+                ))
             return output_file
