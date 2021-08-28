@@ -18,8 +18,9 @@ class Converter:
         self._convert_command = Template("ebook-convert $input_file $output_file")
         # TODO: Add the ability to use converter options
         # https://manual.calibre-ebook.com/generated/en/ebook-convert.html
-        self._kfx_input_convert_command = Template('calibre-debug -r "KFX Input" -- "$input_file"')  # KFX to EPUB
-        self._kfx_output_convert_command = Template('calibre-debug -r "KFX Output" -- "$input_file"')
+        self._kfx_input_convert_command = Template(
+            'WINEDEBUG=-all calibre-debug -r "KFX Input" -- "$input_file"')  # KFX to EPUB
+        self._kfx_output_convert_command = Template('WINEDEBUG=-all calibre-debug -r "KFX Output" -- "$input_file"')
         self.kfx_output_allowed_types = ['epub', 'opf', 'mobi', 'doc', 'docx', 'kpf', 'kfx-zip']
         self.kfx_input_allowed_types = ['azw8', 'kfx', 'kfx-zip']
 
