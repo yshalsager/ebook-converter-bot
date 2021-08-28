@@ -39,23 +39,22 @@ RUN wget -nv -O- https://dl.winehq.org/wine-builds/winehq.key | APT_KEY_DONT_WAR
     && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winehq-${WINE_BRANCH} \
     && rm -rf /var/lib/apt/lists/*
 
-# calibre stuff
-WORKDIR /app
-RUN wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sh /dev/stdin
-RUN wget https://plugins.calibre-ebook.com/291290.zip
-RUN wget https://plugins.calibre-ebook.com/272407.zip
-# KFX Output
-RUN calibre-customize -a 272407.zip
-# KFX Input
-RUN calibre-customize -a 291290.zip
 # Kindle support
-RUN wget -q https://s3.amazonaws.com/kindlepreviewer3/KindlePreviewerInstaller.exe
-RUN DISPLAY=:0 WINEARCH=win64 WINEDEBUG=-all wine KindlePreviewerInstaller.exe /S
 COPY kp3.reg .
-RUN cat kp3.reg >> /root/.wine/user.reg
+RUN wget -q https://s3.amazonaws.com/kindlepreviewer3/KindlePreviewerInstaller.exe \
+    && DISPLAY=:0 WINEARCH=win64 WINEDEBUG=-all wine KindlePreviewerInstaller.exe /S \
+    && cat kp3.reg >> /root/.wine/user.reg && rm *.exe
 
-# cleanup
-RUN rm *.zip *.exe
+# calibre and its plugins are
+WORKDIR /app
+# KFX Output 272407
+# KFX Input 291290
+RUN wget -q -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sh /dev/stdin \
+    && wget -q https://plugins.calibre-ebook.com/272407.zip \
+    && calibre-customize -a 272407.zip \
+    && wget -q https://plugins.calibre-ebook.com/291290.zip \
+    && calibre-customize -a 291290.zip \
+    && rm *.zip
 
 # poetry
 WORKDIR $PYSETUP_PATH
