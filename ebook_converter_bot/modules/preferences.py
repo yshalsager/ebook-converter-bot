@@ -40,4 +40,4 @@ async def set_language_callback(event: events.CallbackQuery.Event):
     language_native_name = language['nativeName']
     await event.edit(_("**Language has been set to**: {} ({})",
                        get_lang(event.chat_id)).format(language_name, language_native_name),
-                     buttons=[Button.inline(_("Back"), data="update_language")])
+                     buttons=[Button.inline(_("Back", get_lang(event.chat_id)), data="update_language")])
