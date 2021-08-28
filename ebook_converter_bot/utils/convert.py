@@ -16,7 +16,7 @@ class Converter:
                               'pdb', 'pmlz', 'rb', 'rtf', 'snb', 'tcr', 'txt', 'txtz', 'zip']
 
     def __init__(self):
-        self._convert_command = Template("ebook-convert $input_file $output_file")
+        self._convert_command = Template('ebook-convert "$input_file" "$output_file"')
         # TODO: Add the ability to use converter options
         # https://manual.calibre-ebook.com/generated/en/ebook-convert.html
         self._kfx_input_convert_command = Template(
