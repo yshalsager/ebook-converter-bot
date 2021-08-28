@@ -119,10 +119,10 @@ You can go through the Dockerfile to see how the bot requirements are being inst
   ```bash
   # KFX Input
   wget https://plugins.calibre-ebook.com/291290.zip 
-  RUN calibre-customize -a 291290.zip
+  calibre-customize -a 291290.zip
   # KFX Output
   wget https://plugins.calibre-ebook.com/272407.zip
-  RUN calibre-customize -a 272407.zip
+  calibre-customize -a 272407.zip
   ```
 - Also, KFX Output plugin requires [Kindle Previewer 3](https://kdp.amazon.com/en_US/help/topic/G202131170), which can
   run on linux under [Wine](https://appdb.winehq.org/objectManager.php?sClass=application&iId=18012).
@@ -140,12 +140,12 @@ python3 -m ebook_converter_bot
 The bot uses gettext for internationalization and makefile for running i18n tasks easily.
 
 - First, generate .pot template using `make i18n-generate-messages`.
-- Update the current translation files using `make i18n-merge`.
+- Update the current translation files using `make i18n-merge`, then edit the translation strings.
 - Compile the translation files using `make i18n-compile`.
 
 To add a new language to the bot, run the following command (change 'ar' to your language code) then edit the new
 language file with translation and compile.
 
 ```bash
-LANG=ar make i18n-init-lan
+LANG=ar make i18n-init-lang
 ```
