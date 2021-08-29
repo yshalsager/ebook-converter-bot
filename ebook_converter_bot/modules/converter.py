@@ -1,5 +1,4 @@
 """Converter"""
-import asyncio
 from pathlib import Path
 from random import sample
 from string import digits
@@ -63,12 +62,8 @@ async def file_converter(event: events.NewMessage.Event):
                Button.inline("txtz", data=f"txtz|{random_id}"),
                Button.inline("zip", data=f"zip|{random_id}")]
 
-    reply = await reply.edit(_("Select the format you want to convert to:", lang),
-                             buttons=[buttons[i::5] for i in range(5)])
-    await asyncio.sleep(30)
-    await reply.delete()
-    if Path(downloaded).exists():
-        Path(downloaded).unlink(missing_ok=True)
+    await reply.edit(_("Select the format you want to convert to:", lang),
+                     buttons=[buttons[i::5] for i in range(5)])
 
 
 @BOT.on(events.CallbackQuery(pattern=r'\w+\|\d+'))
@@ -83,7 +78,7 @@ async def converter_callback(event: events.CallbackQuery.Event):
     if not input_file or not Path(input_file).exists():
         return
     del queue[random_id]
-    reply = await event.reply(_("Converting the file to {}...", lang).format(output_type))
+    reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
     output_file = await converter.convert_ebook(input_file, output_type)
     if Path(output_file).exists():
         await reply.edit(_("Done! Uploading the converted file...", lang))
