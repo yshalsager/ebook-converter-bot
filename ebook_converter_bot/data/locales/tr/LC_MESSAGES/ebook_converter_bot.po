@@ -2,12 +2,12 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # berkantkz <berkantkorkmaz@outlook.com>, 2021.
-#
+# 
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-28 22:48+0200\n"
+"POT-Creation-Date: 2021-08-30 00:25+0200\n"
 "PO-Revision-Date: 2021-08-28 22:48+0200\n"
 "Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
 "Language-Team: - \n"
@@ -32,10 +32,13 @@ msgid ""
 msgstr ""
 "Merhaba {}!\n"
 "\n"
-"Bu bot, EPUB türünü KFX formatına dönüştürmek gibi çeşitli türler arasında dönüştürme yapmanızı sağlar! \n"
-"Calibre'nin güçlü dönüştürme özellikleri sayesinde Güncel olarak 34 giriş ve 19 çıkış türü desteklenmektedir.\n"
+"Bu bot, EPUB türünü KFX formatına dönüştürmek gibi çeşitli türler arasında "
+"dönüştürme yapmanızı sağlar! \n"
+"Calibre'nin güçlü dönüştürme özellikleri sayesinde Güncel olarak 34 giriş ve "
+"19 çıkış türü desteklenmektedir.\n"
 "\n"
-"Bu bot açık kaynaklıdır. Kaynağı [burada](https://github.com/yshalsager/ebook-converter-bot) bulabilirsiniz.\n"
+"Bu bot açık kaynaklıdır. Kaynağı [burada](https://github.com/yshalsager/"
+"ebook-converter-bot) bulabilirsiniz.\n"
 "Geliştiren: [yshalsager](https://t.me/yshalsager/)."
 
 #: ebook_converter_bot/modules/preferences.py:16
@@ -60,32 +63,42 @@ msgid "**Language has been set to**: {} ({})"
 msgstr "**Seçilen dil**: {} ({})"
 
 #. Unsupported file
-#: ebook_converter_bot/modules/converter.py:34
+#: ebook_converter_bot/modules/converter.py:35
 msgid "The file you sent is not a supported type!"
 msgstr "Gönderdiğiniz dosya türü desteklenmemektedir!"
 
 #. 100 MB
-#: ebook_converter_bot/modules/converter.py:37
+#: ebook_converter_bot/modules/converter.py:38
 msgid "Files larger than 100 MB are not supported!"
 msgstr "100 MB üzerindeki dosyalar desteklenmemektedir!"
 
-#: ebook_converter_bot/modules/converter.py:39
+#: ebook_converter_bot/modules/converter.py:40
 msgid "Downloading the file..."
 msgstr "Dosya indiriliyor..."
 
-#: ebook_converter_bot/modules/converter.py:66
+#: ebook_converter_bot/modules/converter.py:67
+#: ebook_converter_bot/modules/converter.py:79
+#: ebook_converter_bot/modules/converter.py:81
+msgid "Force RTL"
+msgstr ""
+
+#: ebook_converter_bot/modules/converter.py:68
 msgid "Select the format you want to convert to:"
 msgstr "Dönüştürmek istediğiniz türü seçiniz:"
 
-#: ebook_converter_bot/modules/converter.py:86
+#: ebook_converter_bot/modules/converter.py:100
 msgid "Converting the file to {}..."
 msgstr "Dosya {} türüne dönüştürülüyor..."
 
-#: ebook_converter_bot/modules/converter.py:89
+#: ebook_converter_bot/modules/converter.py:105
+msgid "Converted to RTL successfully!\n"
+msgstr ""
+
+#: ebook_converter_bot/modules/converter.py:106
 msgid "Done! Uploading the converted file..."
 msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
 
-#: ebook_converter_bot/modules/converter.py:95
+#: ebook_converter_bot/modules/converter.py:113
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "(`{}`) dosyası {} dosyasına dönüştürülürken hata oluştu :("
 
@@ -103,11 +116,11 @@ msgid ""
 msgstr ""
 "**Bot kullanımı:**\n"
 "\n"
-"Desteklenen herhangi bir türdeki dosyayı bota iletin ve ardından"
-"dönüştürülecek dosya türünü seçin. Bot, birkaç saniye içerisinde "
+"Desteklenen herhangi bir türdeki dosyayı bota iletin ve "
+"ardındandönüştürülecek dosya türünü seçin. Bot, birkaç saniye içerisinde "
 "dönüştürülmüş dosya ile size geri dönüş yapacaktır.\n"
-"Bot, gruplarda da çalışmaktadır. Dönüştürmek istediğiniz dosyanın bulunduğu iletiyi "
-"alıntılayarak /convert iletisini girin ve sonrasında "
-"özel sohbette uyguladığınız adımların aynısını uygulayın.\n"
-"Botun dil vb. ayarlarını değiştirmek için /settings "
-"ya da /preferences emirlerini kullanabilirsiniz."
+"Bot, gruplarda da çalışmaktadır. Dönüştürmek istediğiniz dosyanın bulunduğu "
+"iletiyi alıntılayarak /convert iletisini girin ve sonrasında özel sohbette "
+"uyguladığınız adımların aynısını uygulayın.\n"
+"Botun dil vb. ayarlarını değiştirmek için /settings ya da /preferences "
+"emirlerini kullanabilirsiniz."

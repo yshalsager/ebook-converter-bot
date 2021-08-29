@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-28 21:32+0200\n"
+"POT-Creation-Date: 2021-08-30 00:25+0200\n"
 "PO-Revision-Date: 2021-08-26 13:52+0200\n"
 "Last-Translator: yshalsager <ysh-alsager@hotmail.com>\n"
 "Language-Team: Arabic <LL@li.org>\n"
@@ -65,32 +65,42 @@ msgid "**Language has been set to**: {} ({})"
 msgstr "**غُيرت لغة البوت إلى**: {} ({})"
 
 #. Unsupported file
-#: ebook_converter_bot/modules/converter.py:34
+#: ebook_converter_bot/modules/converter.py:35
 msgid "The file you sent is not a supported type!"
 msgstr "نوع الملف الذي أرسلته غير مدعوم!"
 
 #. 100 MB
-#: ebook_converter_bot/modules/converter.py:37
+#: ebook_converter_bot/modules/converter.py:38
 msgid "Files larger than 100 MB are not supported!"
 msgstr "الملفات التي حجمها أكبر من 100 ميجابايت ليست مدعومة!"
 
-#: ebook_converter_bot/modules/converter.py:39
+#: ebook_converter_bot/modules/converter.py:40
 msgid "Downloading the file..."
 msgstr "جاري تحميل الملف..."
 
-#: ebook_converter_bot/modules/converter.py:66
+#: ebook_converter_bot/modules/converter.py:67
+#: ebook_converter_bot/modules/converter.py:79
+#: ebook_converter_bot/modules/converter.py:81
+msgid "Force RTL"
+msgstr "إجبار إتجاه من اليمين لليسار"
+
+#: ebook_converter_bot/modules/converter.py:68
 msgid "Select the format you want to convert to:"
 msgstr "اختر الصيغة التي تود التحويل إليها:"
 
-#: ebook_converter_bot/modules/converter.py:86
+#: ebook_converter_bot/modules/converter.py:100
 msgid "Converting the file to {}..."
 msgstr "جاري تحويل الملف إلى {}..."
 
-#: ebook_converter_bot/modules/converter.py:89
+#: ebook_converter_bot/modules/converter.py:105
+msgid "Converted to RTL successfully!\n"
+msgstr "تم التحويل إلى إتجاه من اليمين إلى اليسار بنجاح!\n"
+
+#: ebook_converter_bot/modules/converter.py:106
 msgid "Done! Uploading the converted file..."
 msgstr "اكتمل التحويل! جاري رفع الملف المحول..."
 
-#: ebook_converter_bot/modules/converter.py:95
+#: ebook_converter_bot/modules/converter.py:113
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "فشل تحويل الملف (`{}`) إلى {} :("
 

@@ -2,8 +2,10 @@
 from pathlib import Path
 from random import sample
 from string import digits
+from typing import List
 
 from telethon import events, Button
+from telethon.tl.custom import Message, MessageButton
 
 from ebook_converter_bot.bot import BOT
 from ebook_converter_bot.db.curd import get_lang
@@ -61,9 +63,24 @@ async def file_converter(event: events.NewMessage.Event):
                Button.inline("txt", data=f"txt|{random_id}"),
                Button.inline("txtz", data=f"txtz|{random_id}"),
                Button.inline("zip", data=f"zip|{random_id}")]
-
+    buttons = [buttons[i::5] for i in range(5)]
+    buttons.append([Button.inline(_("Force RTL", lang) + " ❓", data="rtl_disabled")])
     await reply.edit(_("Select the format you want to convert to:", lang),
-                     buttons=[buttons[i::5] for i in range(5)])
+                     buttons=buttons)
+
+
+@BOT.on(events.CallbackQuery(pattern='rtl_enabled|rtl_disabled'))
+async def rtl_enable_callback(event: events.CallbackQuery.Event):
+    """RTL callback handler"""
+    message: Message = await event.get_message()
+    lang = get_lang(event.chat_id)
+    rtl_button_row: List[MessageButton] = message.buttons.pop(-1)
+    if event.data == event.data == b"rtl_disabled":
+        rtl_button_row[0] = Button.inline(_("Force RTL", lang) + " ✅", data="rtl_enabled")
+    elif event.data == b"rtl_enabled":
+        rtl_button_row[0] = Button.inline(_("Force RTL", lang) + " ❌", data="rtl_disabled")
+    message.buttons.append(rtl_button_row)
+    await message.edit(message.text, buttons=message.buttons)
 
 
 @BOT.on(events.CallbackQuery(pattern=r'\w+\|\d+'))
@@ -71,6 +88,8 @@ async def file_converter(event: events.NewMessage.Event):
 @analysis
 async def converter_callback(event: events.CallbackQuery.Event):
     """Converter callback handler"""
+    message: Message = await event.get_message()
+    convert_to_rtl = message.buttons[-1][0].data == b"rtl_enabled"
     lang = get_lang(event.chat_id)
     converted = False
     output_type, random_id = event.data.decode().split('|')
@@ -79,10 +98,14 @@ async def converter_callback(event: events.CallbackQuery.Event):
         return
     del queue[random_id]
     reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
-    output_file = await converter.convert_ebook(input_file, output_type)
+    output_file, converted_to_rtl = await converter.convert_ebook(input_file, output_type, force_rtl=convert_to_rtl)
     if Path(output_file).exists():
-        await reply.edit(_("Done! Uploading the converted file...", lang))
-        await event.client.send_file(event.chat, output_file, force_document=True)
+        message_text = ""
+        if convert_to_rtl and converted_to_rtl:
+            message_text += _("Converted to RTL successfully!\n", lang)
+        message_text += _("Done! Uploading the converted file...", lang)
+        await reply.edit(message_text)
+        await event.client.send_file(event.chat, output_file, reply_to=reply, force_document=True)
         converted = True
     else:
         input_file_name = input_file.split('/')[-1]
