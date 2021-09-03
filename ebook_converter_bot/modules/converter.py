@@ -30,6 +30,8 @@ async def file_converter(event: events.NewMessage.Event):
     else:
         message = event.message
         file = event.message.file
+    if not file:
+        return
     if not await converter.is_supported_input_type(file.name):
         # Unsupported file
         await event.reply(_("The file you sent is not a supported type!", lang))
@@ -70,6 +72,7 @@ async def file_converter(event: events.NewMessage.Event):
 
 
 @BOT.on(events.CallbackQuery(pattern='rtl_enabled|rtl_disabled'))
+@tg_exceptions_handler
 async def rtl_enable_callback(event: events.CallbackQuery.Event):
     """RTL callback handler"""
     message: Message = await event.get_message()

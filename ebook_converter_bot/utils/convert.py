@@ -77,7 +77,7 @@ class Converter:
                 set_to_rtl = set_epub_to_rtl(epub_file)
             await self._run_command(self._convert_command.safe_substitute(
                 input_file=epub_file, output_file=output_file))
-            Path(epub_file).unlink()
+            Path(epub_file).unlink(missing_ok=True)
             return output_file, set_to_rtl
         elif output_type == "kfx" and input_type in self.kfx_output_allowed_types:
             await self._convert_to_kfx(input_file)
