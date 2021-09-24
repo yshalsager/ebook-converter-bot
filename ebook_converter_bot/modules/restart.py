@@ -11,7 +11,7 @@ from ebook_converter_bot.bot import BOT
 
 @BOT.on(events.NewMessage(from_users=TG_BOT_ADMINS, pattern=r'/restart'))
 async def restart(event):
-    """ restart Samsung bot """
+    """ restart the bot """
     restart_message = await event.reply("Restarting, please wait...")
     chat_info = {
         'chat': restart_message.chat_id,

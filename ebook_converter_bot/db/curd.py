@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, Dict
+
+from sqlalchemy.sql.functions import sum
 
 from ebook_converter_bot.db.models.analytics import Analytics
 from ebook_converter_bot.db.models.chat import Chat
@@ -51,3 +53,21 @@ def update_language(user_id: int, language: str):
 def get_lang(user_id: int) -> str:
     chat = session.query(Preference.language).filter(Preference.user_id == user_id).first()
     return chat.language if chat else 'en'
+
+
+def get_chats_count() -> (int, int):
+    all_chats = session.query(Chat).count()
+    active_chats = session.query(Chat).filter(Chat.usage_times > 0).count()
+    return all_chats, active_chats
+
+
+def get_usage_count() -> (int, int):
+    usage_times = session.query(sum(Chat.usage_times).label('usage_times')).first().usage_times
+    output_times = session.query(sum(Analytics.output_times).label('output_times')).first().output_times
+    return usage_times, output_times
+
+
+def get_top_formats() -> (Dict[str, int], Dict[str, int]):
+    out_formats: List[Analytics] = session.query(Analytics).order_by(Analytics.output_times.desc()).limit(5).all()
+    in_formats: List[Analytics] = session.query(Analytics).order_by(Analytics.input_times.desc()).limit(5).all()
+    return {i.format: i.output_times for i in out_formats}, {i.format: i.input_times for i in in_formats}
