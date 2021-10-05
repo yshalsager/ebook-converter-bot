@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-30 00:25+0200\n"
+"POT-Creation-Date: 2021-10-05 22:00+0200\n"
 "PO-Revision-Date: 2021-08-28 22:48+0200\n"
 "Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
 "Language-Team: - \n"
@@ -63,42 +63,48 @@ msgid "**Language has been set to**: {} ({})"
 msgstr "**Seçilen dil**: {} ({})"
 
 #. Unsupported file
-#: ebook_converter_bot/modules/converter.py:35
+#: ebook_converter_bot/modules/converter.py:37
 msgid "The file you sent is not a supported type!"
 msgstr "Gönderdiğiniz dosya türü desteklenmemektedir!"
 
 #. 100 MB
-#: ebook_converter_bot/modules/converter.py:38
+#: ebook_converter_bot/modules/converter.py:40
 msgid "Files larger than 100 MB are not supported!"
 msgstr "100 MB üzerindeki dosyalar desteklenmemektedir!"
 
-#: ebook_converter_bot/modules/converter.py:40
+#: ebook_converter_bot/modules/converter.py:42
 msgid "Downloading the file..."
 msgstr "Dosya indiriliyor..."
 
-#: ebook_converter_bot/modules/converter.py:67
-#: ebook_converter_bot/modules/converter.py:79
-#: ebook_converter_bot/modules/converter.py:81
+#: ebook_converter_bot/modules/converter.py:69
+#: ebook_converter_bot/modules/converter.py:102
+#: ebook_converter_bot/modules/converter.py:104
 msgid "Force RTL"
 msgstr ""
 
-#: ebook_converter_bot/modules/converter.py:68
+#: ebook_converter_bot/modules/converter.py:71
+#: ebook_converter_bot/modules/converter.py:84
+#: ebook_converter_bot/modules/converter.py:86
+msgid "Fix EPUB before converting"
+msgstr ""
+
+#: ebook_converter_bot/modules/converter.py:72
 msgid "Select the format you want to convert to:"
 msgstr "Dönüştürmek istediğiniz türü seçiniz:"
 
-#: ebook_converter_bot/modules/converter.py:100
+#: ebook_converter_bot/modules/converter.py:130
 msgid "Converting the file to {}..."
 msgstr "Dosya {} türüne dönüştürülüyor..."
 
-#: ebook_converter_bot/modules/converter.py:105
+#: ebook_converter_bot/modules/converter.py:136
 msgid "Converted to RTL successfully!\n"
 msgstr ""
 
-#: ebook_converter_bot/modules/converter.py:106
+#: ebook_converter_bot/modules/converter.py:137
 msgid "Done! Uploading the converted file..."
 msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
 
-#: ebook_converter_bot/modules/converter.py:113
+#: ebook_converter_bot/modules/converter.py:144
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "(`{}`) dosyası {} dosyasına dönüştürülürken hata oluştu :("
 

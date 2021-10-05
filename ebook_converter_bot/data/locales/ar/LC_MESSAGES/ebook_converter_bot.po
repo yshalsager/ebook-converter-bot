@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-30 00:25+0200\n"
+"POT-Creation-Date: 2021-10-05 22:00+0200\n"
 "PO-Revision-Date: 2021-08-26 13:52+0200\n"
 "Last-Translator: yshalsager <ysh-alsager@hotmail.com>\n"
 "Language-Team: Arabic <LL@li.org>\n"
@@ -65,42 +65,48 @@ msgid "**Language has been set to**: {} ({})"
 msgstr "**غُيرت لغة البوت إلى**: {} ({})"
 
 #. Unsupported file
-#: ebook_converter_bot/modules/converter.py:35
+#: ebook_converter_bot/modules/converter.py:37
 msgid "The file you sent is not a supported type!"
 msgstr "نوع الملف الذي أرسلته غير مدعوم!"
 
 #. 100 MB
-#: ebook_converter_bot/modules/converter.py:38
+#: ebook_converter_bot/modules/converter.py:40
 msgid "Files larger than 100 MB are not supported!"
 msgstr "الملفات التي حجمها أكبر من 100 ميجابايت ليست مدعومة!"
 
-#: ebook_converter_bot/modules/converter.py:40
+#: ebook_converter_bot/modules/converter.py:42
 msgid "Downloading the file..."
 msgstr "جاري تحميل الملف..."
 
-#: ebook_converter_bot/modules/converter.py:67
-#: ebook_converter_bot/modules/converter.py:79
-#: ebook_converter_bot/modules/converter.py:81
+#: ebook_converter_bot/modules/converter.py:69
+#: ebook_converter_bot/modules/converter.py:102
+#: ebook_converter_bot/modules/converter.py:104
 msgid "Force RTL"
 msgstr "إجبار إتجاه من اليمين لليسار"
 
-#: ebook_converter_bot/modules/converter.py:68
+#: ebook_converter_bot/modules/converter.py:71
+#: ebook_converter_bot/modules/converter.py:84
+#: ebook_converter_bot/modules/converter.py:86
+msgid "Fix EPUB before converting"
+msgstr "إصلاح الكتاب قبل التحويل"
+
+#: ebook_converter_bot/modules/converter.py:72
 msgid "Select the format you want to convert to:"
 msgstr "اختر الصيغة التي تود التحويل إليها:"
 
-#: ebook_converter_bot/modules/converter.py:100
+#: ebook_converter_bot/modules/converter.py:130
 msgid "Converting the file to {}..."
 msgstr "جاري تحويل الملف إلى {}..."
 
-#: ebook_converter_bot/modules/converter.py:105
+#: ebook_converter_bot/modules/converter.py:136
 msgid "Converted to RTL successfully!\n"
 msgstr "تم التحويل إلى إتجاه من اليمين إلى اليسار بنجاح!\n"
 
-#: ebook_converter_bot/modules/converter.py:106
+#: ebook_converter_bot/modules/converter.py:137
 msgid "Done! Uploading the converted file..."
 msgstr "اكتمل التحويل! جاري رفع الملف المحول..."
 
-#: ebook_converter_bot/modules/converter.py:113
+#: ebook_converter_bot/modules/converter.py:144
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "فشل تحويل الملف (`{}`) إلى {} :("
 

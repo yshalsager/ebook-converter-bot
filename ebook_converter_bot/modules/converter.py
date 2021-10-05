@@ -67,8 +67,25 @@ async def file_converter(event: events.NewMessage.Event):
                Button.inline("zip", data=f"zip|{random_id}")]
     buttons = [buttons[i::5] for i in range(5)]
     buttons.append([Button.inline(_("Force RTL", lang) + " ❓", data="rtl_disabled")])
+    if file.name.lower().endswith('epub'):
+        buttons.append([Button.inline(_("Fix EPUB before converting", lang) + " ❓", data="epub_keep")])
     await reply.edit(_("Select the format you want to convert to:", lang),
                      buttons=buttons)
+
+
+@BOT.on(events.CallbackQuery(pattern='epub_fix|epub_keep'))
+@tg_exceptions_handler
+async def epub_fix_enable_callback(event: events.CallbackQuery.Event):
+    """Epub Fix callback handler"""
+    message: Message = await event.get_message()
+    lang = get_lang(event.chat_id)
+    epub_button_row: List[MessageButton] = message.buttons.pop(-1)
+    if event.data == event.data == b"epub_keep":
+        epub_button_row[0] = Button.inline(_("Fix EPUB before converting", lang) + " ✅", data="epub_fix")
+    elif event.data == b"epub_fix":
+        epub_button_row[0] = Button.inline(_("Fix EPUB before converting", lang) + " ❌", data="epub_keep")
+    message.buttons.append(epub_button_row)
+    await message.edit(message.text, buttons=message.buttons)
 
 
 @BOT.on(events.CallbackQuery(pattern='rtl_enabled|rtl_disabled'))
@@ -77,12 +94,17 @@ async def rtl_enable_callback(event: events.CallbackQuery.Event):
     """RTL callback handler"""
     message: Message = await event.get_message()
     lang = get_lang(event.chat_id)
+    epub_button_row = None
+    if message.buttons[-1][0].data.startswith(b"epub"):
+        epub_button_row = message.buttons.pop(-1)
     rtl_button_row: List[MessageButton] = message.buttons.pop(-1)
     if event.data == event.data == b"rtl_disabled":
         rtl_button_row[0] = Button.inline(_("Force RTL", lang) + " ✅", data="rtl_enabled")
     elif event.data == b"rtl_enabled":
         rtl_button_row[0] = Button.inline(_("Force RTL", lang) + " ❌", data="rtl_disabled")
     message.buttons.append(rtl_button_row)
+    if epub_button_row:
+        message.buttons.append(epub_button_row)
     await message.edit(message.text, buttons=message.buttons)
 
 
@@ -92,7 +114,12 @@ async def rtl_enable_callback(event: events.CallbackQuery.Event):
 async def converter_callback(event: events.CallbackQuery.Event):
     """Converter callback handler"""
     message: Message = await event.get_message()
-    convert_to_rtl = message.buttons[-1][0].data == b"rtl_enabled"
+    fix_epub = False
+    if message.buttons[-1][0].data.startswith(b"epub"):
+        fix_epub = message.buttons[-1][0].data == b"epub_fix"
+        convert_to_rtl = message.buttons[-2][0].data == b"rtl_enabled"
+    else:
+        convert_to_rtl = message.buttons[-1][0].data == b"rtl_enabled"
     lang = get_lang(event.chat_id)
     converted = False
     output_type, random_id = event.data.decode().split('|')
@@ -101,7 +128,8 @@ async def converter_callback(event: events.CallbackQuery.Event):
         return
     del queue[random_id]
     reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
-    output_file, converted_to_rtl = await converter.convert_ebook(input_file, output_type, force_rtl=convert_to_rtl)
+    output_file, converted_to_rtl = await converter.convert_ebook(
+        input_file, output_type, force_rtl=convert_to_rtl, fix_epub=fix_epub)
     if Path(output_file).exists():
         message_text = ""
         if convert_to_rtl and converted_to_rtl:

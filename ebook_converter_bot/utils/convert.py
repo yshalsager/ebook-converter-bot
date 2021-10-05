@@ -4,7 +4,7 @@ from asyncio.subprocess import PIPE, Process, STDOUT
 from pathlib import Path
 from string import Template
 
-from ebook_converter_bot.utils.epub import set_epub_to_rtl
+from ebook_converter_bot.utils.epub import set_epub_to_rtl, fix_content_opf_problems
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +59,15 @@ class Converter:
         """
         await self._run_command(self._kfx_input_convert_command.safe_substitute(input_file=input_file))
 
-    async def convert_ebook(self, input_file, output_type, force_rtl=False) -> (str, bool):
+    async def convert_ebook(self, input_file, output_type, force_rtl=False, fix_epub=False) -> (str, bool):
         set_to_rtl = None
         input_type = input_file.lower().split('.')[-1]
         output_file = input_file.replace(input_type, output_type)
-        if input_type == "epub" and force_rtl:
-            set_to_rtl = set_epub_to_rtl(input_file)
+        if input_type == "epub":
+            if force_rtl:
+                set_to_rtl = set_epub_to_rtl(input_file)
+            if fix_epub:
+                fix_content_opf_problems(input_file)
         if input_type in self.kfx_input_allowed_types:
             await self._convert_from_kfx_to_epub(input_file)
             if output_type == "epub":
