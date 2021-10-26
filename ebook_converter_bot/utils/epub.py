@@ -33,13 +33,16 @@ def fix_content_opf_problems(input_file):
                                   + content[manifest_correct_list_pos:manifest_end_pos] \
                                   + '</manifest>' + spine_line + content[spine_correct_list_pos:]
                     # Fix missing text content exists in content.opf
-                    zip_text_contents = [i.get('href').split('/')[-1]
-                                         for i in ElementTree.fromstring(new_content)[1]
-                                         if 'Text' in i.get('href')]
-                    real_text_contents = [i.split('/')[-1] for i in book.namelist() if 'Text' in i]
-                    missing_text_content = list(set(zip_text_contents) - set(real_text_contents))
-                    for item in missing_text_content:
-                        new_content = re.sub(f'<item .*{item}".*\n', '', new_content)
+                    try:
+                        zip_text_contents = [i.get('href').split('/')[-1]
+                                             for i in ElementTree.fromstring(new_content)[1]
+                                             if 'Text' in i.get('href')]
+                        real_text_contents = [i.split('/')[-1] for i in book.namelist() if 'Text' in i]
+                        missing_text_content = list(set(zip_text_contents) - set(real_text_contents))
+                        for item in missing_text_content:
+                            new_content = re.sub(f'<item .*{item}".*\n', '', new_content)
+                    except ElementTree.ParseError:
+                        continue
                     out.writestr(file.filename, new_content)
                 else:
                     out.writestr(file, book.read(file.filename))
