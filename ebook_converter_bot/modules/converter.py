@@ -36,8 +36,8 @@ async def file_converter(event: events.NewMessage.Event):
         # Unsupported file
         await event.reply(_("The file you sent is not a supported type!", lang))
         return
-    if file.size > 104857600:  # 100 MB
-        await event.reply(_("Files larger than 100 MB are not supported!", lang))
+    if file.size > 26214400:  # 25 MB
+        await event.reply(_("Files larger than 25 MB are not supported!", lang))
         return
     reply = await event.reply(_("Downloading the file...", lang))
     downloaded = await message.download_media(f"/tmp/{file.name}")
