@@ -41,7 +41,7 @@ RUN wget -nv -O- https://dl.winehq.org/wine-builds/winehq.key | APT_KEY_DONT_WAR
 
 # Kindle support
 COPY kp3.reg .
-RUN wget -q https://s3.amazonaws.com/kindlepreviewer3/KindlePreviewerInstaller.exe \
+RUN wget -q https://d2bzeorukaqrvt.cloudfront.net/KindlePreviewerInstaller.exe \
     && DISPLAY=:0 WINEARCH=win64 WINEDEBUG=-all wine KindlePreviewerInstaller.exe /S \
     && cat kp3.reg >> /root/.wine/user.reg && rm *.exe
 
