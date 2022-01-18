@@ -39,7 +39,7 @@ class Converter:
         process: Process = await create_subprocess_shell(command, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
         await process.wait()
         output = await process.stdout.read()
-        output = '\n'.join([i for i in output.decode().strip().splitlines() if ":fixme:" not in i])
+        output = '\n'.join([i for i in output.decode().strip().splitlines() if all(word not in i for word in [":fixme:", "DEBUG -", "INFO -"])])
         logger.info(output)
         return process.returncode
 
