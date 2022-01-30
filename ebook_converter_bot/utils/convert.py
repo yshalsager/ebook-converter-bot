@@ -1,7 +1,9 @@
+import asyncio
 import logging
-from asyncio import create_subprocess_shell
 from asyncio.subprocess import PIPE, Process, STDOUT
+from os import setsid, killpg, getpgid
 from pathlib import Path
+from signal import SIGKILL
 from string import Template
 
 from ebook_converter_bot.utils.epub import set_epub_to_rtl, fix_content_opf_problems
@@ -35,12 +37,23 @@ class Converter:
         return input_file.lower().split('.')[-1] in self.supported_input_types
 
     @staticmethod
-    async def _run_command(command):
-        process: Process = await create_subprocess_shell(command, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
-        await process.wait()
-        output = await process.stdout.read()
-        output = '\n'.join([i for i in output.decode().strip().splitlines() if all(word not in i for word in [":fixme:", "DEBUG -", "INFO -"])])
-        logger.info(output)
+    async def _run_command(command: str):
+        process: Process = await asyncio.create_subprocess_shell(
+            command, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True, preexec_fn=setsid)
+        try:
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=600)  # wait for 10 minutes
+            output = '\n'.join(
+                [i for i in stdout.decode().splitlines() if
+                 all(word not in i for word in [":fixme:", "DEBUG -", "INFO -"])])
+            logger.info(output)
+        except asyncio.exceptions.TimeoutError:
+            logger.info(f"Timeout while running command: {command}")
+        try:
+            # If it timed out terminate the process and its child processes.
+            killpg(getpgid(process.pid), SIGKILL)
+            process.kill()
+        except OSError:
+            pass  # Ignore 'no such process' error
         return process.returncode
 
     async def _convert_to_kfx(self, input_file):
