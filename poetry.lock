@@ -131,7 +131,7 @@ docs = ["sphinx"]
 
 [[package]]
 name = "hachoir"
-version = "3.1.2"
+version = "3.1.3"
 description = "Package of Hachoir parsers used to open binary files"
 category = "main"
 optional = false
@@ -139,6 +139,7 @@ python-versions = "*"
 
 [package.extras]
 urwid = ["urwid (==1.3.1)"]
+wx = ["darkdetect", "wxPython (>=4.0.0,<5.0.0)"]
 
 [[package]]
 name = "idna"
@@ -314,7 +315,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "a2d3c4ac5b6ff25745b3beaa26391b8df2260d2c7cd54d19162114f577620460"
+content-hash = "b80e4bcb15c30f575ba78185053c7d51c88c003ede0346b40e99edb3cb0548bf"
 
 [metadata.files]
 aiohttp = [
@@ -634,8 +635,8 @@ greenlet = [
     {file = "greenlet-1.1.2.tar.gz", hash = "sha256:e30f5ea4ae2346e62cedde8794a56858a67b878dd79f7df76a0767e356b1744a"},
 ]
 hachoir = [
-    {file = "hachoir-3.1.2-py3-none-any.whl", hash = "sha256:b17ba5907b7836b2204ef724e7992d2e794311596e2121098912a9f3c4e69273"},
-    {file = "hachoir-3.1.2.tar.gz", hash = "sha256:bc1259b1e2970532b2dbd99139cb0de59d9bb8904eb1489c3e8a82c979c98f23"},
+    {file = "hachoir-3.1.3-py3-none-any.whl", hash = "sha256:2aea6a5638c52045705d8fedfd140e851653f8a47e81acb3343dba103f86eaa5"},
+    {file = "hachoir-3.1.3.tar.gz", hash = "sha256:e0ad621226bf0819acf673a73793f520f21a382f275d2f7282a5758b1f66dc52"},
 ]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
