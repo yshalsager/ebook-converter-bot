@@ -5,16 +5,15 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_VERSION=1.1.4 \
+    POETRY_VERSION=1.2.0 \
     POETRY_HOME="/opt/poetry" \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     POETRY_NO_INTERACTION=1 \
         PYSETUP_PATH="/opt/app" \
     VENV_PATH="/opt/app/.venv"
-
+    
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 RUN export PATH=$PATH
-
 # Install prerequisites
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
@@ -23,7 +22,9 @@ RUN apt-get update && \
                   python3-venv \
                   software-properties-common \
                   ca-certificates \
-                  xvfb \   
+                  xvfb \ 
+                  libegl1 \
+                  libopengl0 \
                   wget \   
                   curl \   
                   gnupg2 \
@@ -58,7 +59,7 @@ RUN wget -q -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sh /
 
 # poetry
 WORKDIR $PYSETUP_PATH
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3
+RUN curl -sSL https://install.python-poetry.org | python3 -
 COPY poetry.lock pyproject.toml ./
 RUN poetry install --no-dev
 
