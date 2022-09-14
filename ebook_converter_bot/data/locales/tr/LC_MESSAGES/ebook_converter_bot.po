@@ -2,12 +2,12 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # berkantkz <berkantkorkmaz@outlook.com>, 2021.
-# 
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-01-04 08:20+0200\n"
+"POT-Creation-Date: 2022-09-14 12:19+0200\n"
 "PO-Revision-Date: 2021-08-28 22:48+0200\n"
 "Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
 "Language-Team: - \n"
@@ -41,6 +41,16 @@ msgstr ""
 "ebook-converter-bot) bulabilirsiniz.\n"
 "Geliştiren: [yshalsager](https://t.me/yshalsager/)."
 
+#: ebook_converter_bot/modules/broadcast.py:39
+msgid "Broadcasting completed! Message was sent to {} chats\n"
+msgstr ""
+
+#: ebook_converter_bot/modules/broadcast.py:43
+msgid ""
+"Failed to broadcast to {} chats, most likely because bot has been stopped or "
+"kicked out."
+msgstr ""
+
 #: ebook_converter_bot/modules/preferences.py:16
 msgid "Language"
 msgstr "Dil"
@@ -61,6 +71,10 @@ msgstr "**Bot dilini seçiniz**"
 #: ebook_converter_bot/modules/preferences.py:42
 msgid "**Language has been set to**: {} ({})"
 msgstr "**Seçilen dil**: {} ({})"
+
+#: ebook_converter_bot/modules/restart.py:17
+msgid "Restarting, please wait..."
+msgstr ""
 
 #. Unsupported file
 #: ebook_converter_bot/modules/converter.py:37

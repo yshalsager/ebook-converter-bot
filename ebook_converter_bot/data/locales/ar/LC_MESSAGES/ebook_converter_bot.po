@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-01-04 08:20+0200\n"
+"POT-Creation-Date: 2022-09-14 12:19+0200\n"
 "PO-Revision-Date: 2021-08-26 13:52+0200\n"
 "Last-Translator: yshalsager <ysh-alsager@hotmail.com>\n"
 "Language-Team: Arabic <LL@li.org>\n"
@@ -43,6 +43,17 @@ msgstr ""
 "\n"
 "        طُور هذا البوت بواسطة: [yshalsager](https://t.me/yshalsager/)."
 
+#: ebook_converter_bot/modules/broadcast.py:39
+#, fuzzy
+msgid "Broadcasting completed! Message was sent to {} chats\n"
+msgstr "اكتمل النشر! أرسلت الرسالة إلى {} محادثة\n"
+
+#: ebook_converter_bot/modules/broadcast.py:43
+msgid ""
+"Failed to broadcast to {} chats, most likely because bot has been stopped or "
+"kicked out."
+msgstr "فشل الإرسال إلى {} محادثات، غالبا بسبب أن البوت طرد أو أوقف."
+
 #: ebook_converter_bot/modules/preferences.py:16
 msgid "Language"
 msgstr "اللغة"
@@ -63,6 +74,10 @@ msgstr "**اختر لغة البوت**"
 #: ebook_converter_bot/modules/preferences.py:42
 msgid "**Language has been set to**: {} ({})"
 msgstr "**غُيرت لغة البوت إلى**: {} ({})"
+
+#: ebook_converter_bot/modules/restart.py:17
+msgid "Restarting, please wait..."
+msgstr "يٌعاد تشغيل البوت الآن، من فضلك انتظر..."
 
 #. Unsupported file
 #: ebook_converter_bot/modules/converter.py:37
