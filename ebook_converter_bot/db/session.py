@@ -10,7 +10,7 @@ from ebook_converter_bot.db.base import Base
 module_path = Path(__file__).parent
 
 db_connection_string = f"sqlite:///{PARENT_DIR}/ebook_converter_bot.db"
-engine = create_engine(db_connection_string, connect_args={'check_same_thread': False})
+engine = create_engine(db_connection_string, connect_args={"check_same_thread": False})
 
 Base.metadata.create_all(bind=engine)
 

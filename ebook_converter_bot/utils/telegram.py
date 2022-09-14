@@ -5,13 +5,13 @@ from telethon import events
 from telethon.errors import (
     ChannelPrivateError,
     ChatWriteForbiddenError,
-    UserIsBlockedError,
-    InterdcCallErrorError,
-    MessageNotModifiedError,
+    FloodWaitError,
     InputUserDeactivatedError,
+    InterdcCallErrorError,
     MessageIdInvalidError,
+    MessageNotModifiedError,
     SlowModeWaitError,
-    FloodWaitError
+    UserIsBlockedError,
 )
 from telethon.tl.types import User
 
@@ -21,10 +21,15 @@ def tg_exceptions_handler(func):
     async def wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
-        except (ChannelPrivateError, ChatWriteForbiddenError,
-                UserIsBlockedError, InterdcCallErrorError,
-                MessageNotModifiedError, InputUserDeactivatedError,
-                MessageIdInvalidError):
+        except (
+            ChannelPrivateError,
+            ChatWriteForbiddenError,
+            UserIsBlockedError,
+            InterdcCallErrorError,
+            MessageNotModifiedError,
+            InputUserDeactivatedError,
+            MessageIdInvalidError,
+        ):
             pass
         except SlowModeWaitError as error:
             await sleep(error.seconds)
@@ -42,10 +47,10 @@ def get_chat_type(event: events.NewMessage.Event) -> int:
 
 def get_chat_name(event: events.NewMessage.Event) -> str:
     if isinstance(event.chat, User):
-        name = ''
+        name = ""
         if event.chat.first_name:
             name += event.chat.first_name.strip()
         if event.chat.last_name:
-            name += ' ' + event.chat.last_name.strip()
+            name += " " + event.chat.last_name.strip()
         return name
     return event.chat.title

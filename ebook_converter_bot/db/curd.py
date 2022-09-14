@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict, List
 
 from sqlalchemy.sql.functions import sum
 
@@ -16,7 +16,9 @@ def generate_analytics_columns(formats: List[str]):
 
 
 def update_format_analytics(file_format: str, output: bool = False):
-    file_format: Analytics = session.query(Analytics).filter(Analytics.format == file_format).first()
+    file_format: Analytics = (
+        session.query(Analytics).filter(Analytics.format == file_format).first()
+    )
     if not file_format:
         return
     if output:
@@ -41,7 +43,9 @@ def increment_usage(user_id: int):
 
 
 def update_language(user_id: int, language: str):
-    chat: Preference = session.query(Preference).filter(Preference.user_id == user_id).first()
+    chat: Preference = (
+        session.query(Preference).filter(Preference.user_id == user_id).first()
+    )
     if not chat:
         chat = Preference(user_id=user_id, language=language)
         session.add(chat)
@@ -51,8 +55,10 @@ def update_language(user_id: int, language: str):
 
 
 def get_lang(user_id: int) -> str:
-    chat = session.query(Preference.language).filter(Preference.user_id == user_id).first()
-    return chat.language if chat else 'en'
+    chat = (
+        session.query(Preference.language).filter(Preference.user_id == user_id).first()
+    )
+    return chat.language if chat else "en"
 
 
 def get_chats_count() -> (int, int):
@@ -62,12 +68,28 @@ def get_chats_count() -> (int, int):
 
 
 def get_usage_count() -> (int, int):
-    usage_times = session.query(sum(Chat.usage_times).label('usage_times')).first().usage_times
-    output_times = session.query(sum(Analytics.output_times).label('output_times')).first().output_times
+    usage_times = (
+        session.query(sum(Chat.usage_times).label("usage_times")).first().usage_times
+    )
+    output_times = (
+        session.query(sum(Analytics.output_times).label("output_times"))
+        .first()
+        .output_times
+    )
     return usage_times, output_times
 
 
 def get_top_formats() -> (Dict[str, int], Dict[str, int]):
-    out_formats: List[Analytics] = session.query(Analytics).order_by(Analytics.output_times.desc()).limit(5).all()
-    in_formats: List[Analytics] = session.query(Analytics).order_by(Analytics.input_times.desc()).limit(5).all()
-    return {i.format: i.output_times for i in out_formats}, {i.format: i.input_times for i in in_formats}
+    out_formats: List[Analytics] = (
+        session.query(Analytics).order_by(Analytics.output_times.desc()).limit(5).all()
+    )
+    in_formats: List[Analytics] = (
+        session.query(Analytics).order_by(Analytics.input_times.desc()).limit(5).all()
+    )
+    return {i.format: i.output_times for i in out_formats}, {
+        i.format: i.input_times for i in in_formats
+    }
+
+
+def get_all_chats() -> List[Chat]:
+    return session.query(Chat).all()  # type: ignore

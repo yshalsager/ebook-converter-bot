@@ -139,7 +139,7 @@ cython_debug/
 # project files
 config.json
 *.db
-*.log
+*.log*
 *.session
 *.session-journal
 *.pickle

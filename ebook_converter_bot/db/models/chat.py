@@ -1,4 +1,4 @@
-from sqlalchemy import VARCHAR, INT, Column, BIGINT
+from sqlalchemy import BIGINT, INT, VARCHAR, Column
 
 from ebook_converter_bot.db.base import Base
 
