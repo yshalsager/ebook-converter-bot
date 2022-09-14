@@ -22,20 +22,21 @@ RUN apt-get update && \
                   python3-venv \
                   software-properties-common \
                   ca-certificates \
-                  xvfb \ 
+                  xvfb \
                   libegl1 \
                   libopengl0 \
-                  wget \   
-                  curl \   
+                  libxkbcommon-x11-0 \
+                  wget \
+                  curl \
                   gnupg2 \
                   xz-utils \
                   && rm -rf /var/lib/apt/lists/*
 
 # Install wine
 ARG WINE_BRANCH="stable"
-RUN wget -nv -O- https://dl.winehq.org/wine-builds/winehq.key | APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 apt-key add - \
-    && apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu/ $(grep VERSION_CODENAME= /etc/os-release | cut -d= -f2) main" \
-    && dpkg --add-architecture i386 \
+RUN dpkg --add-architecture i386 \
+    && wget -q -nc -O /usr/share/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
+    && wget -q -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/focal/winehq-focal.sources \
     && apt-get update \
     && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winehq-${WINE_BRANCH} \
     && rm -rf /var/lib/apt/lists/*
