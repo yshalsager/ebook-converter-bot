@@ -37,7 +37,7 @@ async def broadcast_handler(event: events.NewMessage.Event) -> None:
     chat: Chat
     for chat in get_all_chats():
         try:
-            await BOT.send_message(chat.id, message_to_send)
+            await BOT.send_message(chat.user_id, message_to_send)
             sent_successfully += 1
             await sleep(2)
         except (
