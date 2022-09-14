@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_NO_INTERACTION=1 \
         PYSETUP_PATH="/opt/app" \
     VENV_PATH="/opt/app/.venv"
-    
+
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 RUN export PATH=$PATH
 # Install prerequisites
@@ -38,7 +38,7 @@ RUN dpkg --add-architecture i386 \
     && wget -q -nc -O /usr/share/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
     && wget -q -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/focal/winehq-focal.sources \
     && apt-get update \
-    && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winehq-${WINE_BRANCH} \
+    && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winbind winehq-${WINE_BRANCH} \
     && rm -rf /var/lib/apt/lists/*
 
 # Kindle support
