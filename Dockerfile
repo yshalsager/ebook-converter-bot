@@ -35,8 +35,9 @@ RUN apt-get update && \
 # Install wine
 ARG WINE_BRANCH="stable"
 RUN dpkg --add-architecture i386 \
-    && wget -q -nc -O /usr/share/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
-    && wget -q -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/focal/winehq-focal.sources \
+    && mkdir -pm755 /etc/apt/keyrings \
+    && wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
+    && wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/focal/winehq-focal.sources \
     && apt-get update \
     && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winbind winehq-${WINE_BRANCH} \
     && rm -rf /var/lib/apt/lists/*
