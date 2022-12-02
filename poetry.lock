@@ -144,7 +144,7 @@ python-versions = "*"
 
 [[package]]
 name = "ebooklib"
-version = "0.17.1"
+version = "0.18"
 description = "Ebook library which can handle EPUB2/EPUB3 and Kindle format"
 category = "main"
 optional = false
@@ -639,7 +639,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=4.6)", "pytest-black (
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "0990fcef1a59c0a11b0b6d53105a983c7e06801f7abe83b8909fd8fe2675ff36"
+content-hash = "08510979df3e45fd96804c3d1ea94795ada08bf7833db236dc444d95e9ba99d0"
 
 [metadata.files]
 aiohttp = [
@@ -845,7 +845,7 @@ distlib = [
     {file = "distlib-0.3.6.tar.gz", hash = "sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46"},
 ]
 ebooklib = [
-    {file = "EbookLib-0.17.1.tar.gz", hash = "sha256:fe23e22c28050196c68db3e7b13b257bf39426d927cb395c6f2cc13ac11327f1"},
+    {file = "EbookLib-0.18.tar.gz", hash = "sha256:38562643a7bc94d9bf56e9930b4927e4e93b5d1d0917f697a6454db5a1c1a533"},
 ]
 filelock = [
     {file = "filelock-3.8.0-py3-none-any.whl", hash = "sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4"},
