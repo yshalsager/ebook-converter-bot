@@ -503,7 +503,7 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "telethon"
-version = "1.25.4"
+version = "1.26.0"
 description = "Full-featured Telegram client library for Python 3"
 category = "main"
 optional = false
@@ -639,7 +639,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=4.6)", "pytest-black (
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "532cc1b2a3b9548ea32c4fca9e5613ef9152e9a61434956451572de4f335bf0c"
+content-hash = "0990fcef1a59c0a11b0b6d53105a983c7e06801f7abe83b8909fd8fe2675ff36"
 
 [metadata.files]
 aiohttp = [
@@ -1344,8 +1344,8 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.44.tar.gz", hash = "sha256:2dda5f96719ae89b3ec0f1b79698d86eb9aecb1d54e990abb3fdd92c04b46a90"},
 ]
 telethon = [
-    {file = "Telethon-1.25.4-py3-none-any.whl", hash = "sha256:a085348801bd62db79ad75c9a67c5c8312507b113f0228b92e2dd4397edc7c1d"},
-    {file = "Telethon-1.25.4.tar.gz", hash = "sha256:8df802aad2d11f7198f1d5b1d84c7498ef19c28e160041dcb8aaf0814f91115b"},
+    {file = "Telethon-1.26.0-py3-none-any.whl", hash = "sha256:148ac8c27908853d5d8a116d55ce947e9ba167bb697c75226ae95645b2e5a504"},
+    {file = "Telethon-1.26.0.tar.gz", hash = "sha256:de7a1619110a2c06390fb5340839c6503c6b108b5f1a2f3bbe1ef60f02cecacb"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
