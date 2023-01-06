@@ -6,7 +6,7 @@ authors = ["yshalsager <ysh-alsager@hotmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-Telethon = "^1.26.0"
+Telethon = "^1.26.1"
 cryptg = "^0.4"
 aiohttp = {extras = ["fast"], version = "^3.8.3"}
 hachoir = "^3.2.0"
