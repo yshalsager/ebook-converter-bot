@@ -122,8 +122,13 @@ class Converter:
                 ]
             )
             logger.info(output)
-            if error_match := re.search(r"Exception: (Conversion error: .*)", output):
-                conversion_error = error_match.group(1)
+            if errors_list := re.findall(
+                r"(Conversion Failure Reason\s+\*{5,}\s+[E\d]+:.*)|(Conversion error: .*)",
+                output,
+            ):
+                conversion_error = "\n".join(
+                    [error[0].strip() or error[1].strip() for error in errors_list]
+                ).replace("*", "")
         except asyncio.exceptions.TimeoutError:
             logger.info(f"Timeout while running command: {command}")
         try:
