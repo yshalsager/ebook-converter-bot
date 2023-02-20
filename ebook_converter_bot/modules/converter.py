@@ -166,7 +166,9 @@ async def converter_callback(event: events.CallbackQuery.Event):
             _("Failed to convert the file (`{}`) to {} :(", lang).format(
                 input_file_name, output_type
             )
-            + f"\n\n`{conversion_error}`",
+            + f"\n\n`{conversion_error}`"
+            if conversion_error
+            else "",
         )
     Path(input_file).unlink(missing_ok=True)
     Path(output_file).unlink(missing_ok=True)
