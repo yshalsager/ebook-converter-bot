@@ -155,11 +155,15 @@ class Converter:
         )
 
     async def convert_ebook(
-        self, input_file, output_type, force_rtl=False, fix_epub=False
-    ) -> (str, bool):
-        set_to_rtl = None
-        input_type = input_file.lower().split(".")[-1]
-        output_file = input_file.replace(input_type, output_type)
+        self,
+        input_file: Path,
+        output_type: str,
+        force_rtl: bool = False,
+        fix_epub: bool = False,
+    ) -> (Path, bool):
+        set_to_rtl: bool | None = None
+        input_type: str = input_file.suffix.lower()
+        output_file: Path = input_file.with_suffix(f".{output_type}")
         if input_type == "epub":
             if force_rtl:
                 set_to_rtl = set_epub_to_rtl(input_file)
@@ -172,7 +176,7 @@ class Converter:
                     set_to_rtl = set_epub_to_rtl(output_file)
                 return output_file, set_to_rtl, conversion_error
             # 2nd step conversion
-            epub_file = input_file.replace(input_type, "epub")
+            epub_file: Path = input_file.with_suffix(".epub")
             if force_rtl:
                 set_to_rtl = set_epub_to_rtl(epub_file)
             await self._run_command(
@@ -180,7 +184,7 @@ class Converter:
                     input_file=epub_file, output_file=output_file
                 )
             )
-            Path(epub_file).unlink(missing_ok=True)
+            epub_file.unlink(missing_ok=True)
             return output_file, set_to_rtl, conversion_error
         elif output_type == "kfx" and input_type in self.kfx_output_allowed_types:
             _, conversion_error = await self._convert_to_kfx(input_file)

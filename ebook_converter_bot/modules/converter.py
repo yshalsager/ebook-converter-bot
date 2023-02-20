@@ -140,8 +140,8 @@ async def converter_callback(event: events.CallbackQuery.Event):
     lang = get_lang(event.chat_id)
     converted = False
     output_type, random_id = event.data.decode().split("|")
-    input_file = queue.get(random_id)
-    if not input_file or not Path(input_file).exists():
+    input_file = Path(queue.get(random_id))
+    if not queue.get(random_id) or not input_file.exists():
         return
     del queue[random_id]
     reply = await event.edit(
@@ -150,7 +150,7 @@ async def converter_callback(event: events.CallbackQuery.Event):
     output_file, converted_to_rtl, conversion_error = await converter.convert_ebook(
         input_file, output_type, force_rtl=convert_to_rtl, fix_epub=fix_epub
     )
-    if Path(output_file).exists():
+    if output_file.exists():
         message_text = ""
         if convert_to_rtl and converted_to_rtl:
             message_text += _("Converted to RTL successfully!\n", lang)
@@ -161,16 +161,14 @@ async def converter_callback(event: events.CallbackQuery.Event):
         )
         converted = True
     else:
-        input_file_name = input_file.split("/")[-1]
-        await reply.edit(
-            _("Failed to convert the file (`{}`) to {} :(", lang).format(
-                input_file_name, output_type
-            )
-            + f"\n\n`{conversion_error}`"
-            if conversion_error
-            else "",
+        input_file_name = input_file.name
+        error_message = _("Failed to convert the file (`{}`) to {} :(", lang).format(
+            input_file_name, output_type
         )
-    Path(input_file).unlink(missing_ok=True)
-    Path(output_file).unlink(missing_ok=True)
+        if conversion_error:
+            error_message += f"\n\n`{conversion_error}`"
+        await reply.edit(error_message)
+    input_file.unlink(missing_ok=True)
+    output_file.unlink(missing_ok=True)
     if converted:
-        return input_file.lower().split(".")[-1], output_type
+        return input_file.suffix, output_type
