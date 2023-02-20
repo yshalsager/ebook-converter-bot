@@ -32,7 +32,7 @@ async def file_converter(event: events.NewMessage.Event):
         file = event.message.file
     if not file:
         return
-    if not await converter.is_supported_input_type(file.name):
+    if not converter.is_supported_input_type(file.name):
         # Unsupported file
         await event.reply(_("The file you sent is not a supported type!", lang))
         return
@@ -147,7 +147,7 @@ async def converter_callback(event: events.CallbackQuery.Event):
     reply = await event.edit(
         _("Converting the file to {}...", lang).format(output_type)
     )
-    output_file, converted_to_rtl = await converter.convert_ebook(
+    output_file, converted_to_rtl, conversion_error = await converter.convert_ebook(
         input_file, output_type, force_rtl=convert_to_rtl, fix_epub=fix_epub
     )
     if Path(output_file).exists():
@@ -166,6 +166,7 @@ async def converter_callback(event: events.CallbackQuery.Event):
             _("Failed to convert the file (`{}`) to {} :(", lang).format(
                 input_file_name, output_type
             )
+            + f"\n\n`{conversion_error}`",
         )
     Path(input_file).unlink(missing_ok=True)
     Path(output_file).unlink(missing_ok=True)

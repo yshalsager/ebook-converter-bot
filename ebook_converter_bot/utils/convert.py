@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from asyncio.subprocess import PIPE, STDOUT, Process
 from os import getpgid, killpg, setsid
 from pathlib import Path
@@ -69,6 +70,16 @@ class Converter:
         "txtz",
         "zip",
     ]
+    kfx_output_allowed_types = [
+        "epub",
+        "opf",
+        "mobi",
+        "doc",
+        "docx",
+        "kpf",
+        "kfx-zip",
+    ]
+    kfx_input_allowed_types = ["azw8", "kfx", "kfx-zip"]
 
     def __init__(self):
         self._convert_command = Template('ebook-convert "$input_file" "$output_file"')
@@ -80,26 +91,17 @@ class Converter:
         self._kfx_output_convert_command = Template(
             'calibre-debug -r "KFX Output" -- "$input_file"'
         )
-        self.kfx_output_allowed_types = [
-            "epub",
-            "opf",
-            "mobi",
-            "doc",
-            "docx",
-            "kpf",
-            "kfx-zip",
-        ]
-        self.kfx_input_allowed_types = ["azw8", "kfx", "kfx-zip"]
 
     @classmethod
     def get_supported_types(cls):
         return sorted(list(set(cls.supported_input_types + cls.supported_output_types)))
 
-    async def is_supported_input_type(self, input_file):
+    def is_supported_input_type(self, input_file):
         return input_file.lower().split(".")[-1] in self.supported_input_types
 
     @staticmethod
-    async def _run_command(command: str):
+    async def _run_command(command: str) -> tuple[int | None, str]:
+        conversion_error = ""
         process: Process = await asyncio.create_subprocess_shell(
             command,
             stdin=PIPE,
@@ -120,6 +122,8 @@ class Converter:
                 ]
             )
             logger.info(output)
+            if error_match := re.search(r"Exception: (Conversion error: .*)", output):
+                conversion_error = error_match.group(1)
         except asyncio.exceptions.TimeoutError:
             logger.info(f"Timeout while running command: {command}")
         try:
@@ -128,25 +132,25 @@ class Converter:
             process.kill()
         except OSError:
             pass  # Ignore 'no such process' error
-        return process.returncode
+        return process.returncode, conversion_error
 
-    async def _convert_to_kfx(self, input_file):
+    async def _convert_to_kfx(self, input_file) -> tuple[int | None, str]:
         """
         Convert an ebook to KFX
         :param input_file: Pathname of the .epub, .opf, .mobi, .doc, .docx, .kpf, or .kfx-zip file to be converted
         :return:
         """
-        await self._run_command(
+        return await self._run_command(
             self._kfx_output_convert_command.safe_substitute(input_file=input_file)
         )
 
-    async def _convert_from_kfx_to_epub(self, input_file):
+    async def _convert_from_kfx_to_epub(self, input_file) -> tuple[int | None, str]:
         """
         Convert a KFX ebook to EPUB
         :param input_file: Pathname of the .azw8, .kfx, .kfx-zip, or .kpf file to be processed
         :return:
         """
-        await self._run_command(
+        return await self._run_command(
             self._kfx_input_convert_command.safe_substitute(input_file=input_file)
         )
 
@@ -162,11 +166,11 @@ class Converter:
             if fix_epub:
                 fix_content_opf_problems(input_file)
         if input_type in self.kfx_input_allowed_types:
-            await self._convert_from_kfx_to_epub(input_file)
+            _, conversion_error = await self._convert_from_kfx_to_epub(input_file)
             if output_type == "epub":
                 if force_rtl:
                     set_to_rtl = set_epub_to_rtl(output_file)
-                return output_file, set_to_rtl
+                return output_file, set_to_rtl, conversion_error
             # 2nd step conversion
             epub_file = input_file.replace(input_type, "epub")
             if force_rtl:
@@ -177,16 +181,16 @@ class Converter:
                 )
             )
             Path(epub_file).unlink(missing_ok=True)
-            return output_file, set_to_rtl
+            return output_file, set_to_rtl, conversion_error
         elif output_type == "kfx" and input_type in self.kfx_output_allowed_types:
-            await self._convert_to_kfx(input_file)
-            return output_file, set_to_rtl
+            _, conversion_error = await self._convert_to_kfx(input_file)
+            return output_file, set_to_rtl, conversion_error
         elif output_type in self.supported_output_types:
-            await self._run_command(
+            _, conversion_error = await self._run_command(
                 self._convert_command.safe_substitute(
                     input_file=input_file, output_file=output_file
                 )
             )
             if output_type == "epub" and force_rtl:
                 set_to_rtl = set_epub_to_rtl(output_file)
-            return output_file, set_to_rtl
+            return output_file, set_to_rtl, conversion_error
