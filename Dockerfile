@@ -1,23 +1,33 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_VERSION=1.2.0 \
-    POETRY_HOME="/opt/poetry" \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_NO_INTERACTION=1 \
-        PYSETUP_PATH="/opt/app" \
-    VENV_PATH="/opt/app/.venv"
+# Configure Poetry
+ENV POETRY_VERSION=1.3.2
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_CACHE_DIR=/opt/.cache
+ENV POETRY_NO_INTERACTION=1
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV PYSETUP_PATH="/opt/app"
 
+# pip
+ENV PIP_NO_CACHE_DIR=off
+ENV PIP_DISABLE_PIP_VERSION_CHECK=on
+ENV PIP_DEFAULT_TIMEOUT=100
+
+# python
+# Don't buffer `stdout`:
+ENV PYTHONUNBUFFERED=1
+# Don't create `.pyc` files:
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Configure Paths
+ENV VENV_PATH="/opt/app/.venv"
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 RUN export PATH=$PATH
+
 # Install prerequisites
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-                  python3.9 \
+                  python3 \
                   python3-pip \
                   python3-venv \
                   software-properties-common \
@@ -26,6 +36,7 @@ RUN apt-get update && \
                   libegl1 \
                   libopengl0 \
                   libxkbcommon-x11-0 \
+                  libxcomposite-dev \
                   wget \
                   curl \
                   gnupg2 \
