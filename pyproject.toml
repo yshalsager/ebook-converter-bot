@@ -10,7 +10,7 @@ Telethon = "^1.27.0"
 cryptg = "^0.4"
 aiohttp = {extras = ["fast"], version = "^3.8.4"}
 hachoir = "^3.2.0"
-sqlalchemy = "^2.0.3"
+sqlalchemy = "^2.0.4"
 EbookLib = "^0.18"
 
 [tool.poetry.group.dev.dependencies]
