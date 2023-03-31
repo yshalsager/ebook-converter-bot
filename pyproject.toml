@@ -14,7 +14,7 @@ sqlalchemy = "^2.0.7"
 EbookLib = "^0.18"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.1.0"
+black = "^23.3.0"
 flake8 = "^5.0.4"
 isort = "^5.11.5"
 mypy = "^1.1"
