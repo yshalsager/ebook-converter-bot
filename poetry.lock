@@ -1227,14 +1227,14 @@ sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
 name = "telethon"
-version = "1.28.1"
+version = "1.28.2"
 description = "Full-featured Telegram client library for Python 3"
 category = "main"
 optional = false
 python-versions = ">=3.5"
 files = [
-    {file = "Telethon-1.28.1-py3-none-any.whl", hash = "sha256:f22350bd691ead1f27df737d18a69e1a78fb02970c0063491e201a20ad2c477c"},
-    {file = "Telethon-1.28.1.tar.gz", hash = "sha256:efcbbe864558fc64913d107659768120875c83bdc5d355b6e5531a04a9b84616"},
+    {file = "Telethon-1.28.2-py3-none-any.whl", hash = "sha256:613bae42acb5f2eeb1a0b92614e323021c66f374db62adf9826ea0c2c9120bb1"},
+    {file = "Telethon-1.28.2.tar.gz", hash = "sha256:893c10f133974fba4c53eb1736b6514d596d1cd94c83436a711f3345df945199"},
 ]
 
 [package.dependencies]
@@ -1491,4 +1491,4 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=4.6)", "pytest-black (
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7"
-content-hash = "08d2a0ba4d41972382e26ee3c306ddbcb91acb98dd109afe7816f88a7c3ba123"
+content-hash = "ec655ac8ba70d34ab1b2890bdfe65b5c548f02a0d0f394367b72711974595a69"
