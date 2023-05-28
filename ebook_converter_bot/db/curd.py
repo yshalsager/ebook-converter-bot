@@ -32,6 +32,15 @@ def add_chat_to_db(user_id: int, user_name: str, chat_type: int) -> None:
         session.commit()
 
 
+def remove_chat(user_id: int) -> bool:
+    chat = session.query(Chat).filter(Chat.user_id == user_id).first()
+    if not chat:
+        return False
+    session.delete(chat)
+    session.commit()
+    return True
+
+
 def increment_usage(user_id: int) -> None:
     chat = session.query(Chat).filter(Chat.user_id == user_id).first()
     if not chat:

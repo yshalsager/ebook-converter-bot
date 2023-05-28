@@ -12,7 +12,7 @@ from telethon.tl.types import Message
 
 from ebook_converter_bot import TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
-from ebook_converter_bot.db.curd import get_all_chats, get_lang
+from ebook_converter_bot.db.curd import get_all_chats, get_lang, remove_chat
 from ebook_converter_bot.db.models.chat import Chat
 from ebook_converter_bot.utils.i18n import translate as _
 from ebook_converter_bot.utils.telegram import tg_exceptions_handler
@@ -48,6 +48,7 @@ async def broadcast_handler(event: events.NewMessage.Event) -> None:
         ) as err:
             failed_to_send += 1
             logger.warning(f"Failed to send message to {chat}:\n{err}")
+            remove_chat(chat.user_id)
     broadcast_status_message: str = _(
         "Broadcasting completed! Message was sent to {} chats\n".format(
             sent_successfully
