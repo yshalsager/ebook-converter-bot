@@ -145,3 +145,4 @@ config.json
 *.pickle
 /*.sh
 tmp*
+*.exe
