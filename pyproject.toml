@@ -11,7 +11,6 @@ cryptg = "^0.4"
 aiohttp = {extras = ["fast"], version = "^3.8.4"}
 hachoir = "^3.2.0"
 sqlalchemy = "^2.0.14"
-EbookLib = "^0.18"
 defusedxml = "^0.7.1"
 
 [tool.poetry.group.dev.dependencies]
