@@ -61,6 +61,7 @@ class Converter:
         "mobi",
         "oeb",
         "pdb",
+        "pdf",
         "pmlz",
         "rb",
         "rtf",
