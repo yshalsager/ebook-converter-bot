@@ -1,8 +1,7 @@
-#!/usr/bin/env python3.9
-""" Telegram Bot"""
+"""Telegram Bot."""
 import asyncio
+import json
 import logging
-import pickle
 from pathlib import Path
 
 from telethon.sync import TelegramClient
@@ -21,14 +20,14 @@ BOT.parse_mode = "markdown"
 BOT_INFO = {}
 
 
-def main():
-    """Main"""
+def main() -> None:
+    """Main."""
     generate_analytics_columns(Converter.get_supported_types())
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run())
 
 
-async def run():
+async def run() -> None:
     """Run the bot."""
     bot_info = await BOT.get_me()
     BOT_INFO.update(
@@ -42,9 +41,8 @@ async def run():
     )
     load_modules(ALL_MODULES, __package__)
     # Check if the bot is restarting
-    if Path("restart.pickle").exists():
-        with open("restart.pickle", "rb") as status:
-            restart_message = pickle.load(status)
+    if Path("restart.json").exists():
+        restart_message = json.loads(Path("restart.json").read_text())
         await BOT.edit_message(
             restart_message["chat"],
             restart_message["message"],

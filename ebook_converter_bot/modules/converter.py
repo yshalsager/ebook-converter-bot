@@ -1,8 +1,7 @@
-"""Converter"""
+"""Converter."""
 from pathlib import Path
 from random import sample
 from string import digits
-from typing import List
 
 from telethon import Button, events
 from telethon.tl.custom import Message, MessageButton
@@ -14,6 +13,8 @@ from ebook_converter_bot.utils.convert import Converter
 from ebook_converter_bot.utils.i18n import translate as _
 from ebook_converter_bot.utils.telegram import tg_exceptions_handler
 
+MAX_ALLOWED_FILE_SIZE = 26214400  # 25 MB
+
 converter = Converter()
 queue = {}
 
@@ -21,8 +22,8 @@ queue = {}
 @BOT.on(events.NewMessage(func=lambda x: x.message.file and x.is_private))
 @BOT.on(events.NewMessage(pattern="/convert", func=lambda x: x.message.is_reply))
 @tg_exceptions_handler
-async def file_converter(event: events.NewMessage.Event):
-    """Convert ebook to another format"""
+async def file_converter(event: events.NewMessage.Event) -> None:
+    """Convert ebook to another format."""
     lang = get_lang(event.chat_id)
     if event.pattern_match:
         message = await event.get_reply_message()
@@ -36,11 +37,11 @@ async def file_converter(event: events.NewMessage.Event):
         # Unsupported file
         await event.reply(_("The file you sent is not a supported type!", lang))
         return
-    if file.size > 26214400:  # 25 MB
+    if file.size > MAX_ALLOWED_FILE_SIZE:
         await event.reply(_("Files larger than 25 MB are not supported!", lang))
         return
     reply = await event.reply(_("Downloading the file...", lang))
-    downloaded = await message.download_media(f"/tmp/{file.name}")
+    downloaded = await message.download_media(f"/tmp/{file.name}")  # noqa: S108
     if " " in downloaded:
         Path(downloaded).rename(downloaded.replace(" ", "_"))
         downloaded = downloaded.replace(" ", "_")
@@ -84,11 +85,11 @@ async def file_converter(event: events.NewMessage.Event):
 
 @BOT.on(events.CallbackQuery(pattern="epub_fix|epub_keep"))
 @tg_exceptions_handler
-async def epub_fix_enable_callback(event: events.CallbackQuery.Event):
-    """Epub Fix callback handler"""
+async def epub_fix_enable_callback(event: events.CallbackQuery.Event) -> None:
+    """Epub Fix callback handler."""
     message: Message = await event.get_message()
     lang = get_lang(event.chat_id)
-    epub_button_row: List[MessageButton] = message.buttons.pop(-1)
+    epub_button_row: list[MessageButton] = message.buttons.pop(-1)
     if event.data == event.data == b"epub_keep":
         epub_button_row[0] = Button.inline(
             _("Fix EPUB before converting", lang) + " ✅", data="epub_fix"
@@ -103,14 +104,14 @@ async def epub_fix_enable_callback(event: events.CallbackQuery.Event):
 
 @BOT.on(events.CallbackQuery(pattern="rtl_enabled|rtl_disabled"))
 @tg_exceptions_handler
-async def rtl_enable_callback(event: events.CallbackQuery.Event):
-    """RTL callback handler"""
+async def rtl_enable_callback(event: events.CallbackQuery.Event) -> None:
+    """RTL callback handler."""
     message: Message = await event.get_message()
     lang = get_lang(event.chat_id)
     epub_button_row = None
     if message.buttons[-1][0].data.startswith(b"epub"):
         epub_button_row = message.buttons.pop(-1)
-    rtl_button_row: List[MessageButton] = message.buttons.pop(-1)
+    rtl_button_row: list[MessageButton] = message.buttons.pop(-1)
     if event.data == event.data == b"rtl_disabled":
         rtl_button_row[0] = Button.inline(
             _("Force RTL", lang) + " ✅", data="rtl_enabled"
@@ -128,8 +129,10 @@ async def rtl_enable_callback(event: events.CallbackQuery.Event):
 @BOT.on(events.CallbackQuery(pattern=r"\w+\|\d+"))
 @tg_exceptions_handler
 @analysis
-async def converter_callback(event: events.CallbackQuery.Event):
-    """Converter callback handler"""
+async def converter_callback(
+    event: events.CallbackQuery.Event,
+) -> tuple[str, str] | None:
+    """Converter callback handler."""
     message: Message = await event.get_message()
     fix_epub = False
     if message.buttons[-1][0].data.startswith(b"epub"):
@@ -139,10 +142,14 @@ async def converter_callback(event: events.CallbackQuery.Event):
         convert_to_rtl = message.buttons[-1][0].data == b"rtl_enabled"
     lang = get_lang(event.chat_id)
     converted = False
+    output_type: str
+    random_id: str
     output_type, random_id = event.data.decode().split("|")
-    input_file = Path(queue.get(random_id))
-    if not queue.get(random_id) or not input_file.exists():
-        return
+    if not queue.get(random_id):
+        return None
+    input_file = Path(queue[random_id])
+    if not input_file.exists():
+        return None
     del queue[random_id]
     reply = await event.edit(
         _("Converting the file to {}...", lang).format(output_type)
@@ -172,3 +179,4 @@ async def converter_callback(event: events.CallbackQuery.Event):
     output_file.unlink(missing_ok=True)
     if converted:
         return input_file.suffix, output_type
+    return None

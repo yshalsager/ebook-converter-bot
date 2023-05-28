@@ -1,23 +1,24 @@
 import re
 from pathlib import Path
-from xml.etree import ElementTree
 from zipfile import ZIP_DEFLATED, ZipFile
 
+from defusedxml import ElementTree
 from ebooklib import epub
 
 
-def set_epub_to_rtl(input_file) -> bool:
+def set_epub_to_rtl(input_file: Path) -> bool:
     try:
         book = epub.read_epub(input_file)
         if book.direction != "rtl":
             book.direction = "rtl"
             epub.write_epub(input_file, book)
             return True
+        return False
     except KeyError:
         return False
 
 
-def fix_content_opf_problems(input_file):
+def fix_content_opf_problems(input_file: Path) -> None:
     with ZipFile(input_file) as book, ZipFile(
         f"{input_file}_", "w", compression=ZIP_DEFLATED
     ) as out:
@@ -29,7 +30,9 @@ def fix_content_opf_problems(input_file):
                     manifest_wrong_list_pos = content.find('<item id="page_1"')
                     manifest_correct_list_pos = content.rfind('<item id="page_1"')
                     manifest_end_pos = content.find("</manifest>")
-                    spine_line = re.search(r"<spine .*\n", content).group(0)
+                    spine_line_match = re.search(r"<spine .*\n", content)
+                    assert spine_line_match is not None
+                    spine_line = spine_line_match.group(0)
                     spine_correct_list_pos = content.rfind('<itemref idref="page_1"')
                     new_content = (
                         content[:manifest_wrong_list_pos]

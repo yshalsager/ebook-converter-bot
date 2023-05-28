@@ -5,26 +5,33 @@ description = "Telegram Bot for covnerting E-Books"
 authors = ["yshalsager <ysh-alsager@hotmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.10"
 Telethon = "^1.28.5"
 cryptg = "^0.4"
 aiohttp = {extras = ["fast"], version = "^3.8.4"}
 hachoir = "^3.2.0"
 sqlalchemy = "^2.0.14"
 EbookLib = "^0.18"
+defusedxml = "^0.7.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.3.0"
-flake8 = "^5.0.4"
-isort = "^5.11.5"
-mypy = "^1.3"
-pre-commit = "^2.21.0"
-pycln = "^2.1.3"
+pre-commit = "^3.3.2"
 types-toml = "^0.10.8"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.ruff]  # https://github.com/charliermarsh/ruff
+fix = true
+ignore-init-module-imports = true
+line-length = 100
+select = ["A", "B", "BLE", "C4", "C90", "DTZ", "E", "ERA", "F", "G", "I", "INP", "ISC", "N", "NPY", "PGH", "PIE", "PLC", "PLE", "PLR", "PLW", "PT", "PTH", "PYI", "RET", "RSE", "RUF", "S", "SIM", "T10", "T20", "TID", "UP", "W", "YTT"]
+ignore = ["E501", "PGH001", "RET504", "S101", "D211", "D213", "ERA001", "G004"]
+unfixable = ["ERA001", "F401", "F841", "T201", "T203"]
+src = ["ebook_converter_bot"]
+target-version = "py310"
 
 
 [tool.black]
@@ -52,7 +59,5 @@ warn_return_any = true
 show_error_codes = true
 warn_unused_ignores = true
 disallow_incomplete_defs = true
-disallow_untyped_decorators = true
-
-[tool.pycln]
-all = true
+disallow_untyped_decorators = false
+plugins = ["sqlalchemy.ext.mypy.plugin"]

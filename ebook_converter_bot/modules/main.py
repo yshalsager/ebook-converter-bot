@@ -1,4 +1,4 @@
-""" Bot main module"""
+"""Bot main module."""
 
 from telethon import events
 
@@ -14,7 +14,7 @@ from ebook_converter_bot.utils.telegram import (
 
 @BOT.on(events.NewMessage(pattern="/start"))
 @tg_exceptions_handler
-async def start(event: events.NewMessage.Event):
+async def start(event: events.NewMessage.Event) -> None:
     """Send a message when the command /start is sent."""
     add_chat_to_db(event.chat_id, get_chat_name(event), get_chat_type(event))
     await event.reply(
@@ -40,6 +40,6 @@ async def start(event: events.NewMessage.Event):
         func=lambda event: event.user_added and BOT_INFO["id"] == event.user_id
     )
 )
-async def on_adding_to_chat(event):
-    """Adds the chat that bot was added to into the database"""
+async def on_adding_to_chat(event: events.NewMessage.Event) -> None:
+    """Adds the chat that bot was added to into the database."""
     add_chat_to_db(event.chat_id, get_chat_name(event), get_chat_type(event))

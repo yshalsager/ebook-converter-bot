@@ -1,48 +1,72 @@
+# https://pre-commit.com
+default_install_hook_types: [ commit-msg, pre-commit ]
+default_stages: [ commit, manual ]
+fail_fast: true
 repos:
+  - repo: meta
+    hooks:
+      - id: check-useless-excludes
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-mock-methods
+      - id: python-use-type-annotations
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+      - id: text-unicode-replacement-char
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-      - id: check-builtin-literals
-      - id: trailing-whitespace
-        exclude_types:
-          - "markdown"
-      - id: end-of-file-fixer
-      - id: check-toml
-      - id: check-yaml
       - id: check-added-large-files
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-json
       - id: check-merge-conflict
-      - id: requirements-txt-fixer
-
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-vcs-permalinks
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        types: [ python ]
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args: [ --pytest-test-first ]
+      - id: trailing-whitespace
+        types: [ python ]
+  - repo: https://github.com/python-poetry/poetry
+    rev: '1.5.0'  # add version here
+    hooks:
+      - id: poetry-check
+#      - id: poetry-lock
+  - repo: https://github.com/MarcoGorelli/absolufy-imports
+    rev: v0.3.1
+    hooks:
+      - id: absolufy-imports
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: 'v0.0.270'
+    hooks:
+      - id: ruff
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 23.3.0
     hooks:
       - id: black
         args: [ --config=pyproject.toml ]
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.3.0'  # Use the sha / tag you want to point at
     hooks:
-      - id: flake8
-
-  - repo: https://github.com/hadialqattan/pycln
-    rev: v2.1.3
-    hooks:
-      - id: pycln
-        args: [ --config=pyproject.toml ]
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        files: "\\.(py)$"
-        args: [ --settings-path=pyproject.toml ]
-
-#  - repo: local
-#    hooks:
-#      - id: mypy
-#        name: mypy
-#        stages: [ commit ]
-#        language: system
-#        entry: poetry run mypy
-#        types: [ python ]
-#        pass_filenames: false
+      - id: mypy
+        args:
+          - --install-types
+        additional_dependencies:
+          - types-toml
+          - SQLAlchemy==2.0.15

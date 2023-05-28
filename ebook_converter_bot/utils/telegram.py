@@ -1,5 +1,7 @@
 from asyncio import sleep
+from collections.abc import Callable
 from functools import wraps
+from typing import Any, cast
 
 from telethon import events
 from telethon.errors import (
@@ -16,11 +18,11 @@ from telethon.errors import (
 from telethon.tl.types import User
 
 
-def tg_exceptions_handler(func):
+def tg_exceptions_handler(func: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args: Any, **kwargs: Any) -> Callable[..., Any]:
         try:
-            return await func(*args, **kwargs)
+            return cast(Callable[..., Any], await func(*args, **kwargs))
         except (
             ChannelPrivateError,
             ChatWriteForbiddenError,
@@ -30,7 +32,7 @@ def tg_exceptions_handler(func):
             InputUserDeactivatedError,
             MessageIdInvalidError,
         ):
-            pass
+            return lambda: None
         except SlowModeWaitError as error:
             await sleep(error.seconds)
             return tg_exceptions_handler(await func(*args, **kwargs))
@@ -53,4 +55,4 @@ def get_chat_name(event: events.NewMessage.Event) -> str:
         if event.chat.last_name:
             name += " " + event.chat.last_name.strip()
         return name
-    return event.chat.title
+    return cast(str, event.chat.title)

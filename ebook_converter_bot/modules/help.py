@@ -1,4 +1,4 @@
-""" Bot Help module"""
+"""Bot Help module."""
 
 from telethon import events
 
@@ -10,7 +10,7 @@ from ebook_converter_bot.utils.telegram import tg_exceptions_handler
 
 @BOT.on(events.NewMessage(pattern="/help"))
 @tg_exceptions_handler
-async def help_handler(event: events.NewMessage.Event):
+async def help_handler(event: events.NewMessage.Event) -> None:
     """Send a message when the command /help is sent."""
     await event.reply(
         _(

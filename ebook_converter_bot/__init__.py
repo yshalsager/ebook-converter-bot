@@ -1,4 +1,4 @@
-""" Bot initialization"""
+"""Bot initialization."""
 import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -9,8 +9,7 @@ WORK_DIR = Path(__package__).absolute()
 PARENT_DIR = WORK_DIR.parent
 
 # read bot config
-with open(f"{PARENT_DIR}/config.json", "r") as f:
-    CONFIG = json.load(f)
+CONFIG = json.loads((PARENT_DIR / "config.json").read_text())
 API_KEY = CONFIG["api_key"]
 API_HASH = CONFIG["api_hash"]
 BOT_TOKEN = CONFIG["tg_bot_token"]
@@ -24,7 +23,7 @@ _ = json.loads(
     Path(WORK_DIR / "data/locales/locales.json").read_text(encoding="utf-8-sig")
 )
 LOCALES = [_[i] for i in LANGUAGES]
-for code, locale in zip(LANGUAGES, LOCALES):
+for code, locale in zip(LANGUAGES, LOCALES, strict=True):
     locale["code"] = code
 
 # Logging
