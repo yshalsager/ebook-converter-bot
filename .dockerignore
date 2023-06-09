@@ -69,3 +69,7 @@ venv.bak/
 config.json.example
 last_run.log*
 tmp_*
+*.tar
+*.db-journal
+*.exe
+*.zip
