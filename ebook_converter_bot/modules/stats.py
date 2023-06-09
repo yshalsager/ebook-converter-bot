@@ -29,10 +29,10 @@ async def stats(event: events.NewMessage.Event) -> None:
     )
     output_formats_message = ""
     for output_format, count in output_formats.items():
-        output_formats_message += f"    __{output_format}__: {str(count)} times.\n"
+        output_formats_message += f"    __{output_format}__: {count!s} times.\n"
     input_formats_message = ""
     for input_format, count in input_formats.items():
-        input_formats_message += f"    __{input_format}__: {str(count)} times.\n"
+        input_formats_message += f"    __{input_format}__: {count!s} times.\n"
     message = message.replace("$output_formats", output_formats_message)
     message = message.replace("$input_formats", input_formats_message)
 
