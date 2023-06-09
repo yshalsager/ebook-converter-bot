@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "ebook-converter-bot"
 version = "0.1.0"
-description = "Telegram Bot for covnerting E-Books"
+description = "A Telegram bot for converting E-books."
 authors = ["yshalsager <ysh-alsager@hotmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 Telethon = "^1.28.5"
 cryptg = "^0.4"
 aiohttp = {extras = ["fast"], version = "^3.8.4"}
@@ -30,7 +30,7 @@ select = ["A", "B", "BLE", "C4", "C90", "DTZ", "E", "ERA", "F", "G", "I", "INP",
 ignore = ["E501", "PGH001", "RET504", "S101", "D211", "D213", "ERA001", "G004"]
 unfixable = ["ERA001", "F401", "F841", "T201", "T203"]
 src = ["ebook_converter_bot"]
-target-version = "py310"
+target-version = "py311"
 
 
 [tool.black]
