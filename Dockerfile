@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 # Configure Poetry
-ENV POETRY_VERSION=1.3.2
+ENV POETRY_VERSION=1.5.1
 ENV POETRY_HOME=/opt/poetry
 ENV POETRY_CACHE_DIR=/opt/.cache
 ENV POETRY_NO_INTERACTION=1
@@ -27,9 +27,6 @@ RUN export PATH=$PATH
 # Install prerequisites
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-                  python3 \
-                  python3-pip \
-                  python3-venv \
                   software-properties-common \
                   ca-certificates \
                   xvfb \
@@ -41,6 +38,8 @@ RUN apt-get update && \
                   curl \
                   gnupg2 \
                   xz-utils \
+                  && add-apt-repository ppa:deadsnakes/ppa -y \
+                  && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends python3.11-full \
                   && rm -rf /var/lib/apt/lists/*
 
 # Install wine
