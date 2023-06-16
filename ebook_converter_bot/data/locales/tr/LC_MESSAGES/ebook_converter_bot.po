@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-14 12:19+0200\n"
+"POT-Creation-Date: 2023-06-16 09:05+0300\n"
 "PO-Revision-Date: 2021-08-28 22:48+0200\n"
 "Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
 "Language-Team: - \n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 # python-brace-format
-#: ebook_converter_bot/modules/main.py:17
+#: ebook_converter_bot/modules/main.py:22
 msgid ""
 "Hello {}!\n"
 "\n"
@@ -41,11 +41,11 @@ msgstr ""
 "ebook-converter-bot) bulabilirsiniz.\n"
 "Geliştiren: [yshalsager](https://t.me/yshalsager/)."
 
-#: ebook_converter_bot/modules/broadcast.py:39
+#: ebook_converter_bot/modules/broadcast.py:53
 msgid "Broadcasting completed! Message was sent to {} chats\n"
 msgstr ""
 
-#: ebook_converter_bot/modules/broadcast.py:43
+#: ebook_converter_bot/modules/broadcast.py:60
 msgid ""
 "Failed to broadcast to {} chats, most likely because bot has been stopped or "
 "kicked out."
@@ -59,71 +59,74 @@ msgstr "Dil"
 msgid "**Available bot preferences:**"
 msgstr "**Kullanılabilir bot tercihleri:**"
 
-#: ebook_converter_bot/modules/preferences.py:28
-#: ebook_converter_bot/modules/preferences.py:44
+#: ebook_converter_bot/modules/preferences.py:33
+#: ebook_converter_bot/modules/preferences.py:53
 msgid "Back"
 msgstr "Geri"
 
-#: ebook_converter_bot/modules/preferences.py:29
+#: ebook_converter_bot/modules/preferences.py:35
 msgid "**Select Bot language**"
 msgstr "**Bot dilini seçiniz**"
 
-#: ebook_converter_bot/modules/preferences.py:42
+#: ebook_converter_bot/modules/preferences.py:49
 msgid "**Language has been set to**: {} ({})"
 msgstr "**Seçilen dil**: {} ({})"
 
-#: ebook_converter_bot/modules/restart.py:17
+#: ebook_converter_bot/modules/restart.py:19
 msgid "Restarting, please wait..."
 msgstr ""
 
 #. Unsupported file
-#: ebook_converter_bot/modules/converter.py:37
+#: ebook_converter_bot/modules/converter.py:38
 msgid "The file you sent is not a supported type!"
 msgstr "Gönderdiğiniz dosya türü desteklenmemektedir!"
 
-#. 25 MB
-#: ebook_converter_bot/modules/converter.py:40
+#: ebook_converter_bot/modules/converter.py:41
 #, fuzzy
 msgid "Files larger than 25 MB are not supported!"
 msgstr "25 MB üzerindeki dosyalar desteklenmemektedir!"
 
-#: ebook_converter_bot/modules/converter.py:42
+#: ebook_converter_bot/modules/converter.py:43
 msgid "Downloading the file..."
 msgstr "Dosya indiriliyor..."
 
-#: ebook_converter_bot/modules/converter.py:69
-#: ebook_converter_bot/modules/converter.py:102
-#: ebook_converter_bot/modules/converter.py:104
+#: ebook_converter_bot/modules/converter.py:73
+#: ebook_converter_bot/modules/converter.py:125
+#: ebook_converter_bot/modules/converter.py:129
 msgid "Force RTL"
 msgstr ""
 
-#: ebook_converter_bot/modules/converter.py:71
-#: ebook_converter_bot/modules/converter.py:84
-#: ebook_converter_bot/modules/converter.py:86
+#: ebook_converter_bot/modules/converter.py:79
+#: ebook_converter_bot/modules/converter.py:103
+#: ebook_converter_bot/modules/converter.py:107
 msgid "Fix EPUB before converting"
 msgstr ""
 
-#: ebook_converter_bot/modules/converter.py:72
+#: ebook_converter_bot/modules/converter.py:84
+msgid "Flatten EPUB TOC"
+msgstr ""
+
+#: ebook_converter_bot/modules/converter.py:90
 msgid "Select the format you want to convert to:"
 msgstr "Dönüştürmek istediğiniz türü seçiniz:"
 
-#: ebook_converter_bot/modules/converter.py:130
+#: ebook_converter_bot/modules/converter.py:163
 msgid "Converting the file to {}..."
 msgstr "Dosya {} türüne dönüştürülüyor..."
 
-#: ebook_converter_bot/modules/converter.py:136
+#: ebook_converter_bot/modules/converter.py:171
 msgid "Converted to RTL successfully!\n"
 msgstr ""
 
-#: ebook_converter_bot/modules/converter.py:137
+#: ebook_converter_bot/modules/converter.py:172
 msgid "Done! Uploading the converted file..."
 msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
 
-#: ebook_converter_bot/modules/converter.py:144
+#: ebook_converter_bot/modules/converter.py:180
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "(`{}`) dosyası {} dosyasına dönüştürülürken hata oluştu :("
 
-#: ebook_converter_bot/modules/help.py:15
+#: ebook_converter_bot/modules/help.py:17
 msgid ""
 "**Bot Usage:**\n"
 "\n"

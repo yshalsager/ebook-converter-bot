@@ -7,7 +7,11 @@ from pathlib import Path
 from signal import SIGKILL
 from string import Template
 
-from ebook_converter_bot.utils.epub import fix_content_opf_problems, set_epub_to_rtl
+from ebook_converter_bot.utils.epub import (
+    fix_content_opf_problems,
+    flatten_toc,
+    set_epub_to_rtl,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -160,27 +164,31 @@ class Converter:
             self._kfx_input_convert_command.safe_substitute(input_file=input_file)
         )
 
-    async def convert_ebook(  # noqa: C901
+    async def convert_ebook(  # noqa: C901, PLR0913
         self,
         input_file: Path,
         output_type: str,
         force_rtl: bool = False,
         fix_epub: bool = False,
+        flat_toc: bool = False,
     ) -> tuple[Path, bool | None, str]:
         conversion_error = ""
         set_to_rtl: bool | None = None
-        input_type: str = input_file.suffix.lower()
+        input_type: str = input_file.suffix.lower()[1:]
         output_file: Path = input_file.with_suffix(f".{output_type}")
+        # EPUB pre-processing
         if input_type == "epub":
             if force_rtl:
                 set_to_rtl = set_epub_to_rtl(input_file)
             if fix_epub:
                 fix_content_opf_problems(input_file)
+            if flat_toc:
+                flatten_toc(input_file)
+        # Conversion
         if input_type in self.kfx_input_allowed_types:
             _, conversion_error = await self._convert_from_kfx_to_epub(input_file)
-            if output_type == "epub":
-                if force_rtl:
-                    set_to_rtl = set_epub_to_rtl(output_file)
+            if output_type == "epub" and force_rtl:
+                set_to_rtl = set_epub_to_rtl(output_file)
             else:
                 # 2nd step conversion
                 epub_file: Path = input_file.with_suffix(".epub")
@@ -195,11 +203,12 @@ class Converter:
         if output_type == "kfx" and input_type in self.kfx_output_allowed_types:
             _, conversion_error = await self._convert_to_kfx(input_file)
         if output_type in self.supported_output_types:
-            _, conversion_error = await self._run_command(
-                self._convert_command.safe_substitute(
-                    input_file=input_file, output_file=output_file
+            if input_type != output_type:
+                _, conversion_error = await self._run_command(
+                    self._convert_command.safe_substitute(
+                        input_file=input_file, output_file=output_file
+                    )
                 )
-            )
             if output_type == "epub" and force_rtl:
                 set_to_rtl = set_epub_to_rtl(output_file)
         return output_file, set_to_rtl, conversion_error

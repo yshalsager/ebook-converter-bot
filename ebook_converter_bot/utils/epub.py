@@ -2,7 +2,9 @@ import re
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
-from defusedxml import ElementTree
+from lxml.etree import Element, ElementTree, ParseError, XMLParser, fromstring, tostring
+
+xml_parser = XMLParser(resolve_entities=False)
 
 
 def set_epub_to_rtl(input_file: Path) -> bool:
@@ -60,7 +62,7 @@ def fix_content_opf_problems(input_file: Path) -> None:
         try:
             zip_text_contents = [
                 i.get("href").split("/")[-1]
-                for i in ElementTree.fromstring(new_content)[1]
+                for i in fromstring(new_content.encode(), xml_parser)[1]  # noqa: S320
                 if "Text" in i.get("href")
             ]
             real_text_contents = [
@@ -71,7 +73,65 @@ def fix_content_opf_problems(input_file: Path) -> None:
             )
             for item in missing_text_content:
                 new_content = re.sub(f'<item .*{item}".*\n', "", new_content)
-        except ElementTree.ParseError:
+        except ParseError:
             pass
         with epub_book.open(content_opf.filename, "w") as o:
             o.write(new_content.encode())
+
+
+def _flatten_toc(nav_map: Element, namespace: str) -> list[Element]:
+    flattened_items: list[Element] = []
+
+    def traverse_nav_point(nav_point: Element, play_order: int) -> None:
+        # Create a new navPoint element with updated attributes
+        new_nav_point = Element(
+            "navPoint", {"id": f"num_{play_order}", "playOrder": str(play_order)}
+        )
+        # Copy the child elements (navLabel and content) from the original navPoint to the new one
+        for child in nav_point:
+            if child.tag != f"{namespace}navPoint":
+                new_nav_point.append(child)
+        # Add the new item
+        flattened_items.append(new_nav_point)
+
+        # Recursively traverse nested navPoints
+        for child in nav_point:
+            if child.tag == f"{namespace}navPoint":
+                play_order += 1
+                traverse_nav_point(child, play_order)
+
+    for idx, navigation_point in enumerate(nav_map, start=1):
+        traverse_nav_point(navigation_point, idx)
+
+    return flattened_items
+
+
+def flatten_toc(input_file: Path) -> None:
+    with ZipFile(input_file, "a", compression=ZIP_DEFLATED) as epub_book:
+        toc_files = list(
+            filter(lambda x: x.filename.endswith("toc.ncx"), epub_book.infolist())
+        )
+        if not toc_files:
+            return
+        toc_ncx = toc_files.pop()
+        toc_xml: ElementTree = ElementTree(
+            fromstring(epub_book.read(toc_ncx.filename), xml_parser)  # noqa: S320
+        )
+        root: Element = toc_xml.getroot()
+        namespace = root.tag.split("}")[0] + "}"
+        nav_map: Element = toc_xml.find(f".//{namespace}navMap")
+        new_toc = _flatten_toc(nav_map, namespace)
+        root.remove(nav_map)
+        new_nav_map = Element("navMap")
+        for i in new_toc:
+            new_nav_map.append(i)
+        root.append(new_nav_map)
+        # print(ET.tostring(root, encoding="utf-8").decode('utf-8'))
+        with epub_book.open(toc_ncx.filename, "w") as o:
+            o.write(tostring(toc_xml, encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    from sys import argv
+
+    flatten_toc(Path(argv[1]))

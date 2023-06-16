@@ -71,36 +71,24 @@ async def file_converter(event: events.NewMessage.Event) -> None:
     ]
     buttons = [buttons[i::5] for i in range(5)]
     buttons.append([Button.inline(_("Force RTL", lang) + " ❓", data="rtl_disabled")])
-    if file.name.lower().endswith("epub"):
-        buttons.append(
+    if file.name.lower().endswith(".epub"):
+        buttons.extend(
             [
-                Button.inline(
-                    _("Fix EPUB before converting", lang) + " ❓", data="epub_keep"
-                )
+                [
+                    Button.inline(
+                        _("Fix EPUB before converting", lang) + " ❓", data="epub_keep"
+                    )
+                ],
+                [
+                    Button.inline(
+                        _("Flatten EPUB TOC", lang) + " ❓", data="epub_keep_toc"
+                    )
+                ],
             ]
         )
     await reply.edit(
         _("Select the format you want to convert to:", lang), buttons=buttons
     )
-
-
-@BOT.on(events.CallbackQuery(pattern="epub_fix|epub_keep"))
-@tg_exceptions_handler
-async def epub_fix_enable_callback(event: events.CallbackQuery.Event) -> None:
-    """Epub Fix callback handler."""
-    message: Message = await event.get_message()
-    lang = get_lang(event.chat_id)
-    epub_button_row: list[MessageButton] = message.buttons.pop(-1)
-    if event.data == event.data == b"epub_keep":
-        epub_button_row[0] = Button.inline(
-            _("Fix EPUB before converting", lang) + " ✅", data="epub_fix"
-        )
-    elif event.data == b"epub_fix":
-        epub_button_row[0] = Button.inline(
-            _("Fix EPUB before converting", lang) + " ❌", data="epub_keep"
-        )
-    message.buttons.append(epub_button_row)
-    await message.edit(message.text, buttons=message.buttons)
 
 
 @BOT.on(events.CallbackQuery(pattern="rtl_enabled|rtl_disabled"))
@@ -112,8 +100,8 @@ async def rtl_enable_callback(event: events.CallbackQuery.Event) -> None:
     epub_button_row = None
     if message.buttons[-1][0].data.startswith(b"epub"):
         epub_button_row = message.buttons.pop(-1)
-    rtl_button_row: list[MessageButton] = message.buttons.pop(-1)
-    if event.data == event.data == b"rtl_disabled":
+    rtl_button_row: list[MessageButton] = message.buttons[5]
+    if event.data == b"rtl_disabled":
         rtl_button_row[0] = Button.inline(
             _("Force RTL", lang) + " ✅", data="rtl_enabled"
         )
@@ -121,9 +109,47 @@ async def rtl_enable_callback(event: events.CallbackQuery.Event) -> None:
         rtl_button_row[0] = Button.inline(
             _("Force RTL", lang) + " ❌", data="rtl_disabled"
         )
-    message.buttons.append(rtl_button_row)
+    message.buttons[5] = rtl_button_row
     if epub_button_row:
         message.buttons.append(epub_button_row)
+    await message.edit(message.text, buttons=message.buttons)
+
+
+@BOT.on(events.CallbackQuery(pattern="epub_fix|epub_keep"))
+@tg_exceptions_handler
+async def epub_fix_enable_callback(event: events.CallbackQuery.Event) -> None:
+    """Epub Fix callback handler."""
+    message: Message = await event.get_message()
+    lang = get_lang(event.chat_id)
+    epub_button_row: list[MessageButton] = message.buttons[-2]
+    if event.data == b"epub_keep":
+        epub_button_row[0] = Button.inline(
+            _("Fix EPUB before converting", lang) + " ✅", data="epub_fix"
+        )
+    elif event.data == b"epub_fix":
+        epub_button_row[0] = Button.inline(
+            _("Fix EPUB before converting", lang) + " ❌", data="epub_keep"
+        )
+    message.buttons[-2] = epub_button_row
+    await message.edit(message.text, buttons=message.buttons)
+
+
+@BOT.on(events.CallbackQuery(pattern="epub_flat_toc|epub_keep_toc"))
+@tg_exceptions_handler
+async def epub_toc_edit_enable_callback(event: events.CallbackQuery.Event) -> None:
+    """Epub TOC edit callback handler."""
+    message: Message = await event.get_message()
+    lang = get_lang(event.chat_id)
+    epub_button_row: list[MessageButton] = message.buttons[-1]
+    if event.data == b"epub_keep_toc":
+        epub_button_row[0] = Button.inline(
+            _("Flatten EPUB TOC", lang) + " ✅", data="epub_flat_toc"
+        )
+    elif event.data == b"epub_flat_toc":
+        epub_button_row[0] = Button.inline(
+            _("Flatten EPUB TOC", lang) + " ❌", data="epub_flat_toc"
+        )
+    message.buttons[-1] = epub_button_row
     await message.edit(message.text, buttons=message.buttons)
 
 
@@ -136,9 +162,11 @@ async def converter_callback(
     """Converter callback handler."""
     message: Message = await event.get_message()
     fix_epub = False
+    flat_toc = False
     if message.buttons[-1][0].data.startswith(b"epub"):
-        fix_epub = message.buttons[-1][0].data == b"epub_fix"
-        convert_to_rtl = message.buttons[-2][0].data == b"rtl_enabled"
+        convert_to_rtl = message.buttons[-3][0].data == b"rtl_enabled"
+        fix_epub = message.buttons[-2][0].data == b"epub_fix"
+        flat_toc = message.buttons[-1][0].data == b"epub_flat_toc"
     else:
         convert_to_rtl = message.buttons[-1][0].data == b"rtl_enabled"
     lang = get_lang(event.chat_id)
@@ -156,7 +184,11 @@ async def converter_callback(
         _("Converting the file to {}...", lang).format(output_type)
     )
     output_file, converted_to_rtl, conversion_error = await converter.convert_ebook(
-        input_file, output_type, force_rtl=convert_to_rtl, fix_epub=fix_epub
+        input_file,
+        output_type,
+        force_rtl=convert_to_rtl,
+        fix_epub=fix_epub,
+        flat_toc=flat_toc,
     )
     if output_file.exists():
         message_text = ""

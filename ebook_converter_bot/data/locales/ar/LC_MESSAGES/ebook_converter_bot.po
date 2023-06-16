@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-14 12:19+0200\n"
+"POT-Creation-Date: 2023-06-16 09:05+0300\n"
 "PO-Revision-Date: 2021-08-26 13:52+0200\n"
 "Last-Translator: yshalsager <ysh-alsager@hotmail.com>\n"
 "Language-Team: Arabic <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 # python-brace-format
-#: ebook_converter_bot/modules/main.py:17
+#: ebook_converter_bot/modules/main.py:22
 msgid ""
 "Hello {}!\n"
 "\n"
@@ -43,12 +43,12 @@ msgstr ""
 "\n"
 "        طُور هذا البوت بواسطة: [yshalsager](https://t.me/yshalsager/)."
 
-#: ebook_converter_bot/modules/broadcast.py:39
+#: ebook_converter_bot/modules/broadcast.py:53
 #, fuzzy
 msgid "Broadcasting completed! Message was sent to {} chats\n"
 msgstr "اكتمل النشر! أرسلت الرسالة إلى {} محادثة\n"
 
-#: ebook_converter_bot/modules/broadcast.py:43
+#: ebook_converter_bot/modules/broadcast.py:60
 msgid ""
 "Failed to broadcast to {} chats, most likely because bot has been stopped or "
 "kicked out."
@@ -62,71 +62,74 @@ msgstr "اللغة"
 msgid "**Available bot preferences:**"
 msgstr "**الإعدادات المتوفرة للبوت:**"
 
-#: ebook_converter_bot/modules/preferences.py:28
-#: ebook_converter_bot/modules/preferences.py:44
+#: ebook_converter_bot/modules/preferences.py:33
+#: ebook_converter_bot/modules/preferences.py:53
 msgid "Back"
 msgstr "رجوع"
 
-#: ebook_converter_bot/modules/preferences.py:29
+#: ebook_converter_bot/modules/preferences.py:35
 msgid "**Select Bot language**"
 msgstr "**اختر لغة البوت**"
 
-#: ebook_converter_bot/modules/preferences.py:42
+#: ebook_converter_bot/modules/preferences.py:49
 msgid "**Language has been set to**: {} ({})"
 msgstr "**غُيرت لغة البوت إلى**: {} ({})"
 
-#: ebook_converter_bot/modules/restart.py:17
+#: ebook_converter_bot/modules/restart.py:19
 msgid "Restarting, please wait..."
 msgstr "يٌعاد تشغيل البوت الآن، من فضلك انتظر..."
 
 #. Unsupported file
-#: ebook_converter_bot/modules/converter.py:37
+#: ebook_converter_bot/modules/converter.py:38
 msgid "The file you sent is not a supported type!"
 msgstr "نوع الملف الذي أرسلته غير مدعوم!"
 
-#. 25 MB
-#: ebook_converter_bot/modules/converter.py:40
+#: ebook_converter_bot/modules/converter.py:41
 #, fuzzy
 msgid "Files larger than 25 MB are not supported!"
 msgstr "الملفات التي حجمها أكبر من 25 ميجابايت ليست مدعومة!"
 
-#: ebook_converter_bot/modules/converter.py:42
+#: ebook_converter_bot/modules/converter.py:43
 msgid "Downloading the file..."
 msgstr "جاري تحميل الملف..."
 
-#: ebook_converter_bot/modules/converter.py:69
-#: ebook_converter_bot/modules/converter.py:102
-#: ebook_converter_bot/modules/converter.py:104
+#: ebook_converter_bot/modules/converter.py:73
+#: ebook_converter_bot/modules/converter.py:125
+#: ebook_converter_bot/modules/converter.py:129
 msgid "Force RTL"
-msgstr "إجبار إتجاه من اليمين لليسار"
+msgstr "إجبار جهة النص من اليمين لليسار"
 
-#: ebook_converter_bot/modules/converter.py:71
-#: ebook_converter_bot/modules/converter.py:84
-#: ebook_converter_bot/modules/converter.py:86
+#: ebook_converter_bot/modules/converter.py:79
+#: ebook_converter_bot/modules/converter.py:103
+#: ebook_converter_bot/modules/converter.py:107
 msgid "Fix EPUB before converting"
 msgstr "إصلاح الكتاب قبل التحويل"
 
-#: ebook_converter_bot/modules/converter.py:72
+#: ebook_converter_bot/modules/converter.py:84
+msgid "Flatten EPUB TOC"
+msgstr "تسطيح فهرس الكتاب"
+
+#: ebook_converter_bot/modules/converter.py:90
 msgid "Select the format you want to convert to:"
 msgstr "اختر الصيغة التي تود التحويل إليها:"
 
-#: ebook_converter_bot/modules/converter.py:130
+#: ebook_converter_bot/modules/converter.py:163
 msgid "Converting the file to {}..."
 msgstr "جاري تحويل الملف إلى {}..."
 
-#: ebook_converter_bot/modules/converter.py:136
+#: ebook_converter_bot/modules/converter.py:171
 msgid "Converted to RTL successfully!\n"
 msgstr "تم التحويل إلى إتجاه من اليمين إلى اليسار بنجاح!\n"
 
-#: ebook_converter_bot/modules/converter.py:137
+#: ebook_converter_bot/modules/converter.py:172
 msgid "Done! Uploading the converted file..."
 msgstr "اكتمل التحويل! جاري رفع الملف المحول..."
 
-#: ebook_converter_bot/modules/converter.py:144
+#: ebook_converter_bot/modules/converter.py:180
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "فشل تحويل الملف (`{}`) إلى {} :("
 
-#: ebook_converter_bot/modules/help.py:15
+#: ebook_converter_bot/modules/help.py:17
 msgid ""
 "**Bot Usage:**\n"
 "\n"

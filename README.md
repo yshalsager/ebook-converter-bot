@@ -53,6 +53,7 @@ Some more features of the bot:
 
 - Force book direction to be RTL
 - Multilingual support, you can contribute and add your own languages if you want :).
+- Flatten book's table of contents.
 
 ## Usage
 
