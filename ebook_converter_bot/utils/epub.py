@@ -108,6 +108,7 @@ def _flatten_toc(nav_map: Element, namespace: str) -> list[Element]:
 
 def flatten_toc(input_file: Path) -> None:
     with ZipFile(input_file, "a", compression=ZIP_DEFLATED) as epub_book:
+        # Flatten toc.ncx
         toc_files = list(
             filter(lambda x: x.filename.endswith("toc.ncx"), epub_book.infolist())
         )
@@ -126,9 +127,28 @@ def flatten_toc(input_file: Path) -> None:
         for i in new_toc:
             new_nav_map.append(i)
         root.append(new_nav_map)
-        # print(ET.tostring(root, encoding="utf-8").decode('utf-8'))
+        # print(tostring(root, encoding="utf-8").decode('utf-8'))
         with epub_book.open(toc_ncx.filename, "w") as o:
             o.write(tostring(toc_xml, encoding="utf-8"))
+
+        # Delete nav.xhtml
+        nav_html_files = list(
+            filter(lambda x: x.filename.endswith("nav.xhtml"), epub_book.infolist())
+        )
+        if not nav_html_files:
+            return
+        content_opf = list(
+            filter(lambda x: x.filename.endswith(".opf"), epub_book.infolist())
+        ).pop()
+        opf_file_content = epub_book.read(content_opf.filename).decode()
+        new_opf_file_content = re.sub(
+            r"<item\s+[^>]*href=\"nav\.xhtml\"[^>]*>", "", opf_file_content
+        )
+        new_opf_file_content = re.sub(
+            r"<itemref\s+[^>]*idref=.*?nav.*?[^>]*/>", "", new_opf_file_content
+        )
+        with epub_book.open(content_opf.filename, "w") as o:
+            o.write(new_opf_file_content.encode())
 
 
 if __name__ == "__main__":
