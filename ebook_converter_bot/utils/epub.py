@@ -1,7 +1,9 @@
 import re
 from pathlib import Path
+from typing import cast
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
+from lxml import html
 from lxml.etree import Element, ElementTree, ParseError, XMLParser, fromstring, tostring
 
 xml_parser = XMLParser(resolve_entities=False)
@@ -79,7 +81,7 @@ def fix_content_opf_problems(input_file: Path) -> None:
             o.write(new_content.encode())
 
 
-def _flatten_toc(nav_map: Element, namespace: str) -> list[Element]:
+def _flatten_ncx_toc(nav_map: Element, namespace: str) -> list[Element]:
     flattened_items: list[Element] = []
 
     def traverse_nav_point(nav_point: Element, play_order: int) -> None:
@@ -106,6 +108,21 @@ def _flatten_toc(nav_map: Element, namespace: str) -> list[Element]:
     return flattened_items
 
 
+def _flatten_html_nav(html_nav_file: bytes) -> bytes:
+    root = html.fromstring(html_nav_file)
+    nested_ol_elems = root.xpath(".//*/ol/*/ol")
+    # Flatten the nested lists
+    for nested_ol in nested_ol_elems:
+        parent_li = nested_ol.getparent()
+        parent_ol = parent_li.getparent()
+        index = parent_ol.index(parent_li)
+        parent_ol.remove(parent_li)
+        for li in reversed(nested_ol):
+            parent_ol.insert(index, li)
+        nested_ol.drop_tree()
+    return cast(bytes, tostring(root, encoding="utf-8"))
+
+
 def flatten_toc(input_file: Path) -> None:
     with ZipFile(input_file, "a", compression=ZIP_DEFLATED) as epub_book:
         # Flatten toc.ncx
@@ -121,7 +138,7 @@ def flatten_toc(input_file: Path) -> None:
         root: Element = toc_xml.getroot()
         namespace = root.tag.split("}")[0] + "}"
         nav_map: Element = toc_xml.find(f".//{namespace}navMap")
-        new_toc = _flatten_toc(nav_map, namespace)
+        new_toc = _flatten_ncx_toc(nav_map, namespace)
         root.remove(nav_map)
         new_nav_map = Element("navMap")
         for i in new_toc:
@@ -131,24 +148,16 @@ def flatten_toc(input_file: Path) -> None:
         with epub_book.open(toc_ncx.filename, "w") as o:
             o.write(tostring(toc_xml, encoding="utf-8"))
 
-        # Delete nav.xhtml
+        # Flatten nav.xhtml
         nav_html_files = list(
             filter(lambda x: x.filename.endswith("nav.xhtml"), epub_book.infolist())
         )
         if not nav_html_files:
             return
-        content_opf = list(
-            filter(lambda x: x.filename.endswith(".opf"), epub_book.infolist())
-        ).pop()
-        opf_file_content = epub_book.read(content_opf.filename).decode()
-        new_opf_file_content = re.sub(
-            r"<item\s+[^>]*href=\"nav\.xhtml\"[^>]*>", "", opf_file_content
-        )
-        new_opf_file_content = re.sub(
-            r"<itemref\s+[^>]*idref=.*?nav.*?[^>]*/>", "", new_opf_file_content
-        )
-        with epub_book.open(content_opf.filename, "w") as o:
-            o.write(new_opf_file_content.encode())
+        nav_html = nav_html_files.pop()
+        new_nav_html = _flatten_html_nav(epub_book.read(nav_html.filename))
+        with epub_book.open(nav_html.filename, "w") as o:
+            o.write(new_nav_html)
 
 
 if __name__ == "__main__":
