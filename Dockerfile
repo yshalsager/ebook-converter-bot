@@ -34,6 +34,8 @@ RUN apt-get update && \
                   libopengl0 \
                   libxkbcommon-x11-0 \
                   libxcomposite-dev \
+                  # QTWebEngine deps
+                  libxdamage-dev libxrandr-dev libxtst6 \
                   wget \
                   curl \
                   gnupg2 \
@@ -71,6 +73,7 @@ RUN wget -q -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sh /
 
 # poetry
 WORKDIR $PYSETUP_PATH
+ENV QTWEBENGINE_CHROMIUM_FLAGS="--no-sandbox"
 RUN curl -sSL https://install.python-poetry.org | python3 -
 COPY poetry.lock pyproject.toml ./
 RUN poetry install --only main
