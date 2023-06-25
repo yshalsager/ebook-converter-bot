@@ -6,6 +6,7 @@ from os import getpgid, killpg, setsid
 from pathlib import Path
 from signal import SIGKILL
 from string import Template
+from typing import ClassVar
 
 from ebook_converter_bot.utils.epub import (
     fix_content_opf_problems,
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class Converter:
-    supported_input_types = [
+    supported_input_types: ClassVar[list[str]] = [
         "azw",
         "azw3",
         "azw4",
@@ -53,7 +54,7 @@ class Converter:
         "txt",
         "txtz",
     ]
-    supported_output_types = [
+    supported_output_types: ClassVar[list[str]] = [
         "azw3",
         "docx",
         "epub",
@@ -75,7 +76,7 @@ class Converter:
         "txtz",
         "zip",
     ]
-    kfx_output_allowed_types = [
+    kfx_output_allowed_types: ClassVar[list[str]] = [
         "epub",
         "opf",
         "mobi",
@@ -84,7 +85,7 @@ class Converter:
         "kpf",
         "kfx-zip",
     ]
-    kfx_input_allowed_types = ["azw8", "kfx", "kfx-zip"]
+    kfx_input_allowed_types: ClassVar[list[str]] = ["azw8", "kfx", "kfx-zip"]
 
     def __init__(self) -> None:
         self._convert_command = Template('ebook-convert "$input_file" "$output_file"')
