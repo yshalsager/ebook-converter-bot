@@ -36,7 +36,6 @@ RUN apt-get update && \
                   libxcomposite-dev \
                   # QTWebEngine deps
                   libxdamage-dev libxrandr-dev libxtst6 \
-                  wget \
                   curl \
                   gnupg2 \
                   xz-utils \
@@ -46,15 +45,15 @@ RUN apt-get update && \
 ARG WINE_BRANCH="stable"
 RUN dpkg --add-architecture i386 \
     && mkdir -pm755 /etc/apt/keyrings \
-    && wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
-    && wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/debian/dists/bullseye/winehq-bullseye.sources \
+    && curl -o /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
+    && curl -L -o /etc/apt/sources.list.d/winehq-bullseye.sources https://dl.winehq.org/wine-builds/debian/dists/bullseye/winehq-bullseye.sources \
     && apt-get update \
     && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winbind winehq-${WINE_BRANCH} \
     && rm -rf /var/lib/apt/lists/*
 
 # Kindle support
 COPY kp3.reg .
-RUN wget -q https://d2bzeorukaqrvt.cloudfront.net/KindlePreviewerInstaller.exe \
+RUN curl -s -O https://d2bzeorukaqrvt.cloudfront.net/KindlePreviewerInstaller.exe \
     && DISPLAY=:0 WINEARCH=win64 WINEDEBUG=-all wine KindlePreviewerInstaller.exe /S \
     && cat kp3.reg >> /root/.wine/user.reg && rm *.exe
 
@@ -62,10 +61,10 @@ RUN wget -q https://d2bzeorukaqrvt.cloudfront.net/KindlePreviewerInstaller.exe \
 WORKDIR /app
 # KFX Output 272407
 # KFX Input 291290
-RUN wget -q -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sh /dev/stdin \
-    && wget -q https://plugins.calibre-ebook.com/272407.zip \
+RUN curl -s https://download.calibre-ebook.com/linux-installer.sh | sh /dev/stdin \
+    && curl -s -O https://plugins.calibre-ebook.com/272407.zip \
     && calibre-customize -a 272407.zip \
-    && wget -q https://plugins.calibre-ebook.com/291290.zip \
+    && curl -s -O https://plugins.calibre-ebook.com/291290.zip \
     && calibre-customize -a 291290.zip \
     && rm *.zip
 
