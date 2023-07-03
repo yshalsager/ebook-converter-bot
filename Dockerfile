@@ -1,4 +1,5 @@
-FROM ubuntu:22.04
+# Use python:3.11-slim-bullseye as base image to have a smaller image and avoid installing python manually
+FROM python:3.11-slim-bullseye
 
 # Configure Poetry
 ENV POETRY_VERSION=1.5.1
@@ -27,7 +28,6 @@ RUN export PATH=$PATH
 # Install prerequisites
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-                  software-properties-common \
                   ca-certificates \
                   xvfb \
                   libegl1 \
@@ -40,8 +40,6 @@ RUN apt-get update && \
                   curl \
                   gnupg2 \
                   xz-utils \
-                  && add-apt-repository ppa:deadsnakes/ppa -y \
-                  && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends python3.11-full \
                   && rm -rf /var/lib/apt/lists/*
 
 # Install wine
@@ -49,7 +47,7 @@ ARG WINE_BRANCH="stable"
 RUN dpkg --add-architecture i386 \
     && mkdir -pm755 /etc/apt/keyrings \
     && wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
-    && wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/focal/winehq-focal.sources \
+    && wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/debian/dists/bullseye/winehq-bullseye.sources \
     && apt-get update \
     && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winbind winehq-${WINE_BRANCH} \
     && rm -rf /var/lib/apt/lists/*
