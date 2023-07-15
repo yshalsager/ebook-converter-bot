@@ -13,5 +13,5 @@ services:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     volumes:
-      - "./:/opt/app/app"
+      - "./:/app/app"
 

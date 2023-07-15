@@ -1,13 +1,12 @@
-# Use python:3.11-slim-bullseye as base image to have a smaller image and avoid installing python manually
-FROM python:3.11-slim-bullseye
+FROM ghcr.io/yshalsager/calibre-with-kfx:20230714-0830
 
 # Configure Poetry
 ENV POETRY_VERSION=1.5.1
-ENV POETRY_HOME=/opt/poetry
-ENV POETRY_CACHE_DIR=/opt/.cache
+ENV POETRY_HOME=/app/poetry
+ENV POETRY_CACHE_DIR=/app/.cache
 ENV POETRY_NO_INTERACTION=1
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
-ENV PYSETUP_PATH="/opt/app"
+ENV PYSETUP_PATH="/app"
 
 # pip
 ENV PIP_NO_CACHE_DIR=off
@@ -21,60 +20,17 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Configure Paths
-ENV VENV_PATH="/opt/app/.venv"
+ENV VENV_PATH="/app/.venv"
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 RUN export PATH=$PATH
 
-# Install prerequisites
-RUN apt-get update && \
-    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-                  ca-certificates \
-                  xvfb \
-                  libegl1 \
-                  libopengl0 \
-                  libxkbcommon-x11-0 \
-                  libxcomposite-dev \
-                  # QTWebEngine deps
-                  libxdamage-dev libxrandr-dev libxtst6 \
-                  curl \
-                  gnupg2 \
-                  xz-utils \
-                  && rm -rf /var/lib/apt/lists/*
-
-# Install wine
-ARG WINE_BRANCH="stable"
-RUN dpkg --add-architecture i386 \
-    && mkdir -pm755 /etc/apt/keyrings \
-    && curl -o /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key \
-    && curl -L -o /etc/apt/sources.list.d/winehq-bullseye.sources https://dl.winehq.org/wine-builds/debian/dists/bullseye/winehq-bullseye.sources \
-    && apt-get update \
-    && DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends winbind winehq-${WINE_BRANCH} \
-    && rm -rf /var/lib/apt/lists/*
-
-# Kindle support
-COPY kp3.reg .
-RUN curl -s -O https://d2bzeorukaqrvt.cloudfront.net/KindlePreviewerInstaller.exe \
-    && DISPLAY=:0 WINEARCH=win64 WINEDEBUG=-all wine KindlePreviewerInstaller.exe /S \
-    && cat kp3.reg >> /root/.wine/user.reg && rm *.exe
-
-# calibre and its plugins are
-WORKDIR /app
-# KFX Output 272407
-# KFX Input 291290
-RUN curl -s https://download.calibre-ebook.com/linux-installer.sh | sh /dev/stdin \
-    && curl -s -O https://plugins.calibre-ebook.com/272407.zip \
-    && calibre-customize -a 272407.zip \
-    && curl -s -O https://plugins.calibre-ebook.com/291290.zip \
-    && calibre-customize -a 291290.zip \
-    && rm *.zip
-
 # poetry
 WORKDIR $PYSETUP_PATH
-ENV QTWEBENGINE_CHROMIUM_FLAGS="--no-sandbox"
 RUN curl -sSL https://install.python-poetry.org | python3 -
 COPY poetry.lock pyproject.toml ./
 RUN poetry install --only main
 
 #COPY . .
 
-#CMD ['python3', '-m', 'ebook_converter_bot']
+# Override the entrypoint of the parent image
+ENTRYPOINT [""]
