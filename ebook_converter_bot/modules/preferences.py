@@ -42,7 +42,7 @@ async def set_language_callback(event: events.CallbackQuery.Event) -> None:
     """Set language handler."""
     language_code = event.data.decode().split("_")[-1]
     update_language(event.chat_id, language_code)
-    language = list(filter(lambda x: x["code"] == language_code, LOCALES))[0]
+    language = next(iter(filter(lambda x: x["code"] == language_code, LOCALES)))
     language_name = language["name"]
     language_native_name = language["nativeName"]
     await event.edit(
