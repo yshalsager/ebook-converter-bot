@@ -21,6 +21,15 @@
     enabled: true,
     schedule: ["before 5am on saturday"],
   },
+
+  "packageRules": [
+    {
+      matchUpdateTypes: ["minor", "patch", "pin", "digest"],
+      automerge: true,
+      automergeType: "branch"
+    }
+  ],
+
   regexManagers: [
     {
       fileMatch: [
