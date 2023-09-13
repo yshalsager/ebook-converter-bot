@@ -1,7 +1,7 @@
 FROM ghcr.io/yshalsager/calibre-with-kfx:20230910-0105
 
 # Configure Poetry
-ENV POETRY_VERSION=1.5.1
+ENV POETRY_VERSION=1.6.1
 ENV POETRY_HOME=/app/poetry
 ENV POETRY_CACHE_DIR=/app/.cache
 ENV POETRY_NO_INTERACTION=1
