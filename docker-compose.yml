@@ -5,7 +5,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    command: bash -c "cd app && python3.11 -m ebook_converter_bot"
+    command: bash -c "cd app && python3.12 -m ebook_converter_bot"
     environment:
       - PUID=1000
       - PGID=1000

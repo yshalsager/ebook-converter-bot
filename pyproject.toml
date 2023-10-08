@@ -5,10 +5,9 @@ description = "A Telegram bot for converting E-books."
 authors = ["yshalsager <ysh-alsager@hotmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 Telethon = "^1.28.5"
 cryptg = "^0.4"
-aiohttp = {extras = ["fast"], version = "^3.8.4"}
 hachoir = "^3.2.0"
 sqlalchemy = "^2.0.14"
 lxml = "^4.9.2"
@@ -30,7 +29,7 @@ select = ["A", "B", "BLE", "C4", "C90", "DTZ", "E", "ERA", "F", "G", "I", "INP",
 ignore = ["E501", "PGH001", "RET504", "S101", "D211", "D213", "ERA001", "G004"]
 unfixable = ["ERA001", "F401", "F841", "T201", "T203"]
 src = ["ebook_converter_bot"]
-target-version = "py311"
+target-version = "py312"
 
 
 [tool.black]
