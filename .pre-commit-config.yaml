@@ -69,4 +69,4 @@ repos:
           - --install-types
         additional_dependencies:
           - types-toml
-          - SQLAlchemy==2.0.23
+          - SQLAlchemy==2.0.24
