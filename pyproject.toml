@@ -10,7 +10,7 @@ Telethon = "^1.28.5"
 cryptg = "^0.4"
 hachoir = "^3.2.0"
 sqlalchemy = "^2.0.14"
-lxml = "^4.9.2"
+lxml = "^5.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.2"
