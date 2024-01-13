@@ -5,7 +5,7 @@ from ebook_converter_bot.db.base import Base
 
 class Preference(Base):
     __tablename__ = "preferences"
-    id: int = Column(  # noqa: A003
+    id: int = Column(
         INT(), primary_key=True, autoincrement=True, nullable=False
     )
     user_id: int = Column(

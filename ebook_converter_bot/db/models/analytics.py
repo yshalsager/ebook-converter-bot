@@ -5,10 +5,10 @@ from ebook_converter_bot.db.base import Base
 
 class Analytics(Base):
     __tablename__ = "analytics"
-    id: int = Column(  # noqa: A003
+    id: int = Column(
         INT(), primary_key=True, autoincrement=True, nullable=False
     )
-    format: str = Column(VARCHAR(), nullable=False)  # noqa: A003
+    format: str = Column(VARCHAR(), nullable=False)
     input_times: int = Column(INT(), nullable=False, default=0)
     output_times: int = Column(INT(), nullable=False, default=0)
 
