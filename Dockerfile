@@ -1,4 +1,4 @@
-FROM ghcr.io/yshalsager/calibre-with-kfx:20231217-0019
+FROM ghcr.io/yshalsager/calibre-with-kfx:20240114-0019
 
 # Configure Poetry
 ENV POETRY_VERSION=1.6.1
