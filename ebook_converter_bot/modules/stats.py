@@ -1,4 +1,5 @@
 """Bot stats module."""
+
 from telethon import events
 
 from ebook_converter_bot import TG_BOT_ADMINS
