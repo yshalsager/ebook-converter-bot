@@ -1,4 +1,5 @@
 """Bot restart module."""
+
 import json
 from os import execl
 from pathlib import Path

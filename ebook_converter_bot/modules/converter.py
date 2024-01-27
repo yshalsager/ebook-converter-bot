@@ -1,4 +1,5 @@
 """Converter."""
+
 from pathlib import Path
 from random import sample
 from string import digits

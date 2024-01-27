@@ -1,4 +1,5 @@
 """Bot initialization."""
+
 import json
 import logging
 from logging.handlers import TimedRotatingFileHandler

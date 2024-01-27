@@ -1,4 +1,5 @@
 """Bot modules dynamic loader."""
+
 import logging
 
 # This code is adapted from
