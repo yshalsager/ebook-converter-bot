@@ -56,9 +56,7 @@ async def broadcast_handler(event: events.NewMessage.Event) -> None:
     )
     if failed_to_send:
         broadcast_status_message += _(
-            "Failed to broadcast to {} chats, most likely because bot has been stopped or kicked out.".format(
-                failed_to_send
-            ),
+            f"Failed to broadcast to {failed_to_send} chats, most likely because bot has been stopped or kicked out.",
             lang,
         )
     await event.reply("Broadcast done!")
