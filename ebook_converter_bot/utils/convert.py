@@ -108,12 +108,12 @@ class Converter:
     @staticmethod
     async def _run_command(command: str) -> tuple[int | None, str]:
         conversion_error = ""
-        process: Process = await asyncio.create_subprocess_shell(
+        process: Process = await asyncio.create_subprocess_shell(  # noqa: S604
             command,
             stdin=PIPE,
             stdout=PIPE,
             stderr=STDOUT,
-            shell=True,  # noqa: S604
+            shell=True,
             preexec_fn=setsid,
         )
         try:
