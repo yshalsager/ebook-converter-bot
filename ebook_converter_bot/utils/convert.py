@@ -113,7 +113,7 @@ class Converter:
             stdin=PIPE,
             stdout=PIPE,
             stderr=STDOUT,
-            shell=True,  # noqa: S604
+            shell=True,
             preexec_fn=setsid,
         )
         try:
