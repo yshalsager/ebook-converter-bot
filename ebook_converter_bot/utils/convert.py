@@ -165,7 +165,7 @@ class Converter:
             self._kfx_input_convert_command.safe_substitute(input_file=input_file)
         )
 
-    async def convert_ebook(  # noqa: C901, PLR0913
+    async def convert_ebook(  # noqa: C901
         self,
         input_file: Path,
         output_type: str,
