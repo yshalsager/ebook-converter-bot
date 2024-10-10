@@ -41,6 +41,7 @@ class Converter:
         "kpf",
         "lit",
         "lrf",
+        "md",
         "mobi",
         "odt",
         "opf",
