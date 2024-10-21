@@ -1,6 +1,6 @@
 # https://pre-commit.com
 default_install_hook_types: [ commit-msg, pre-commit ]
-default_stages: [ commit, manual ]
+default_stages: [ pre-commit, manual ]
 fail_fast: true
 repos:
   - repo: meta
@@ -43,7 +43,7 @@ repos:
       - id: trailing-whitespace
         types: [ python ]
   - repo: https://github.com/python-poetry/poetry
-    rev: '1.8.4'  # add version here
+    rev: '1.8.0'  # add version here
     hooks:
       - id: poetry-check
 #      - id: poetry-lock
@@ -62,7 +62,7 @@ repos:
       - id: black
         args: [ --config=pyproject.toml ]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.11.2'  # Use the sha / tag you want to point at
+    rev: 'v1.12.1'  # Use the sha / tag you want to point at
     hooks:
       - id: mypy
         args:
