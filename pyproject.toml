@@ -7,7 +7,7 @@ authors = ["yshalsager <ysh-alsager@hotmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.12"
 Telethon = "^1.28.5"
-cryptg = "^0.4"
+cryptg = "^0.5.0"
 hachoir = "^3.2.0"
 sqlalchemy = "^2.0.14"
 lxml = "^5.0.0"
