@@ -28,14 +28,10 @@ async def update_language_callback(event: events.CallbackQuery.Event) -> None:
     """Update language handler."""
     lang = get_lang(event.chat_id)
     buttons = [
-        Button.inline(
-            f"{i['name']} ({i['nativeName']})", data=f"setlanguage_{i['code']}"
-        )
+        Button.inline(f"{i['name']} ({i['nativeName']})", data=f"setlanguage_{i['code']}")
         for i in LOCALES
     ] + [Button.inline(_("Back", lang), data="update_preferences")]
-    await event.edit(
-        _("**Select Bot language**", lang), buttons=[buttons[i::5] for i in range(5)]
-    )
+    await event.edit(_("**Select Bot language**", lang), buttons=[buttons[i::5] for i in range(5)])
 
 
 @BOT.on(events.CallbackQuery(pattern=r"setlanguage_\w+"))
@@ -51,7 +47,5 @@ async def set_language_callback(event: events.CallbackQuery.Event) -> None:
         _("**Language has been set to**: {} ({})", get_lang(event.chat_id)).format(
             language_name, language_native_name
         ),
-        buttons=[
-            Button.inline(_("Back", get_lang(event.chat_id)), data="update_language")
-        ],
+        buttons=[Button.inline(_("Back", get_lang(event.chat_id)), data="update_language")],
     )

@@ -14,9 +14,7 @@ from ebook_converter_bot.utils.convert import Converter
 from ebook_converter_bot.utils.loader import load_modules
 
 LOGGER = logging.getLogger(__name__)
-BOT = TelegramClient("ebook_converter_bot", API_KEY, API_HASH).start(
-    bot_token=BOT_TOKEN
-)
+BOT = TelegramClient("ebook_converter_bot", API_KEY, API_HASH).start(bot_token=BOT_TOKEN)
 BOT.parse_mode = "markdown"
 BOT_INFO = {}
 
@@ -31,9 +29,7 @@ def main() -> None:
 async def run() -> None:
     """Run the bot."""
     bot_info = await BOT.get_me()
-    BOT_INFO.update(
-        {"name": bot_info.first_name, "username": bot_info.username, "id": bot_info.id}
-    )
+    BOT_INFO.update({"name": bot_info.first_name, "username": bot_info.username, "id": bot_info.id})
     LOGGER.info(
         "Bot started as %s! Username is %s and ID is %s",
         BOT_INFO["name"],

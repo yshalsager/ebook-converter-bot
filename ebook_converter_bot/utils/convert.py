@@ -155,9 +155,7 @@ class Converter:
             self._kfx_output_convert_command.safe_substitute(input_file=input_file)
         )
 
-    async def _convert_from_kfx_to_epub(
-        self, input_file: Path
-    ) -> tuple[int | None, str]:
+    async def _convert_from_kfx_to_epub(self, input_file: Path) -> tuple[int | None, str]:
         """Convert a KFX ebook to EPUB
         :param input_file: Pathname of the .azw8, .kfx, .kfx-zip, or .kpf file to be processed
         :return:

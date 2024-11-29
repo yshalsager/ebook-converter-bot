@@ -16,9 +16,7 @@ from ebook_converter_bot.utils.i18n import translate as _
 @BOT.on(events.NewMessage(from_users=TG_BOT_ADMINS, pattern=r"/restart"))
 async def restart(event: events.NewMessage.Event) -> None:
     """Restart the bot."""
-    restart_message = await event.reply(
-        _("Restarting, please wait...", get_lang(event.chat_id))
-    )
+    restart_message = await event.reply(_("Restarting, please wait...", get_lang(event.chat_id)))
     Path("restart.pickle").write_text(
         json.dumps({"chat": restart_message.chat_id, "message": restart_message.id})
     )

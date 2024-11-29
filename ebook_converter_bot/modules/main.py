@@ -26,11 +26,7 @@ async def start(event: events.NewMessage.Event) -> None:
         The bot is open source, you can find the source code of it [here](https://github.com/yshalsager/ebook-converter-bot).\n \
         Developed by: [yshalsager](https://t.me/yshalsager/).",
             get_lang(event.chat_id),
-        ).format(
-            event.chat.first_name
-            if hasattr(event.chat, "first_name")
-            else event.chat.title
-        )
+        ).format(event.chat.first_name if hasattr(event.chat, "first_name") else event.chat.title)
     )
 
 

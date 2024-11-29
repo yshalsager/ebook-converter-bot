@@ -75,21 +75,11 @@ async def file_converter(event: events.NewMessage.Event) -> None:
     if file.name.lower().endswith(".epub"):
         buttons.extend(
             [
-                [
-                    Button.inline(
-                        _("Fix EPUB before converting", lang) + " ❓", data="epub_keep"
-                    )
-                ],
-                [
-                    Button.inline(
-                        _("Flatten EPUB TOC", lang) + " ❓", data="epub_keep_toc"
-                    )
-                ],
+                [Button.inline(_("Fix EPUB before converting", lang) + " ❓", data="epub_keep")],
+                [Button.inline(_("Flatten EPUB TOC", lang) + " ❓", data="epub_keep_toc")],
             ]
         )
-    await reply.edit(
-        _("Select the format you want to convert to:", lang), buttons=buttons
-    )
+    await reply.edit(_("Select the format you want to convert to:", lang), buttons=buttons)
 
 
 @BOT.on(events.CallbackQuery(pattern="rtl_enabled|rtl_disabled"))
@@ -103,13 +93,9 @@ async def rtl_enable_callback(event: events.CallbackQuery.Event) -> None:
         epub_button_row = message.buttons.pop(-1)
     rtl_button_row: list[MessageButton] = message.buttons[5]
     if event.data == b"rtl_disabled":
-        rtl_button_row[0] = Button.inline(
-            _("Force RTL", lang) + " ✅", data="rtl_enabled"
-        )
+        rtl_button_row[0] = Button.inline(_("Force RTL", lang) + " ✅", data="rtl_enabled")
     elif event.data == b"rtl_enabled":
-        rtl_button_row[0] = Button.inline(
-            _("Force RTL", lang) + " ❌", data="rtl_disabled"
-        )
+        rtl_button_row[0] = Button.inline(_("Force RTL", lang) + " ❌", data="rtl_disabled")
     message.buttons[5] = rtl_button_row
     if epub_button_row:
         message.buttons.append(epub_button_row)
@@ -181,9 +167,7 @@ async def converter_callback(
     if not input_file.exists():
         return None
     del queue[random_id]
-    reply = await event.edit(
-        _("Converting the file to {}...", lang).format(output_type)
-    )
+    reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
     output_file, converted_to_rtl, conversion_error = await converter.convert_ebook(
         input_file,
         output_type,
@@ -197,9 +181,7 @@ async def converter_callback(
             message_text += _("Converted to RTL successfully!\n", lang)
         message_text += _("Done! Uploading the converted file...", lang)
         await reply.edit(message_text)
-        await event.client.send_file(
-            event.chat, output_file, reply_to=reply, force_document=True
-        )
+        await event.client.send_file(event.chat, output_file, reply_to=reply, force_document=True)
         converted = True
     else:
         input_file_name = input_file.name

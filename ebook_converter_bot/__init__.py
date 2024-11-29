@@ -20,16 +20,16 @@ TG_BOT_ADMINS = CONFIG["tg_bot_admins"]
 # locale
 LOCALE_PATH = WORK_DIR / "data/locales"
 LANGUAGES = ["ar", "en", "tr"]
-_ = json.loads(
-    Path(WORK_DIR / "data/locales/locales.json").read_text(encoding="utf-8-sig")
-)
+_ = json.loads(Path(WORK_DIR / "data/locales/locales.json").read_text(encoding="utf-8-sig"))
 LOCALES = [_[i] for i in LANGUAGES]
 for code, locale in zip(LANGUAGES, LOCALES, strict=True):
     locale["code"] = code
 
 # Logging
 LOG_FILE = PARENT_DIR / "last_run.log"
-LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s [%(module)s.%(funcName)s:%(lineno)d]: %(message)s"
+LOG_FORMAT = (
+    "%(asctime)s [%(levelname)s] %(name)s [%(module)s.%(funcName)s:%(lineno)d]: %(message)s"
+)
 FORMATTER: logging.Formatter = logging.Formatter(LOG_FORMAT)
 handler = TimedRotatingFileHandler(LOG_FILE, when="d", interval=1, backupCount=3)
 logging.basicConfig(filename=str(LOG_FILE), filemode="w", format=LOG_FORMAT)

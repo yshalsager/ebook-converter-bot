@@ -1,4 +1,4 @@
-from sqlalchemy.sql.functions import sum
+from sqlalchemy.sql.functions import sum as sql_sum
 
 from ebook_converter_bot.db.models.analytics import Analytics
 from ebook_converter_bot.db.models.chat import Chat
@@ -63,9 +63,7 @@ def update_language(user_id: int, language: str) -> None:
 
 def get_lang(user_id: int) -> str:
     language: str = (
-        session.query(Preference.language)
-        .filter(Preference.user_id == user_id)
-        .scalar()
+        session.query(Preference.language).filter(Preference.user_id == user_id).scalar()
     )
     return language or "en"
 
@@ -77,8 +75,8 @@ def get_chats_count() -> tuple[int, int]:
 
 
 def get_usage_count() -> tuple[int, int]:
-    usage_times: int = session.query(sum(Chat.usage_times)).scalar() or 0
-    output_times: int = session.query(sum(Analytics.output_times)).scalar()
+    usage_times: int = session.query(sql_sum(Chat.usage_times)).scalar() or 0
+    output_times: int = session.query(sql_sum(Analytics.output_times)).scalar() or 0
     return usage_times, output_times
 
 

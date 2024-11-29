@@ -31,9 +31,7 @@ def set_epub_to_rtl(input_file: Path) -> bool:
                 )
                 for css_file in css_files:
                     css_content = epub_book.read(css_file)
-                    new_css_content = (
-                        f"* {{direction: rtl !important;}}\n{css_content.decode()}"
-                    )
+                    new_css_content = f"* {{direction: rtl !important;}}\n{css_content.decode()}"
                     with epub_book.open(css_file.filename, "w") as o:
                         o.write(new_css_content.encode())
                 return True
@@ -67,12 +65,8 @@ def fix_content_opf_problems(input_file: Path) -> None:
                 for i in fromstring(new_content.encode(), xml_parser)[1]  # noqa: S320
                 if "Text" in i.get("href")
             ]
-            real_text_contents = [
-                i.split("/")[-1] for i in epub_book.namelist() if "Text" in i
-            ]
-            missing_text_content = list(
-                set(zip_text_contents) - set(real_text_contents)
-            )
+            real_text_contents = [i.split("/")[-1] for i in epub_book.namelist() if "Text" in i]
+            missing_text_content = list(set(zip_text_contents) - set(real_text_contents))
             for item in missing_text_content:
                 new_content = re.sub(f'<item .*{item}".*\n', "", new_content)
         except ParseError:
@@ -126,9 +120,7 @@ def _flatten_html_nav(html_nav_file: bytes) -> bytes:
 def flatten_toc(input_file: Path) -> None:
     with ZipFile(input_file, "a", compression=ZIP_DEFLATED) as epub_book:
         # Flatten toc.ncx
-        toc_files = list(
-            filter(lambda x: x.filename.endswith("toc.ncx"), epub_book.infolist())
-        )
+        toc_files = list(filter(lambda x: x.filename.endswith("toc.ncx"), epub_book.infolist()))
         if not toc_files:
             return
         toc_ncx = toc_files.pop()
