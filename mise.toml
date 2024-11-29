@@ -1,0 +1,6 @@
+[tools]
+python = '3.13'
+uv = 'latest'
+
+[tasks.default]
+run = 'python3 -m ebook_converter_bot'

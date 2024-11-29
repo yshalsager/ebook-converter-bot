@@ -137,6 +137,7 @@ dmypy.json
 cython_debug/
 
 # project files
+.mise.local.toml
 config.json
 *.db
 *.log*

@@ -42,25 +42,12 @@ repos:
         args: [ --pytest-test-first ]
       - id: trailing-whitespace
         types: [ python ]
-  - repo: https://github.com/python-poetry/poetry
-    rev: '1.8.4'  # add version here
-    hooks:
-      - id: poetry-check
-#      - id: poetry-lock
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
-    rev: v0.3.1
-    hooks:
-      - id: absolufy-imports
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: 'v0.7.4'
+    rev: 'v0.8.1'
     hooks:
       - id: ruff
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
-    hooks:
-      - id: black
-        args: [ --config=pyproject.toml ]
+        args: [ --fix, --exit-non-zero-on-fix ]
+      - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.13.0'  # Use the sha / tag you want to point at
     hooks:

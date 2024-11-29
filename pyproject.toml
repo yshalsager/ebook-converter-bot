@@ -1,50 +1,39 @@
-[tool.poetry]
+[project]
 name = "ebook-converter-bot"
 version = "0.1.0"
 description = "A Telegram bot for converting E-books."
-authors = ["yshalsager <ysh-alsager@hotmail.com>"]
+authors = [
+    { name = "yshalsager", email = "contact@yshalsager.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "Telethon>=1.28.5",
+    "cryptg>=0.5.0",
+    "hachoir>=3.2.0",
+    "sqlalchemy>=2.0.14",
+    "lxml>=5.0.0"
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-Telethon = "^1.28.5"
-cryptg = "^0.5.0"
-hachoir = "^3.2.0"
-sqlalchemy = "^2.0.14"
-lxml = "^5.0.0"
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^4.0.0"
-types-toml = "^0.10.8"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
+[dependency-groups]
+dev = [
+    "ruff>=0.8.1",
+    "pre-commit>=4.0.0",
+]
 
 [tool.ruff]  # https://github.com/charliermarsh/ruff
 fix = true
-ignore-init-module-imports = true
 line-length = 100
-select = ["A", "B", "BLE", "C4", "C90", "DTZ", "E", "ERA", "F", "G", "I", "INP", "ISC", "N", "NPY", "PGH", "PIE", "PLC", "PLE", "PLR", "PLW", "PT", "PTH", "PYI", "RET", "RSE", "RUF", "S", "SIM", "T10", "T20", "TID", "UP", "W", "YTT"]
-ignore = ["E501", "PGH001", "RET504", "S101", "D211", "D213", "ERA001", "G004"]
-unfixable = ["ERA001", "F401", "F841", "T201", "T203"]
 src = ["ebook_converter_bot"]
-target-version = "py312"
+target-version = "py313"
 
+[tool.ruff.lint]
+select = ["A", "B", "BLE", "C4", "C90", "DTZ", "E", "ERA", "F", "G", "I", "INP", "ISC", "N", "NPY", "PGH", "PIE", "PLC", "PLE", "PLR", "PLW", "PT", "PTH", "PYI", "RET", "RSE", "RUF", "S", "SIM", "T10", "T20", "TID", "UP", "W", "YTT"]
+ignore = ["E501", "S307", "RET504", "S101", "D211", "D213", "ERA001", "G004", "ISC001"]
+unfixable = ["ERA001", "F401", "F841", "T201", "T203"]
 
-[tool.black]
-include = '(\.pyi?$)'
-exclude = '''
-/(
-    \.git
-  | __pycache__
-  | data/locales
-  | \.venv
-)/
-'''
-
-[tool.isort]
-profile = "black"
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"
 
 [tool.mypy]
 files = ["ebook_converter_bot"]
