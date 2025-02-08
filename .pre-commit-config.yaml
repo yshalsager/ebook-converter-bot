@@ -56,4 +56,4 @@ repos:
           - --install-types
         additional_dependencies:
           - types-toml
-          - SQLAlchemy==2.0.37
+          - SQLAlchemy==2.0.38
