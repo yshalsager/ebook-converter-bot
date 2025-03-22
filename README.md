@@ -16,12 +16,6 @@ It currently supports 34 input formats and 20 output formats.
 
 You can start using it or adding it to your group [here on Telegram](https://t.me/ebook_converter_bot).
 
-## Sponsors
-
-Thanks to JetBrains for providing us with open-source free license!
-
-[![JetBrains Logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://jb.gg/OpenSourceSupport)
-
 ## About the code:
 
 This project is a modular bot, made using Python 3 and the following:
