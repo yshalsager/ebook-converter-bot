@@ -124,9 +124,7 @@ def flatten_toc(input_file: Path) -> None:
         if not toc_files:
             return
         toc_ncx = toc_files.pop()
-        toc_xml: ElementTree = ElementTree(
-            fromstring(epub_book.read(toc_ncx.filename), xml_parser)
-        )
+        toc_xml: ElementTree = ElementTree(fromstring(epub_book.read(toc_ncx.filename), xml_parser))
         root: Element = toc_xml.getroot()
         namespace = root.tag.split("}")[0] + "}"
         nav_map: Element = toc_xml.find(f".//{namespace}navMap")
