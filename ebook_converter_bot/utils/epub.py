@@ -62,7 +62,7 @@ def fix_content_opf_problems(input_file: Path) -> None:
         try:
             zip_text_contents = [
                 i.get("href").split("/")[-1]
-                for i in fromstring(new_content.encode(), xml_parser)[1]  # noqa: S320
+                for i in fromstring(new_content.encode(), xml_parser)[1]
                 if "Text" in i.get("href")
             ]
             real_text_contents = [i.split("/")[-1] for i in epub_book.namelist() if "Text" in i]
@@ -125,7 +125,7 @@ def flatten_toc(input_file: Path) -> None:
             return
         toc_ncx = toc_files.pop()
         toc_xml: ElementTree = ElementTree(
-            fromstring(epub_book.read(toc_ncx.filename), xml_parser)  # noqa: S320
+            fromstring(epub_book.read(toc_ncx.filename), xml_parser)
         )
         root: Element = toc_xml.getroot()
         namespace = root.tag.split("}")[0] + "}"
