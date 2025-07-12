@@ -1,11 +1,11 @@
----
 services:
   ebook_converter_bot:
     container_name: ebook_converter_bot
     build:
       context: ./
       dockerfile: Dockerfile
-    command: bash -c "cd app && python3 -m ebook_converter_bot"
+    working_dir: /app
+    command: uv run -m ebook_converter_bot
     environment:
       - PUID=1000
       - PGID=1000
@@ -13,4 +13,4 @@ services:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     volumes:
-      - "./:/app/app"
+      - "./:/app"
