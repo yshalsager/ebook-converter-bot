@@ -118,7 +118,7 @@ class Converter:
             preexec_fn=setsid,
         )
         try:
-            stdout, stderr = await asyncio.wait_for(
+            stdout, _ = await asyncio.wait_for(
                 process.communicate(), timeout=600
             )  # wait for 10 minutes
             output = "\n".join(
