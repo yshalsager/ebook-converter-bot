@@ -1,0 +1,26 @@
+pre-commit:
+  commands:
+    check-large-files:
+      run: echo {staged_files} | xargs -r ls -l | awk '{if ($5 > 500000) print $9}'
+
+    lint:
+      glob: "*.py"
+      run: uv run ruff check --fix {staged_files}
+      stage_fixed: true
+
+    fmt:
+      glob: "*.py"
+      run: uv run ruff format {staged_files}
+      stage_fixed: true
+
+    mypy:
+      glob: '*.py'
+      run: 'uv run mypy {staged_files} --install-types --non-interactive'
+
+post-merge:
+  parallel: true
+  commands:
+    install-deps:
+      files: git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD
+      glob: uv.lock
+      run: uv sync  --inexact
