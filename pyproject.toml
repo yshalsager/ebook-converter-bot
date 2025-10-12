@@ -25,7 +25,7 @@ dev = [
 fix = true
 line-length = 100
 src = ["ebook_converter_bot"]
-target-version = "py313"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["A", "B", "BLE", "C4", "C90", "DTZ", "E", "ERA", "F", "G", "I", "INP", "ISC", "N", "NPY", "PGH", "PIE", "PLC", "PLE", "PLR", "PLW", "PT", "PTH", "PYI", "RET", "RSE", "RUF", "S", "SIM", "T10", "T20", "TID", "UP", "W", "YTT"]
