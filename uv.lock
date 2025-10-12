@@ -62,7 +62,7 @@ requires-dist = [
     { name = "hachoir", specifier = ">=3.2.0" },
     { name = "lxml", specifier = ">=5.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.14" },
-    { name = "telethon", specifier = ">=1.28.5" },
+    { name = "telethon", specifier = ">=1.41.1" },
 ]
 
 [package.metadata.requires-dev]
