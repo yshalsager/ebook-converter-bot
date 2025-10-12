@@ -5,7 +5,7 @@ import json
 import logging
 from pathlib import Path
 
-from telethon.sync import TelegramClient
+from telethon import TelegramClient
 
 from ebook_converter_bot import API_HASH, API_KEY, BOT_TOKEN
 from ebook_converter_bot.db.curd import generate_analytics_columns
@@ -13,8 +13,13 @@ from ebook_converter_bot.modules import ALL_MODULES
 from ebook_converter_bot.utils.convert import Converter
 from ebook_converter_bot.utils.loader import load_modules
 
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+
 LOGGER = logging.getLogger(__name__)
-BOT = TelegramClient("ebook_converter_bot", API_KEY, API_HASH).start(bot_token=BOT_TOKEN)
+BOT = TelegramClient("ebook_converter_bot", API_KEY, API_HASH, loop=_loop).start(
+    bot_token=BOT_TOKEN
+)
 BOT.parse_mode = "markdown"
 BOT_INFO = {}
 
@@ -22,8 +27,7 @@ BOT_INFO = {}
 def main() -> None:
     """Main."""
     generate_analytics_columns(Converter.get_supported_types())
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run())
+    BOT.loop.run_until_complete(run())
 
 
 async def run() -> None:
