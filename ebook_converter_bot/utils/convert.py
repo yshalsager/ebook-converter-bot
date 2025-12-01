@@ -204,10 +204,13 @@ class Converter:
             _, conversion_error = await self._convert_to_kfx(input_file)
         if output_type in self.supported_output_types:
             if input_type != output_type:
+                command = self._convert_command.safe_substitute(
+                    input_file=input_file, output_file=output_file
+                )
+                if output_type == "docx":
+                    command += " --filter-css margin-left,margin-right"
                 _, conversion_error = await self._run_command(
-                    self._convert_command.safe_substitute(
-                        input_file=input_file, output_file=output_file
-                    )
+                    command
                 )
             if output_type == "epub" and force_rtl:
                 set_to_rtl = set_epub_to_rtl(output_file)
