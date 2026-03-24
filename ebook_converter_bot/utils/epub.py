@@ -7,6 +7,12 @@ from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
 from lxml import etree, html
 
+from ebook_converter_bot.utils.epub_footnotes import (
+    append_to_last_footnote,
+    pop_leading_continuation,
+    update_hamesh_html,
+)
+
 xml_parser = etree.XMLParser(resolve_entities=False)
 page_id_re = re.compile(r"page_(\d+)")
 
@@ -198,6 +204,95 @@ def _needs_cleanup(epub_book: ZipFile, unique_infos: list[ZipInfo], total_infos:
     )
 
 
+def _body_inner_html(body: etree._Element) -> str:
+    parts: list[str] = [body.text or ""]
+    for child in list(body):
+        parts.append(etree.tostring(child, encoding="unicode", with_tail=False))
+        parts.append(child.tail or "")
+    return "".join(parts)
+
+
+def _set_body_inner_html(body: etree._Element, fragment: str) -> bool:
+    try:
+        wrapper = etree.fromstring(
+            f'<wrapper xmlns:epub="http://www.idpf.org/2007/ops">{fragment}</wrapper>',
+            xml_parser,
+        )
+    except etree.ParseError:
+        return False
+
+    for child in list(body):
+        body.remove(child)
+    body.text = wrapper.text
+    for child in list(wrapper):
+        wrapper.remove(child)
+        body.append(child)
+    return True
+
+
+def _resolve_href_to_zip_name(
+    zip_names: set[str], zip_lower_map: dict[str, list[str]], opf_dir: str, href: str
+) -> str | None:
+    fixed_href = _fix_href_case(zip_names, zip_lower_map, opf_dir, href)
+    resolveds, _ = _href_resolveds(opf_dir, fixed_href)
+    for resolved in resolveds:
+        if resolved in zip_names:
+            return resolved
+        candidates = zip_lower_map.get(resolved.lower())
+        if candidates and len(candidates) == 1:
+            return candidates[0]
+    return None
+
+
+def _ordered_xhtml_paths(  # noqa: C901
+    epub_book: ZipFile, content_opf: ZipInfo, root: etree._Element, unique_infos: list[ZipInfo]
+) -> list[str]:
+    namespace = _ns(root)
+    manifest = root.find(f".//{namespace}manifest")
+    spine = root.find(f".//{namespace}spine")
+    if manifest is None or spine is None:
+        return [
+            info.filename
+            for info in unique_infos
+            if info.filename.lower().endswith((".xhtml", ".html", ".htm"))
+        ]
+
+    opf_dir = posixpath.dirname(content_opf.filename)
+    zip_names = set(epub_book.namelist())
+    zip_lower_map: dict[str, list[str]] = {}
+    for name in zip_names:
+        zip_lower_map.setdefault(name.lower(), []).append(name)
+
+    manifest_href_by_id: dict[str, str] = {}
+    for item in [child for child in list(manifest) if child.tag == f"{namespace}item"]:
+        item_id = item.get("id")
+        href = item.get("href")
+        media_type = item.get("media-type", "").lower()
+        if not item_id or not href:
+            continue
+        if media_type and "xhtml" not in media_type and "html" not in media_type:
+            continue
+        manifest_href_by_id[item_id] = href
+
+    ordered: list[str] = []
+    for itemref in [child for child in list(spine) if child.tag == f"{namespace}itemref"]:
+        idref = itemref.get("idref")
+        href = manifest_href_by_id.get(idref or "")
+        if not href:
+            continue
+        resolved = _resolve_href_to_zip_name(zip_names, zip_lower_map, opf_dir, href)
+        if resolved and resolved not in ordered:
+            ordered.append(resolved)
+
+    for info in unique_infos:
+        lower = info.filename.lower()
+        if not lower.endswith((".xhtml", ".html", ".htm")):
+            continue
+        if info.filename not in ordered:
+            ordered.append(info.filename)
+    return ordered
+
+
 def _rewrite_epub_dedup(
     input_file: Path,
     epub_book: ZipFile,
@@ -266,6 +361,89 @@ def set_epub_to_rtl(input_file: Path) -> bool:
             if changed
             else opf_bytes
         )
+        _rewrite_epub_dedup(input_file, epub_book, unique_infos, replacements)
+        return True
+
+
+def standardize_epub_footnotes(input_file: Path) -> bool:  # noqa: C901,PLR0912,PLR0915
+    with ZipFile(input_file, "r") as epub_book:
+        picked = _pick_valid_opf(epub_book)
+        if not picked:
+            return False
+
+        content_opf, _opf_bytes, root = picked
+        infos = epub_book.infolist()
+        unique_infos = _unique_infos(infos)
+        needs_cleanup = _needs_cleanup(epub_book, unique_infos, len(infos))
+
+        ordered_xhtml_paths = _ordered_xhtml_paths(epub_book, content_opf, root, unique_infos)
+        if not ordered_xhtml_paths and not needs_cleanup:
+            return False
+
+        doc_states: list[dict[str, object]] = []
+        for name in ordered_xhtml_paths:
+            old = epub_book.read(name)
+            try:
+                doc_root = etree.fromstring(old, xml_parser)
+            except etree.ParseError:
+                continue
+            namespace = _ns(doc_root)
+            body = doc_root.find(f".//{namespace}body")
+            if body is None:
+                continue
+            original_body = _body_inner_html(body)
+            doc_states.append(
+                {
+                    "name": name,
+                    "old": old,
+                    "root": doc_root,
+                    "body": body,
+                    "original_body": original_body,
+                    "new_body": original_body,
+                }
+            )
+
+        for index, state in enumerate(doc_states):
+            transformed = update_hamesh_html(str(state["new_body"]))
+            stripped, continuation = pop_leading_continuation(transformed)
+            if continuation and index > 0:
+                previous_body = str(doc_states[index - 1]["new_body"])
+                merged_previous, merged = append_to_last_footnote(previous_body, continuation)
+                if merged:
+                    doc_states[index - 1]["new_body"] = merged_previous
+                    transformed = stripped
+            state["new_body"] = transformed
+
+        replacements: dict[str, bytes] = {}
+        for state in doc_states:
+            original_body = str(state["original_body"])
+            new_body = str(state["new_body"])
+            if new_body == original_body:
+                continue
+            body = state["body"]
+            if not isinstance(body, etree._Element):
+                continue
+            if not _set_body_inner_html(body, new_body):
+                continue
+            old_bytes = state["old"]
+            if not isinstance(old_bytes, bytes):
+                continue
+            xml_declaration = old_bytes.lstrip().startswith(b"<?xml")
+            root_elem = state["root"]
+            if not isinstance(root_elem, etree._Element):
+                continue
+            new_content = etree.tostring(
+                root_elem,
+                encoding="utf-8",
+                xml_declaration=xml_declaration,
+            )
+            name = state["name"]
+            if isinstance(name, str) and new_content != old_bytes:
+                replacements[name] = new_content
+
+        if not replacements and not needs_cleanup:
+            return False
+
         _rewrite_epub_dedup(input_file, epub_book, unique_infos, replacements)
         return True
 

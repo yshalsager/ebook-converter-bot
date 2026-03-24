@@ -74,9 +74,10 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
     "docx_no_toc": "docx_no_toc",
     "epub_inline_toc": "epub_inline_toc",
     "epub_remove_background": "epub_remove_background",
+    "epub_standardize_footnotes": "epub_standardize_footnotes",
     "pdf_page_numbers": "pdf_page_numbers",
 }
-EPUB_ONLY_BOOL_OPTIONS: set[str] = {"fix_epub", "flat_toc"}
+EPUB_ONLY_BOOL_OPTIONS: set[str] = {"fix_epub", "flat_toc", "epub_standardize_footnotes"}
 VALUE_OPTION_ATTRS: dict[str, str] = {
     "change_justification": "change_justification",
     "kfx_doc_type": "kfx_doc_type",
@@ -96,6 +97,7 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
 EPUB_EXTRA_BOOL_OPTIONS: tuple[tuple[str, str], ...] = (
     ("fix_epub", "fix_epub_label"),
     ("flat_toc", "flat_toc_label"),
+    ("epub_standardize_footnotes", "epub_standardize_footnotes_label"),
 )
 
 
@@ -119,6 +121,7 @@ class ConversionRequestState:
     epub_version: str = "default"
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
+    epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
     pdf_page_numbers: bool = False
 
@@ -223,6 +226,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.epub_version = "default"
         state.epub_inline_toc = False
         state.epub_remove_background = False
+        state.epub_standardize_footnotes = False
         state.pdf_paper_size = "default"
         state.pdf_page_numbers = False
         return True

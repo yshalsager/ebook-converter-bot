@@ -74,6 +74,7 @@ def options_labels(lang: str) -> dict[str, str]:
         "epub_version_label": _("EPUB version", lang),
         "epub_inline_toc_label": _("EPUB: inline TOC", lang),
         "epub_remove_background_label": _("Remove EPUB background", lang),
+        "epub_standardize_footnotes_label": _("Standardize EPUB footnotes", lang),
         "pdf_paper_size_label": _("PDF paper size", lang),
         "pdf_page_numbers_label": _("PDF: page numbers", lang),
         "kfx_doc_type_label": _("KFX doc type", lang),
@@ -126,6 +127,10 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 _("Remove EPUB background", lang),
             ),
             (
+                state.input_ext == "epub" and getattr(state, "epub_standardize_footnotes", False),
+                _("Standardize EPUB footnotes", lang),
+            ),
+            (
                 state.pdf_paper_size != "default",
                 _("PDF paper size: {}", lang).format(state.pdf_paper_size.upper()),
             ),
@@ -155,6 +160,11 @@ def build_conversion_options(state: ConversionRequestState) -> ConversionOptions
         "epub_version": state.epub_version,
         "epub_inline_toc": state.epub_inline_toc,
         "epub_remove_background": getattr(state, "epub_remove_background", False),
+        "epub_standardize_footnotes": (
+            getattr(state, "epub_standardize_footnotes", False)
+            if state.input_ext == "epub"
+            else False
+        ),
         "pdf_paper_size": state.pdf_paper_size,
         "pdf_page_numbers": state.pdf_page_numbers,
     }

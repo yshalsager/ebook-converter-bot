@@ -26,6 +26,7 @@ LABELS = {
     "epub_version_label": "EPUB version",
     "epub_inline_toc_label": "EPUB: inline TOC",
     "epub_remove_background_label": "Remove EPUB background",
+    "epub_standardize_footnotes_label": "Standardize EPUB footnotes",
     "pdf_paper_size_label": "PDF paper size",
     "pdf_page_numbers_label": "PDF: page numbers",
     "kfx_doc_type_label": "KFX doc type",
@@ -86,6 +87,7 @@ def test_options_keyboard_context_tabs_and_docx_controls() -> None:
     assert b"opt|kfx_doc_type|doc|12345678" not in data
     assert b"opt|fix_epub|1|12345678" in data
     assert b"opt|flat_toc|1|12345678" in data
+    assert b"opt|epub_standardize_footnotes|1|12345678" in data
     assert [button.data for button in rows[-2]] == [b"opt|reset|1|12345678"]
     assert [button.data for button in rows[-1]] == [
         b"view|formats|12345678",
@@ -167,6 +169,8 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.epub_version == "3"
     assert set_request_option(state, "epub_remove_background", "1") is True
     assert state.epub_remove_background is True
+    assert set_request_option(state, "epub_standardize_footnotes", "1") is True
+    assert state.epub_standardize_footnotes is True
     assert state.pdf_paper_size == "default"
 
     assert set_request_option(state, "pdf_paper_size", "letter") is True
@@ -212,6 +216,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         epub_version="3",
         epub_inline_toc=True,
         epub_remove_background=True,
+        epub_standardize_footnotes=True,
         pdf_paper_size="letter",
         pdf_page_numbers=True,
     )
@@ -231,6 +236,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.epub_version == "default"
     assert state.epub_inline_toc is False
     assert state.epub_remove_background is False
+    assert state.epub_standardize_footnotes is False
     assert state.pdf_paper_size == "default"
     assert state.pdf_page_numbers is False
 
@@ -243,6 +249,7 @@ def test_set_request_option_rejects_epub_only_flags_for_non_epub() -> None:
     )
     assert set_request_option(state, "fix_epub", "1") is False
     assert set_request_option(state, "flat_toc", "1") is False
+    assert set_request_option(state, "epub_standardize_footnotes", "1") is False
 
 
 def test_cleanup_expired_requests_removes_stale_state_and_file(tmp_path: Path) -> None:

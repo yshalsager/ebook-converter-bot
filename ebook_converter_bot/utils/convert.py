@@ -13,6 +13,7 @@ from ebook_converter_bot.utils.epub import (
     fix_content_opf_problems,
     flatten_toc,
     set_epub_to_rtl,
+    standardize_epub_footnotes,
 )
 from ebook_converter_bot.utils.pdf import pdf_to_htmlz
 
@@ -37,6 +38,7 @@ class ConversionOptions:
     epub_version: str = "default"
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
+    epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
     pdf_page_numbers: bool = False
 
@@ -299,6 +301,8 @@ class Converter:
             fix_content_opf_problems(input_file)
         if options.flat_toc:
             flatten_toc(input_file)
+        if options.epub_standardize_footnotes:
+            standardize_epub_footnotes(input_file)
         return set_to_rtl
 
     async def _convert_from_kfx_input(

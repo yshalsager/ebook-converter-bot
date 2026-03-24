@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 
+import ebook_converter_bot.utils.convert as convert_utils
 from ebook_converter_bot.utils.convert import TASK_TIMEOUT, ConversionOptions, Converter
 
 
@@ -229,3 +230,21 @@ def test_convert_ebook_passes_timeout_to_bok_flow(tmp_path: Path) -> None:
         assert captured_timeouts == [TASK_TIMEOUT, None]
 
     asyncio.run(run())
+
+
+def test_preprocess_input_epub_runs_footnote_standardization(tmp_path: Path) -> None:
+    input_file = tmp_path / "book.epub"
+    input_file.write_text("hello")
+    called: list[Path] = []
+
+    original = convert_utils.standardize_epub_footnotes
+    convert_utils.standardize_epub_footnotes = lambda path: called.append(path) or True
+    try:
+        Converter._preprocess_input_epub(
+            input_file,
+            ConversionOptions(epub_standardize_footnotes=True),
+        )
+    finally:
+        convert_utils.standardize_epub_footnotes = original
+
+    assert called == [input_file]

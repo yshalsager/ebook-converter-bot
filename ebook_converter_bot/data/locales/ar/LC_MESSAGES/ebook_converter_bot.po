@@ -108,6 +108,11 @@ msgid "Remove EPUB background"
 msgstr "إزالة خلفية EPUB"
 
 #: ebook_converter_bot/modules/converter.py:74
+#: ebook_converter_bot/modules/converter.py:123
+msgid "Standardize EPUB footnotes"
+msgstr "توحيد هوامش EPUB"
+
+#: ebook_converter_bot/modules/converter.py:74
 msgid "PDF paper size"
 msgstr "حجم ورق PDF"
 
