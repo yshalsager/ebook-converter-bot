@@ -49,6 +49,14 @@ Some more features of the bot:
 - Multilingual support, you can contribute and add your own languages if you want :).
 - Flatten book's table of contents.
 - Convert Shamela old `.bok` files by first generating an EPUB in Python then using the existing calibre pipeline for other outputs.
+- Interactive conversion options before selecting output format.
+- Global output options: cover compression, smart punctuation, text justification, and paragraph spacing cleanup.
+- DOCX options: page size and generated TOC toggle.
+- EPUB output options: version selection, inline TOC, and background removal.
+- PDF options: paper size and page numbers.
+- KFX options: PDOC/EBOK type and pages mode.
+- EPUB input preprocessing options: fix EPUB metadata/spine issues, flatten TOC, and standardize footnotes.
+- EPUB-to-EPUB volume splitting with per-volume output processing (up to 35 split files).
 
 ## Usage
 
