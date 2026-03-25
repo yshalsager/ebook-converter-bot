@@ -13,7 +13,12 @@ from ebook_converter_bot import TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
 from ebook_converter_bot.db.curd import get_lang
 from ebook_converter_bot.utils.analytics import analysis
-from ebook_converter_bot.utils.convert import TASK_TIMEOUT, ConversionOptions, Converter
+from ebook_converter_bot.utils.convert import (
+    MAX_SPLIT_OUTPUT_FILES,
+    TASK_TIMEOUT,
+    ConversionOptions,
+    Converter,
+)
 from ebook_converter_bot.utils.converter_options import (
     CONTEXT_TYPES,
     ConversionRequestState,
@@ -74,6 +79,7 @@ def options_labels(lang: str) -> dict[str, str]:
         "epub_version_label": _("EPUB version", lang),
         "epub_inline_toc_label": _("EPUB: inline TOC", lang),
         "epub_remove_background_label": _("Remove EPUB background", lang),
+        "epub_split_volumes_label": _("Split EPUB volumes", lang),
         "epub_standardize_footnotes_label": _("Standardize EPUB footnotes", lang),
         "pdf_paper_size_label": _("PDF paper size", lang),
         "pdf_page_numbers_label": _("PDF: page numbers", lang),
@@ -127,6 +133,10 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 _("Remove EPUB background", lang),
             ),
             (
+                state.input_ext == "epub" and getattr(state, "epub_split_volumes", False),
+                _("Split EPUB volumes", lang),
+            ),
+            (
                 state.input_ext == "epub" and getattr(state, "epub_standardize_footnotes", False),
                 _("Standardize EPUB footnotes", lang),
             ),
@@ -145,11 +155,12 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
 
 def build_conversion_options(state: ConversionRequestState) -> ConversionOptions:
     options = ConversionOptions()
+    is_epub_input = state.input_ext == "epub"
     option_values = {
         "force_rtl": state.force_rtl,
         "compress_cover": state.compress_cover,
-        "fix_epub": state.fix_epub if state.input_ext == "epub" else False,
-        "flat_toc": state.flat_toc if state.input_ext == "epub" else False,
+        "fix_epub": state.fix_epub if is_epub_input else False,
+        "flat_toc": state.flat_toc if is_epub_input else False,
         "smarten_punctuation": state.smarten_punctuation,
         "change_justification": state.change_justification,
         "remove_paragraph_spacing": state.remove_paragraph_spacing,
@@ -160,10 +171,11 @@ def build_conversion_options(state: ConversionRequestState) -> ConversionOptions
         "epub_version": state.epub_version,
         "epub_inline_toc": state.epub_inline_toc,
         "epub_remove_background": getattr(state, "epub_remove_background", False),
+        "epub_split_volumes": getattr(state, "epub_split_volumes", False)
+        if is_epub_input
+        else False,
         "epub_standardize_footnotes": (
-            getattr(state, "epub_standardize_footnotes", False)
-            if state.input_ext == "epub"
-            else False
+            getattr(state, "epub_standardize_footnotes", False) if is_epub_input else False
         ),
         "pdf_paper_size": state.pdf_paper_size,
         "pdf_page_numbers": state.pdf_page_numbers,
@@ -355,30 +367,44 @@ async def converter_callback(
     reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
     input_file = Path(state.input_file_path)
     options = build_conversion_options(state)
-    output_file, converted_to_rtl, conversion_error = await converter.convert_ebook(
+    batch_result = await converter.convert_ebook_many(
         input_file,
         output_type,
         options=options,
         timeout=None if event.sender_id in BOT_ADMIN_IDS else TASK_TIMEOUT,
     )
-    if output_file.exists():
-        message_text = ""
-        if state.force_rtl and converted_to_rtl:
-            message_text += _("Converted to RTL successfully!\n", lang)
-        message_text += _("Done! Uploading the converted file...", lang)
+    output_files = [file_path for file_path in batch_result.output_files if file_path.exists()]
+    if batch_result.split_capped:
+        message_text = _("Split produced {} files, maximum allowed is {}.", lang).format(
+            batch_result.split_count, MAX_SPLIT_OUTPUT_FILES
+        )
         await reply.edit(message_text)
-        await event.client.send_file(event.chat, output_file, reply_to=reply, force_document=True)
+    elif output_files:
+        message_text = ""
+        if state.force_rtl and batch_result.converted_to_rtl:
+            message_text += _("Converted to RTL successfully!\n", lang)
+        message_text += (
+            _("Done! Uploading the converted files...", lang)
+            if len(output_files) > 1
+            else _("Done! Uploading the converted file...", lang)
+        )
+        await reply.edit(message_text)
+        for output_file in output_files:
+            await event.client.send_file(
+                event.chat, output_file, reply_to=reply, force_document=True
+            )
         converted = True
     else:
         input_file_name = input_file.name
         error_message = _("Failed to convert the file (`{}`) to {} :(", lang).format(
             input_file_name, output_type
         )
-        if conversion_error:
-            error_message += f"\n\n`{conversion_error}`"
+        if batch_result.conversion_error:
+            error_message += f"\n\n`{batch_result.conversion_error}`"
         await reply.edit(error_message)
     input_file.unlink(missing_ok=True)
-    output_file.unlink(missing_ok=True)
+    for output_file in batch_result.output_files:
+        output_file.unlink(missing_ok=True)
     if converted:
         return state.input_ext, output_type
     return None

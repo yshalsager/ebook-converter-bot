@@ -2,7 +2,51 @@ import asyncio
 from pathlib import Path
 
 import ebook_converter_bot.utils.convert as convert_utils
-from ebook_converter_bot.utils.convert import TASK_TIMEOUT, ConversionOptions, Converter
+import pytest
+from ebook_converter_bot.utils.convert import (
+    MAX_SPLIT_OUTPUT_FILES,
+    TASK_TIMEOUT,
+    ConversionOptions,
+    Converter,
+)
+
+EXPECTED_SPLIT_OUTPUTS = 2
+OPTION_CASES = [
+    {
+        "output_type": "docx",
+        "options": ConversionOptions(
+            smarten_punctuation=True,
+            change_justification="left",
+            remove_paragraph_spacing=True,
+            docx_page_size="a4",
+            docx_no_toc=True,
+        ),
+        "expected_flags": ["--smarten-punctuation", "--remove-paragraph-spacing", "--docx-no-toc"],
+        "expected_pairs": [("--change-justification", "left"), ("--docx-page-size", "a4")],
+    },
+    {
+        "output_type": "epub",
+        "options": ConversionOptions(
+            epub_version="3",
+            epub_inline_toc=True,
+            epub_remove_background=True,
+        ),
+        "expected_flags": ["--epub-inline-toc"],
+        "expected_pairs": [
+            ("--epub-version", "3"),
+            ("--filter-css", "background,background-color,background-image"),
+        ],
+    },
+    {
+        "output_type": "pdf",
+        "options": ConversionOptions(
+            pdf_paper_size="a4",
+            pdf_page_numbers=True,
+        ),
+        "expected_flags": ["--pdf-page-numbers"],
+        "expected_pairs": [("--paper-size", "a4")],
+    },
+]
 
 
 def _capture_commands(converter: Converter) -> list[list[str]]:
@@ -26,81 +70,38 @@ def _contains_flag_pair(command: list[str], flag: str, value: str) -> bool:
     return index + 1 < len(command) and command[index + 1] == value
 
 
-def test_docx_options_are_applied_only_when_changed(tmp_path: Path) -> None:
+@pytest.fixture
+def converter_with_commands() -> tuple[Converter, list[list[str]]]:
+    converter = Converter()
+    return converter, _capture_commands(converter)
+
+
+@pytest.mark.parametrize(
+    "case",
+    OPTION_CASES,
+    ids=["docx", "epub", "pdf"],
+)
+def test_output_options_are_applied_only_when_changed(
+    tmp_path: Path,
+    converter_with_commands: tuple[Converter, list[list[str]]],
+    case: dict[str, ConversionOptions | list[str] | list[tuple[str, str]] | str],
+) -> None:
     async def run() -> None:
-        converter = Converter()
-        commands = _capture_commands(converter)
+        converter, commands = converter_with_commands
         input_file = tmp_path / "book.txt"
         input_file.write_text("hello")
 
-        await converter.convert_ebook(
+        await converter.convert_ebook_many(
             input_file,
-            "docx",
-            options=ConversionOptions(
-                smarten_punctuation=True,
-                change_justification="left",
-                remove_paragraph_spacing=True,
-                docx_page_size="a4",
-                docx_no_toc=True,
-            ),
+            str(case["output_type"]),
+            options=case["options"],
         )
 
         command = commands[0]
-        assert "--smarten-punctuation" in command
-        assert "--remove-paragraph-spacing" in command
-        assert _contains_flag_pair(command, "--change-justification", "left")
-        assert _contains_flag_pair(command, "--docx-page-size", "a4")
-        assert "--docx-no-toc" in command
-
-    asyncio.run(run())
-
-
-def test_epub_options_are_applied_only_when_changed(tmp_path: Path) -> None:
-    async def run() -> None:
-        converter = Converter()
-        commands = _capture_commands(converter)
-        input_file = tmp_path / "book.txt"
-        input_file.write_text("hello")
-
-        await converter.convert_ebook(
-            input_file,
-            "epub",
-            options=ConversionOptions(
-                epub_version="3",
-                epub_inline_toc=True,
-                epub_remove_background=True,
-            ),
-        )
-
-        command = commands[0]
-        assert _contains_flag_pair(command, "--epub-version", "3")
-        assert "--epub-inline-toc" in command
-        assert _contains_flag_pair(
-            command, "--filter-css", "background,background-color,background-image"
-        )
-
-    asyncio.run(run())
-
-
-def test_pdf_options_are_applied_only_when_changed(tmp_path: Path) -> None:
-    async def run() -> None:
-        converter = Converter()
-        commands = _capture_commands(converter)
-        input_file = tmp_path / "book.txt"
-        input_file.write_text("hello")
-
-        await converter.convert_ebook(
-            input_file,
-            "pdf",
-            options=ConversionOptions(
-                pdf_paper_size="a4",
-                pdf_page_numbers=True,
-            ),
-        )
-
-        command = commands[0]
-        assert _contains_flag_pair(command, "--paper-size", "a4")
-        assert "--pdf-page-numbers" in command
+        for flag in case["expected_flags"]:
+            assert flag in command
+        for flag, value in case["expected_pairs"]:
+            assert _contains_flag_pair(command, flag, value)
 
     asyncio.run(run())
 
@@ -112,7 +113,7 @@ def test_format_specific_flags_do_not_leak_to_other_outputs(tmp_path: Path) -> N
         input_file = tmp_path / "book.txt"
         input_file.write_text("hello")
 
-        await converter.convert_ebook(
+        await converter.convert_ebook_many(
             input_file,
             "fb2",
             options=ConversionOptions(
@@ -145,7 +146,7 @@ def test_epub_remove_background_applies_for_epub_input_to_epub_output(tmp_path: 
         input_file = tmp_path / "book.epub"
         input_file.write_text("hello")
 
-        await converter.convert_ebook(
+        await converter.convert_ebook_many(
             input_file,
             "epub",
             options=ConversionOptions(epub_remove_background=True),
@@ -171,7 +172,7 @@ def test_compress_cover_runs_ebook_polish_for_supported_outputs(tmp_path: Path) 
         output_file = input_file.with_suffix(".epub")
         output_file.write_text("converted")
 
-        await converter.convert_ebook(
+        await converter.convert_ebook_many(
             input_file,
             "epub",
             options=ConversionOptions(compress_cover=True),
@@ -198,8 +199,8 @@ def test_convert_ebook_passes_timeout_to_run_command(tmp_path: Path) -> None:
         input_file = tmp_path / "book.txt"
         input_file.write_text("hello")
 
-        await converter.convert_ebook(input_file, "epub")
-        await converter.convert_ebook(input_file, "epub", timeout=None)
+        await converter.convert_ebook_many(input_file, "epub")
+        await converter.convert_ebook_many(input_file, "epub", timeout=None)
 
         assert timeouts == [TASK_TIMEOUT, None]
 
@@ -224,8 +225,8 @@ def test_convert_ebook_passes_timeout_to_bok_flow(tmp_path: Path) -> None:
         input_file = tmp_path / "book.bok"
         input_file.write_text("hello")
 
-        await converter.convert_ebook(input_file, "epub")
-        await converter.convert_ebook(input_file, "epub", timeout=None)
+        await converter.convert_ebook_many(input_file, "epub")
+        await converter.convert_ebook_many(input_file, "epub", timeout=None)
 
         assert captured_timeouts == [TASK_TIMEOUT, None]
 
@@ -248,3 +249,238 @@ def test_preprocess_input_epub_runs_footnote_standardization(tmp_path: Path) -> 
         convert_utils.standardize_epub_footnotes = original
 
     assert called == [input_file]
+
+
+def test_convert_ebook_many_split_capped_cleans_outputs(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        input_file = tmp_path / "book.epub"
+        input_file.write_text("input")
+        created_files: list[Path] = []
+
+        def fake_split(_input_file: Path, _out_dir: Path) -> list[Path]:
+            for index in range(MAX_SPLIT_OUTPUT_FILES + 1):
+                output_file = tmp_path / f"part-{index}.epub"
+                output_file.write_text("split")
+                created_files.append(output_file)
+            return created_files
+
+        original_split = convert_utils.split_epub_by_volumes
+        convert_utils.split_epub_by_volumes = fake_split
+        try:
+            result = await converter.convert_ebook_many(
+                input_file,
+                "epub",
+                options=ConversionOptions(epub_split_volumes=True),
+            )
+        finally:
+            convert_utils.split_epub_by_volumes = original_split
+
+        assert result.split_capped is True
+        assert result.split_count == MAX_SPLIT_OUTPUT_FILES + 1
+        assert result.output_files == []
+        assert all(not path.exists() for path in created_files)
+
+    asyncio.run(run())
+
+
+def test_convert_ebook_many_split_applies_volume_output_flags(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        input_file = tmp_path / "book.epub"
+        input_file.write_text("input")
+
+        split_outputs = [tmp_path / "part-1.epub", tmp_path / "part-2.epub"]
+        for path in split_outputs:
+            path.write_text("split")
+
+        converted_options: list[ConversionOptions] = []
+        compressed: list[Path] = []
+        rtl_applied: list[Path] = []
+        preprocess_calls: list[Path] = []
+
+        original_split = convert_utils.split_epub_by_volumes
+        original_rtl = convert_utils.set_epub_to_rtl
+
+        async def fake_convert_non_bok(
+            input_volume: Path,
+            output_type: str,
+            options: ConversionOptions,
+            timeout: int | None = TASK_TIMEOUT,
+        ) -> tuple[Path, bool | None, str]:
+            converted_options.append(options)
+            rebuilt = input_volume.with_name(f"{input_volume.stem}_.epub")
+            rebuilt.write_text("rebuilt")
+            return rebuilt, None, ""
+
+        async def fake_compress(
+            output_file: Path,
+            output_type: str,
+            timeout: int | None = TASK_TIMEOUT,
+        ) -> str:
+            compressed.append(output_file)
+            return ""
+
+        convert_utils.split_epub_by_volumes = lambda _input_file, _out_dir: split_outputs.copy()
+        convert_utils.set_epub_to_rtl = lambda path: rtl_applied.append(path) or True
+        converter._convert_non_bok = fake_convert_non_bok  # type: ignore[method-assign]
+        converter._compress_cover = fake_compress  # type: ignore[method-assign]
+        converter._preprocess_input_epub = (  # type: ignore[method-assign]
+            lambda path, _options: preprocess_calls.append(path) or True
+        )
+        try:
+            result = await converter.convert_ebook_many(
+                input_file,
+                "epub",
+                options=ConversionOptions(
+                    epub_split_volumes=True,
+                    epub_version="3",
+                    compress_cover=True,
+                    force_rtl=True,
+                    fix_epub=True,
+                    flat_toc=True,
+                    epub_standardize_footnotes=True,
+                ),
+            )
+        finally:
+            convert_utils.split_epub_by_volumes = original_split
+            convert_utils.set_epub_to_rtl = original_rtl
+
+        assert preprocess_calls == [input_file]
+        assert result.split_capped is False
+        assert len(result.output_files) == EXPECTED_SPLIT_OUTPUTS
+        assert all(path.exists() for path in result.output_files)
+        assert compressed == result.output_files
+        assert rtl_applied == result.output_files
+        assert len(converted_options) == EXPECTED_SPLIT_OUTPUTS
+        assert all(option.epub_split_volumes is False for option in converted_options)
+        assert all(option.fix_epub is False for option in converted_options)
+        assert all(option.flat_toc is False for option in converted_options)
+        assert all(option.epub_standardize_footnotes is False for option in converted_options)
+        assert all(option.epub_version == "3" for option in converted_options)
+
+        for path in result.output_files:
+            path.unlink(missing_ok=True)
+
+    asyncio.run(run())
+
+
+def test_convert_ebook_many_split_returns_empty_when_unsplittable(
+    tmp_path: Path,
+) -> None:
+    async def run() -> None:
+        converter = Converter()
+        input_file = tmp_path / "book.epub"
+        input_file.write_text("input")
+        called: list[tuple[Path, str]] = []
+        preprocess_calls: list[Path] = []
+
+        original_split = convert_utils.split_epub_by_volumes
+
+        async def fake_convert_non_bok(
+            source_file: Path,
+            output_type: str,
+            options: ConversionOptions,
+            timeout: int | None = TASK_TIMEOUT,
+        ) -> tuple[Path, bool | None, str]:
+            called.append((source_file, output_type))
+            output_file = source_file.with_name("book_.epub")
+            output_file.write_text("out")
+            return output_file, None, ""
+
+        convert_utils.split_epub_by_volumes = lambda _input_file, _out_dir: []
+        converter._convert_non_bok = fake_convert_non_bok  # type: ignore[method-assign]
+        converter._preprocess_input_epub = (  # type: ignore[method-assign]
+            lambda path, _options: preprocess_calls.append(path) or True
+        )
+        try:
+            result = await converter.convert_ebook_many(
+                input_file,
+                "epub",
+                options=ConversionOptions(epub_split_volumes=True),
+            )
+        finally:
+            convert_utils.split_epub_by_volumes = original_split
+
+        assert called == []
+        assert preprocess_calls == [input_file]
+        assert result.output_files == []
+        assert result.conversion_error == ""
+        assert result.converted_to_rtl is True
+
+    asyncio.run(run())
+
+
+def test_convert_ebook_many_split_preprocess_ignores_flat_toc(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        input_file = tmp_path / "book.epub"
+        input_file.write_text("input")
+        preprocess_options: list[ConversionOptions] = []
+
+        original_split = convert_utils.split_epub_by_volumes
+
+        convert_utils.split_epub_by_volumes = lambda _input_file, _out_dir: []
+        converter._preprocess_input_epub = (  # type: ignore[method-assign]
+            lambda _path, options: preprocess_options.append(options) or None
+        )
+        requested_options = ConversionOptions(
+            epub_split_volumes=True,
+            flat_toc=True,
+            fix_epub=True,
+        )
+        try:
+            result = await converter.convert_ebook_many(
+                input_file,
+                "epub",
+                options=requested_options,
+            )
+        finally:
+            convert_utils.split_epub_by_volumes = original_split
+
+        assert result.output_files == []
+        assert len(preprocess_options) == 1
+        assert preprocess_options[0].flat_toc is False
+        assert preprocess_options[0].fix_epub is True
+        assert requested_options.flat_toc is True
+
+    asyncio.run(run())
+
+
+def test_convert_ebook_many_split_missing_rebuild_output_fails_and_cleans(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        input_file = tmp_path / "book.epub"
+        input_file.write_text("input")
+
+        split_output = tmp_path / "part-1.epub"
+        split_output.write_text("split")
+
+        original_split = convert_utils.split_epub_by_volumes
+
+        async def fake_convert_non_bok(
+            source_file: Path,
+            output_type: str,
+            options: ConversionOptions,
+            timeout: int | None = TASK_TIMEOUT,
+        ) -> tuple[Path, bool | None, str]:
+            assert source_file == split_output
+            assert output_type == "epub"
+            return source_file.with_name("missing_.epub"), None, ""
+
+        convert_utils.split_epub_by_volumes = lambda _input_file, _out_dir: [split_output]
+        converter._convert_non_bok = fake_convert_non_bok  # type: ignore[method-assign]
+        try:
+            result = await converter.convert_ebook_many(
+                input_file,
+                "epub",
+                options=ConversionOptions(epub_split_volumes=True),
+            )
+        finally:
+            convert_utils.split_epub_by_volumes = original_split
+
+        assert result.output_files == []
+        assert "Failed to rebuild split volume: part-1.epub" in result.conversion_error
+        assert split_output.exists() is False
+
+    asyncio.run(run())

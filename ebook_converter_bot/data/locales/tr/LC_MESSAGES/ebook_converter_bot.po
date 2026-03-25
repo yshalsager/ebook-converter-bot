@@ -108,6 +108,11 @@ msgid "Remove EPUB background"
 msgstr "EPUB arka planını kaldır"
 
 #: ebook_converter_bot/modules/converter.py:74
+#: ebook_converter_bot/modules/converter.py:122
+msgid "Split EPUB volumes"
+msgstr "EPUB ciltlerini böl"
+
+#: ebook_converter_bot/modules/converter.py:75
 #: ebook_converter_bot/modules/converter.py:123
 msgid "Standardize EPUB footnotes"
 msgstr "EPUB dipnotlarını standartlaştır"
@@ -238,6 +243,11 @@ msgstr "Dosya indirilemedi. Lütfen tekrar gönderin."
 msgid "This option is not available in this context."
 msgstr "Bu seçenek bu bağlamda kullanılamaz."
 
+#: ebook_converter_bot/modules/converter.py:364
+#, python-brace-format
+msgid "Split produced {} files, maximum allowed is {}."
+msgstr "Bölme işlemi {} dosya üretti, izin verilen en yüksek sayı {}."
+
 #: ebook_converter_bot/modules/converter.py:297
 msgid "Conversion request canceled."
 msgstr "Dönüştürme isteği iptal edildi."
@@ -254,6 +264,10 @@ msgstr "RTL'ye başarıyla dönüştürüldü!\n"
 #: ebook_converter_bot/modules/converter.py:341
 msgid "Done! Uploading the converted file..."
 msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
+
+#: ebook_converter_bot/modules/converter.py:341
+msgid "Done! Uploading the converted files..."
+msgstr "İşlem tamamlandı! Dönüştürülen dosyalar yükleniyor..."
 
 #: ebook_converter_bot/modules/converter.py:347
 #, python-brace-format

@@ -15,11 +15,13 @@ from ebook_converter_bot.utils.epub import (
     set_epub_to_rtl,
     standardize_epub_footnotes,
 )
+from ebook_converter_bot.utils.epub_split import split_epub_by_volumes
 from ebook_converter_bot.utils.pdf import pdf_to_htmlz
 
 logger = logging.getLogger(__name__)
 
 TASK_TIMEOUT = 600  # 10 min
+MAX_SPLIT_OUTPUT_FILES = 35
 
 
 @dataclass
@@ -38,9 +40,19 @@ class ConversionOptions:
     epub_version: str = "default"
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
+    epub_split_volumes: bool = False
     epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
     pdf_page_numbers: bool = False
+
+
+@dataclass
+class ConversionBatchResult:
+    output_files: list[Path]
+    converted_to_rtl: bool | None
+    conversion_error: str = ""
+    split_capped: bool = False
+    split_count: int = 0
 
 
 class Converter:
@@ -415,6 +427,7 @@ class Converter:
                     epub_version="default",
                     epub_inline_toc=False,
                     epub_remove_background=False,
+                    epub_split_volumes=False,
                     pdf_paper_size="default",
                     pdf_page_numbers=False,
                 )
@@ -435,31 +448,115 @@ class Converter:
         finally:
             htmlz_file.unlink(missing_ok=True)
 
-    async def convert_ebook(
+    @staticmethod
+    def _cleanup_files(paths: list[Path]) -> None:
+        for path in paths:
+            path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _merge_errors(*errors: str) -> str:
+        return "\n".join([error for error in errors if error]).strip()
+
+    async def _convert_epub_split_volumes(
+        self,
+        input_file: Path,
+        options: ConversionOptions,
+        timeout: int | None = TASK_TIMEOUT,
+    ) -> ConversionBatchResult:
+        preprocess_options = replace(options, flat_toc=False)
+        set_to_rtl = self._preprocess_input_epub(input_file, preprocess_options)
+        split_files = split_epub_by_volumes(input_file, input_file.parent)
+        if not split_files:
+            return ConversionBatchResult([], set_to_rtl)
+
+        if len(split_files) > MAX_SPLIT_OUTPUT_FILES:
+            self._cleanup_files(split_files)
+            return ConversionBatchResult(
+                [],
+                set_to_rtl,
+                split_capped=True,
+                split_count=len(split_files),
+            )
+
+        volume_options = replace(
+            options,
+            force_rtl=False,
+            fix_epub=False,
+            flat_toc=False,
+            epub_standardize_footnotes=False,
+            epub_split_volumes=False,
+            compress_cover=False,
+        )
+        output_files: list[Path] = []
+        generated_files: set[Path] = set(split_files)
+        conversion_errors: list[str] = []
+        for split_file in split_files:
+            output_file, _converted_to_rtl, volume_error = await self._convert_non_bok(
+                split_file, "epub", volume_options, timeout=timeout
+            )
+            if output_file != split_file:
+                generated_files.add(output_file)
+                if not output_file.exists():
+                    conversion_errors.append(
+                        self._merge_errors(
+                            volume_error,
+                            f"Failed to rebuild split volume: {split_file.name}",
+                        )
+                    )
+                    output_files.append(split_file)
+                    continue
+                split_file.unlink(missing_ok=True)
+                output_file.replace(split_file)
+                generated_files.discard(output_file)
+
+            if options.force_rtl and split_file.exists():
+                set_epub_to_rtl(split_file)
+            postprocess_error = (
+                await self._compress_cover(split_file, "epub", timeout=timeout)
+                if options.compress_cover
+                else ""
+            )
+            if merged_error := self._merge_errors(volume_error, postprocess_error):
+                conversion_errors.append(merged_error)
+
+            output_files.append(split_file)
+
+        if conversion_errors:
+            self._cleanup_files(list(generated_files.union(output_files)))
+            return ConversionBatchResult([], set_to_rtl, "\n".join(conversion_errors))
+
+        return ConversionBatchResult(output_files, set_to_rtl)
+
+    async def convert_ebook_many(
         self,
         input_file: Path,
         output_type: str,
         options: ConversionOptions | None = None,
         timeout: int | None = TASK_TIMEOUT,
-    ) -> tuple[Path, bool | None, str]:
+    ) -> ConversionBatchResult:
         options = options or ConversionOptions()
         input_type = input_file.suffix.lower()[1:]
-        if input_type == "bok":
-            output_file, converted_to_rtl, conversion_error = await self._convert_from_bok(
-                input_file, output_type, options, timeout=timeout
-            )
-        elif input_type == "pdf":
-            output_file, converted_to_rtl, conversion_error = await self._convert_from_pdf(
+        converted_to_rtl: bool | None = None
+
+        if input_type == "epub" and output_type == "epub" and options.epub_split_volumes:
+            return await self._convert_epub_split_volumes(input_file, options, timeout=timeout)
+        if input_type in {"bok", "pdf"}:
+            convert_fn = self._convert_from_bok if input_type == "bok" else self._convert_from_pdf
+            output_file, converted_to_rtl, conversion_error = await convert_fn(
                 input_file, output_type, options, timeout=timeout
             )
         else:
             output_file, converted_to_rtl, conversion_error = await self._convert_non_bok(
-                input_file, output_type, options, timeout=timeout
+                input_file,
+                output_type,
+                options,
+                timeout=timeout,
             )
+
+        output_files = [output_file]
         if options.compress_cover:
             compression_error = await self._compress_cover(
                 output_file, output_type, timeout=timeout
             )
-            if compression_error:
-                conversion_error = f"{conversion_error}\n{compression_error}".strip()
-        return output_file, converted_to_rtl, conversion_error
+            conversion_error = self._merge_errors(conversion_error, compression_error)
+        return ConversionBatchResult(output_files, converted_to_rtl, conversion_error)

@@ -60,6 +60,7 @@ CONTEXT_BOOL_OPTIONS: dict[str, tuple[tuple[str, str], ...]] = {
     "epub": (
         ("epub_inline_toc", "epub_inline_toc_label"),
         ("epub_remove_background", "epub_remove_background_label"),
+        ("epub_split_volumes", "epub_split_volumes_label"),
     ),
     "pdf": (("pdf_page_numbers", "pdf_page_numbers_label"),),
     "kfx": (),
@@ -74,10 +75,16 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
     "docx_no_toc": "docx_no_toc",
     "epub_inline_toc": "epub_inline_toc",
     "epub_remove_background": "epub_remove_background",
+    "epub_split_volumes": "epub_split_volumes",
     "epub_standardize_footnotes": "epub_standardize_footnotes",
     "pdf_page_numbers": "pdf_page_numbers",
 }
-EPUB_ONLY_BOOL_OPTIONS: set[str] = {"fix_epub", "flat_toc", "epub_standardize_footnotes"}
+EPUB_ONLY_BOOL_OPTIONS: set[str] = {
+    "fix_epub",
+    "flat_toc",
+    "epub_standardize_footnotes",
+    "epub_split_volumes",
+}
 VALUE_OPTION_ATTRS: dict[str, str] = {
     "change_justification": "change_justification",
     "kfx_doc_type": "kfx_doc_type",
@@ -121,9 +128,18 @@ class ConversionRequestState:
     epub_version: str = "default"
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
+    epub_split_volumes: bool = False
     epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
     pdf_page_numbers: bool = False
+
+
+@dataclass
+class OptionsKeyboardContext:
+    rows: list[list[KeyboardButtonCallback]]
+    request_id: str
+    state: ConversionRequestState
+    labels: dict[str, str]
 
 
 def format_button_rows(
@@ -142,6 +158,44 @@ def format_button_rows(
     return [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]
 
 
+def _append_bool_row(
+    context: OptionsKeyboardContext,
+    option_key: str,
+    label_key: str,
+) -> None:
+    selected = getattr(context.state, BOOL_OPTION_ATTRS[option_key], False)
+    context.rows.append(
+        [
+            Button.inline(
+                f"{context.labels[label_key]}{' ✅' if selected else ''}",
+                data=f"opt|{option_key}|{0 if selected else 1}|{context.request_id}",
+            )
+        ]
+    )
+
+
+def _append_value_row(
+    context: OptionsKeyboardContext,
+    option_key: str,
+    prefix_label_key: str,
+    value_specs: tuple[tuple[str, str], ...],
+) -> None:
+    option_attr = VALUE_OPTION_ATTRS[option_key]
+    selected_value = getattr(context.state, option_attr)
+    row_buttons: list[KeyboardButtonCallback] = []
+    for index, (value_token, label_key) in enumerate(value_specs):
+        label = context.labels.get(label_key, label_key)
+        prefix = f"{context.labels[prefix_label_key]}: " if index == 0 else ""
+        target_value = VALUE_OPTION_MAP[option_key][value_token]
+        row_buttons.append(
+            Button.inline(
+                f"{prefix}{label}{' ✅' if selected_value == target_value else ''}",
+                data=f"opt|{option_key}|{value_token}|{context.request_id}",
+            )
+        )
+    context.rows.append(row_buttons)
+
+
 def build_options_keyboard(
     request_id: str,
     state: ConversionRequestState,
@@ -156,49 +210,23 @@ def build_options_keyboard(
             for context in CONTEXT_TYPES
         ]
     ]
-
-    def add_bool_row(option_key: str, label_key: str) -> None:
-        selected = getattr(state, BOOL_OPTION_ATTRS[option_key], False)
-        rows.append(
-            [
-                Button.inline(
-                    f"{labels[label_key]}{' ✅' if selected else ''}",
-                    data=f"opt|{option_key}|{0 if selected else 1}|{request_id}",
-                )
-            ]
-        )
-
-    def add_value_row(
-        option_key: str, prefix_label_key: str, value_specs: tuple[tuple[str, str], ...]
-    ) -> None:
-        option_attr = VALUE_OPTION_ATTRS[option_key]
-        selected_value = getattr(state, option_attr)
-        row_buttons: list[KeyboardButtonCallback] = []
-        for index, (value_token, label_key) in enumerate(value_specs):
-            label = labels.get(label_key, label_key)
-            prefix = f"{labels[prefix_label_key]}: " if index == 0 else ""
-            target_value = VALUE_OPTION_MAP[option_key][value_token]
-            row_buttons.append(
-                Button.inline(
-                    f"{prefix}{label}{' ✅' if selected_value == target_value else ''}",
-                    data=f"opt|{option_key}|{value_token}|{request_id}",
-                )
-            )
-        rows.append(row_buttons)
+    keyboard_context = OptionsKeyboardContext(rows, request_id, state, labels)
 
     for option_key, label_key in GLOBAL_BOOL_OPTIONS:
-        add_bool_row(option_key, label_key)
+        _append_bool_row(keyboard_context, option_key, label_key)
     for option_key, prefix_label_key, value_specs in GLOBAL_VALUE_OPTIONS:
-        add_value_row(option_key, prefix_label_key, value_specs)
+        _append_value_row(keyboard_context, option_key, prefix_label_key, value_specs)
 
     for option_key, prefix_label_key, value_specs in CONTEXT_VALUE_OPTIONS[state.options_context]:
-        add_value_row(option_key, prefix_label_key, value_specs)
+        _append_value_row(keyboard_context, option_key, prefix_label_key, value_specs)
     for option_key, label_key in CONTEXT_BOOL_OPTIONS[state.options_context]:
-        add_bool_row(option_key, label_key)
+        if option_key in EPUB_ONLY_BOOL_OPTIONS and state.input_ext != "epub":
+            continue
+        _append_bool_row(keyboard_context, option_key, label_key)
 
     if state.input_ext == "epub":
         for option_key, label_key in EPUB_EXTRA_BOOL_OPTIONS:
-            add_bool_row(option_key, label_key)
+            _append_bool_row(keyboard_context, option_key, label_key)
 
     rows.append([Button.inline(labels["reset_options_label"], data=f"opt|reset|1|{request_id}")])
     rows.append(
@@ -226,6 +254,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.epub_version = "default"
         state.epub_inline_toc = False
         state.epub_remove_background = False
+        state.epub_split_volumes = False
         state.epub_standardize_footnotes = False
         state.pdf_paper_size = "default"
         state.pdf_page_numbers = False

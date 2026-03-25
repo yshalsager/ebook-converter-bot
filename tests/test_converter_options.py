@@ -26,6 +26,7 @@ LABELS = {
     "epub_version_label": "EPUB version",
     "epub_inline_toc_label": "EPUB: inline TOC",
     "epub_remove_background_label": "Remove EPUB background",
+    "epub_split_volumes_label": "Split EPUB volumes",
     "epub_standardize_footnotes_label": "Standardize EPUB footnotes",
     "pdf_paper_size_label": "PDF paper size",
     "pdf_page_numbers_label": "PDF: page numbers",
@@ -126,6 +127,22 @@ def test_options_keyboard_epub_context_has_remove_background_toggle() -> None:
 
     assert b"opt|epub_inline_toc|1|12345678" in data
     assert b"opt|epub_remove_background|1|12345678" in data
+    assert b"opt|epub_split_volumes|1|12345678" in data
+
+
+def test_options_keyboard_epub_context_hides_epub_only_toggles_for_non_epub_input() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.pdf",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="pdf",
+        options_context="epub",
+    )
+    rows = build_options_keyboard("12345678", state, LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|epub_inline_toc|1|12345678" in data
+    assert b"opt|epub_remove_background|1|12345678" in data
+    assert b"opt|epub_split_volumes|1|12345678" not in data
 
 
 def test_options_keyboard_kfx_pages_none_and_auto_only() -> None:
@@ -169,6 +186,8 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.epub_version == "3"
     assert set_request_option(state, "epub_remove_background", "1") is True
     assert state.epub_remove_background is True
+    assert set_request_option(state, "epub_split_volumes", "1") is True
+    assert state.epub_split_volumes is True
     assert set_request_option(state, "epub_standardize_footnotes", "1") is True
     assert state.epub_standardize_footnotes is True
     assert state.pdf_paper_size == "default"
@@ -216,6 +235,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         epub_version="3",
         epub_inline_toc=True,
         epub_remove_background=True,
+        epub_split_volumes=True,
         epub_standardize_footnotes=True,
         pdf_paper_size="letter",
         pdf_page_numbers=True,
@@ -236,6 +256,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.epub_version == "default"
     assert state.epub_inline_toc is False
     assert state.epub_remove_background is False
+    assert state.epub_split_volumes is False
     assert state.epub_standardize_footnotes is False
     assert state.pdf_paper_size == "default"
     assert state.pdf_page_numbers is False
@@ -249,6 +270,7 @@ def test_set_request_option_rejects_epub_only_flags_for_non_epub() -> None:
     )
     assert set_request_option(state, "fix_epub", "1") is False
     assert set_request_option(state, "flat_toc", "1") is False
+    assert set_request_option(state, "epub_split_volumes", "1") is False
     assert set_request_option(state, "epub_standardize_footnotes", "1") is False
 
 

@@ -14,6 +14,8 @@ from typing import Any
 
 from access_parser import AccessParser
 
+from ebook_converter_bot.utils.epub_common import escape_xml
+
 ARABIC_RE = re.compile(r"[\u0600-\u06FF]")
 HIGH_LATIN_RE = re.compile(r"[\u00C0-\u00FF]")
 LOOKS_LIKE_HTML_RE = re.compile(r"</?(p|br|div|span|h[1-6]|font)\b", re.IGNORECASE)
@@ -52,17 +54,6 @@ class EpubBook:
     about: str
     pages: list[dict[str, Any]]
     toc_tree: list[Any]
-
-
-def escape_xml(v: object) -> str:
-    return (
-        str(v)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&apos;")
-    )
 
 
 def digits_to_ascii(v: object) -> str:
