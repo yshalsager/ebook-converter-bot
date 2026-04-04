@@ -407,11 +407,14 @@ def standardize_epub_footnotes(input_file: Path) -> bool:  # noqa: C901,PLR0912,
             transformed = update_hamesh_html(str(state["new_body"]))
             stripped, continuation = pop_leading_continuation(transformed)
             if continuation and index > 0:
-                previous_body = str(doc_states[index - 1]["new_body"])
-                merged_previous, merged = append_to_last_footnote(previous_body, continuation)
-                if merged:
-                    doc_states[index - 1]["new_body"] = merged_previous
+                for target_idx in range(index - 1, -1, -1):
+                    previous_body = str(doc_states[target_idx]["new_body"])
+                    merged_previous, merged = append_to_last_footnote(previous_body, continuation)
+                    if not merged:
+                        continue
+                    doc_states[target_idx]["new_body"] = merged_previous
                     transformed = stripped
+                    break
             state["new_body"] = transformed
 
         replacements: dict[str, bytes] = {}
