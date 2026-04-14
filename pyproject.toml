@@ -19,7 +19,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ipython>=9.7.0",
-    "pytest>=8.0.0",
+    "pytest>=9.0.3",
     "ruff>=0.14.4",
     "ty>=0.0.15",
     "jurigged>=0.6.1",
