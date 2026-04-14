@@ -42,6 +42,16 @@ CONTEXT_VALUE_OPTIONS: dict[str, tuple[tuple[str, str, tuple[tuple[str, str], ..
             "pdf_paper_size_label",
             (("default", "default_label"), ("letter", "letter_label"), ("a4", "a4_label")),
         ),
+        (
+            "pdf_font_profile",
+            "pdf_font_profile_label",
+            (
+                ("default", "default_label"),
+                ("noto_naskh_arabic", "noto_naskh_arabic_label"),
+                ("amiri", "amiri_label"),
+                ("ibm_plex_sans_arabic", "ibm_plex_sans_arabic_label"),
+            ),
+        ),
     ),
     "kfx": (
         (
@@ -93,6 +103,7 @@ VALUE_OPTION_ATTRS: dict[str, str] = {
     "docx_page_size": "docx_page_size",
     "epub_version": "epub_version",
     "pdf_paper_size": "pdf_paper_size",
+    "pdf_font_profile": "pdf_font_profile",
 }
 VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "change_justification": {"original": "original", "left": "left", "justify": "justify"},
@@ -101,6 +112,12 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "docx_page_size": {"default": "default", "letter": "letter", "a4": "a4"},
     "epub_version": {"default": "default", "2": "2", "3": "3"},
     "pdf_paper_size": {"default": "default", "letter": "letter", "a4": "a4"},
+    "pdf_font_profile": {
+        "default": "default",
+        "noto_naskh_arabic": "noto_naskh_arabic",
+        "amiri": "amiri",
+        "ibm_plex_sans_arabic": "ibm_plex_sans_arabic",
+    },
 }
 EPUB_EXTRA_BOOL_OPTIONS: tuple[tuple[str, str], ...] = (
     ("fix_epub", "fix_epub_label"),
@@ -126,6 +143,7 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "epub_split_volumes",
     "epub_standardize_footnotes",
     "pdf_paper_size",
+    "pdf_font_profile",
     "pdf_page_numbers",
 )
 PERSISTED_OPTION_ATTRS_SET = set(PERSISTED_OPTION_ATTRS)
@@ -159,6 +177,7 @@ class ConversionRequestState:
     epub_split_volumes: bool = False
     epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
+    pdf_font_profile: str = "default"
     pdf_page_numbers: bool = False
 
 
@@ -285,6 +304,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.epub_split_volumes = False
         state.epub_standardize_footnotes = False
         state.pdf_paper_size = "default"
+        state.pdf_font_profile = "default"
         state.pdf_page_numbers = False
         return True
     bool_value = {"1": True, "0": False}.get(option_value)

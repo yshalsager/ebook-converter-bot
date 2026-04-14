@@ -1,0 +1,27 @@
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  src: url("ibm_plex_sans_arabic/IBMPlexSansArabic-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  src: url("ibm_plex_sans_arabic/IBMPlexSansArabic-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+body,
+p,
+li,
+div,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "IBM Plex Sans Arabic", sans-serif !important;
+}

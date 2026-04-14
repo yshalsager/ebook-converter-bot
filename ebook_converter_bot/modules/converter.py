@@ -107,6 +107,10 @@ def options_labels(lang: str) -> dict[str, str]:
         "epub_split_volumes_label": _("Split EPUB volumes", lang),
         "epub_standardize_footnotes_label": _("Standardize EPUB footnotes", lang),
         "pdf_paper_size_label": _("PDF paper size", lang),
+        "pdf_font_profile_label": _("PDF Arabic font", lang),
+        "noto_naskh_arabic_label": _("Noto Naskh Arabic", lang),
+        "amiri_label": _("Amiri", lang),
+        "ibm_plex_sans_arabic_label": _("IBM Plex Sans Arabic", lang),
         "pdf_page_numbers_label": _("PDF: page numbers", lang),
         "kfx_doc_type_label": _("KFX doc type", lang),
         "kfx_pages_label": _("KFX pages", lang),
@@ -169,6 +173,10 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 state.pdf_paper_size != "default",
                 _("PDF paper size: {}", lang).format(state.pdf_paper_size.upper()),
             ),
+            (
+                state.pdf_font_profile != "default",
+                _("PDF Arabic font: {}", lang).format(state.pdf_font_profile.replace("_", " ")),
+            ),
             (state.pdf_page_numbers, _("PDF: page numbers", lang)),
             (state.kfx_doc_type == "book", _("KFX doc type: EBOK", lang)),
             (state.kfx_pages == 0, _("KFX pages: Auto", lang)),
@@ -203,6 +211,7 @@ def build_conversion_options(state: ConversionRequestState) -> ConversionOptions
             getattr(state, "epub_standardize_footnotes", False) if is_epub_input else False
         ),
         "pdf_paper_size": state.pdf_paper_size,
+        "pdf_font_profile": state.pdf_font_profile,
         "pdf_page_numbers": state.pdf_page_numbers,
     }
     for key, value in option_values.items():

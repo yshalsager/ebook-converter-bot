@@ -31,6 +31,10 @@ LABELS = {
     "epub_split_volumes_label": "Split EPUB volumes",
     "epub_standardize_footnotes_label": "Standardize EPUB footnotes",
     "pdf_paper_size_label": "PDF paper size",
+    "pdf_font_profile_label": "PDF Arabic font",
+    "noto_naskh_arabic_label": "Noto Naskh Arabic",
+    "amiri_label": "Amiri",
+    "ibm_plex_sans_arabic_label": "IBM Plex Sans Arabic",
     "pdf_page_numbers_label": "PDF: page numbers",
     "kfx_doc_type_label": "KFX doc type",
     "kfx_pages_label": "KFX pages",
@@ -110,6 +114,10 @@ def test_options_keyboard_shows_selected_context_controls_only() -> None:
 
     assert rows[0][2].text.startswith("▸ PDF")
     assert b"opt|pdf_paper_size|default|12345678" in data
+    assert b"opt|pdf_font_profile|default|12345678" in data
+    assert b"opt|pdf_font_profile|noto_naskh_arabic|12345678" in data
+    assert b"opt|pdf_font_profile|amiri|12345678" in data
+    assert b"opt|pdf_font_profile|ibm_plex_sans_arabic|12345678" in data
     assert b"opt|pdf_page_numbers|1|12345678" in data
     assert b"opt|docx_page_size|default|12345678" not in data
     assert b"opt|epub_version|default|12345678" not in data
@@ -196,6 +204,8 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
 
     assert set_request_option(state, "pdf_paper_size", "letter") is True
     assert state.pdf_paper_size == "letter"
+    assert set_request_option(state, "pdf_font_profile", "amiri") is True
+    assert state.pdf_font_profile == "amiri"
 
 
 def test_set_request_option_is_idempotent_and_validates_values() -> None:
@@ -240,6 +250,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         epub_split_volumes=True,
         epub_standardize_footnotes=True,
         pdf_paper_size="letter",
+        pdf_font_profile="amiri",
         pdf_page_numbers=True,
     )
 
@@ -261,6 +272,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.epub_split_volumes is False
     assert state.epub_standardize_footnotes is False
     assert state.pdf_paper_size == "default"
+    assert state.pdf_font_profile == "default"
     assert state.pdf_page_numbers is False
 
 
@@ -339,6 +351,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "options_context": "kfx",
             "kfx_pages": 0,
             "epub_standardize_footnotes": True,
+            "pdf_font_profile": "ibm_plex_sans_arabic",
         },
     )
 
@@ -349,6 +362,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.options_context == "kfx"
     assert state.kfx_pages == 0
     assert state.epub_standardize_footnotes is True
+    assert state.pdf_font_profile == "ibm_plex_sans_arabic"
 
 
 def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags() -> None:
@@ -367,6 +381,7 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
             "epub_standardize_footnotes": True,
             "epub_split_volumes": True,
             "pdf_paper_size": "a4",
+            "pdf_font_profile": "unknown",
             "unknown_option": True,
         },
     )
@@ -377,6 +392,7 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
     assert state.epub_standardize_footnotes is False
     assert state.epub_split_volumes is False
     assert state.pdf_paper_size == "a4"
+    assert state.pdf_font_profile == "default"
 
 
 def test_persisted_snapshot_changes_only_after_valid_option_change() -> None:

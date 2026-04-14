@@ -22,6 +22,47 @@ logger = logging.getLogger(__name__)
 
 TASK_TIMEOUT = 600  # 10 min
 MAX_SPLIT_OUTPUT_FILES = 35
+PDF_FONTS_DIR = Path(__file__).resolve().parents[1] / "data" / "fonts" / "pdf"
+
+
+@dataclass(frozen=True)
+class PdfFontProfile:
+    serif_family: str
+    sans_family: str
+    embed_family: str
+    css_file: str
+    required_files: tuple[str, ...]
+
+
+PDF_FONT_PROFILES: dict[str, PdfFontProfile] = {
+    "noto_naskh_arabic": PdfFontProfile(
+        serif_family="Noto Naskh Arabic",
+        sans_family="Noto Naskh Arabic",
+        embed_family="Noto Naskh Arabic",
+        css_file="noto_naskh_arabic.css",
+        required_files=(
+            "noto_naskh_arabic/NotoNaskhArabic-Regular.ttf",
+            "noto_naskh_arabic/NotoNaskhArabic-Bold.ttf",
+        ),
+    ),
+    "amiri": PdfFontProfile(
+        serif_family="Amiri",
+        sans_family="Amiri",
+        embed_family="Amiri",
+        css_file="amiri.css",
+        required_files=("amiri/Amiri-Regular.ttf", "amiri/Amiri-Bold.ttf"),
+    ),
+    "ibm_plex_sans_arabic": PdfFontProfile(
+        serif_family="IBM Plex Sans Arabic",
+        sans_family="IBM Plex Sans Arabic",
+        embed_family="IBM Plex Sans Arabic",
+        css_file="ibm_plex_sans_arabic.css",
+        required_files=(
+            "ibm_plex_sans_arabic/IBMPlexSansArabic-Regular.ttf",
+            "ibm_plex_sans_arabic/IBMPlexSansArabic-Bold.ttf",
+        ),
+    ),
+}
 
 
 @dataclass
@@ -43,6 +84,7 @@ class ConversionOptions:
     epub_split_volumes: bool = False
     epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
+    pdf_font_profile: str = "default"
     pdf_page_numbers: bool = False
 
 
@@ -214,6 +256,34 @@ class Converter:
             command.extend(["--paper-size", options.pdf_paper_size])
         if options.pdf_page_numbers:
             command.append("--pdf-page-numbers")
+        Converter._append_pdf_font_profile_options(command, options)
+
+    @staticmethod
+    def _append_pdf_font_profile_options(command: list[str], options: ConversionOptions) -> None:
+        if options.pdf_font_profile == "default":
+            return
+
+        profile = PDF_FONT_PROFILES.get(options.pdf_font_profile)
+        if not profile:
+            logger.warning("Unknown PDF font profile: %s", options.pdf_font_profile)
+            return
+
+        css_path = PDF_FONTS_DIR / profile.css_file
+        required_paths = [PDF_FONTS_DIR / file_path for file_path in profile.required_files]
+        missing_paths = [path for path in [css_path, *required_paths] if not path.exists()]
+        if missing_paths:
+            logger.warning(
+                "PDF font profile '%s' has missing assets: %s",
+                options.pdf_font_profile,
+                ", ".join(str(path) for path in missing_paths),
+            )
+            return
+
+        command.extend(["--pdf-serif-family", profile.serif_family])
+        command.extend(["--pdf-sans-family", profile.sans_family])
+        command.extend(["--embed-font-family", profile.embed_family])
+        command.append("--embed-all-fonts")
+        command.extend(["--extra-css", str(css_path)])
 
     def _append_ebook_convert_options(
         self,
@@ -362,6 +432,7 @@ class Converter:
             epub_split_volumes=False,
             epub_standardize_footnotes=False,
             pdf_paper_size="default",
+            pdf_font_profile="default",
             pdf_page_numbers=False,
         )
         epub_file, _ignored_rtl, conversion_error = await self._convert_non_bok(
@@ -487,6 +558,7 @@ class Converter:
                     epub_remove_background=False,
                     epub_split_volumes=False,
                     pdf_paper_size="default",
+                    pdf_font_profile="default",
                     pdf_page_numbers=False,
                 )
                 epub_file, set_to_rtl, conversion_error = await self._convert_non_bok(

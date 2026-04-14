@@ -5,6 +5,7 @@ import ebook_converter_bot.utils.convert as convert_utils
 import pytest
 from ebook_converter_bot.utils.convert import (
     MAX_SPLIT_OUTPUT_FILES,
+    PDF_FONTS_DIR,
     TASK_TIMEOUT,
     ConversionOptions,
     Converter,
@@ -191,6 +192,29 @@ def test_force_rtl_pdf_with_epub_input_uses_existing_preprocess(tmp_path: Path) 
         assert commands[0][:3] == ["ebook-convert", str(input_file), str(output_file)]
         assert _contains_flag_pair(commands[0], "--paper-size", "letter")
         assert rtl_paths == [input_file]
+
+    asyncio.run(run())
+
+
+def test_pdf_font_profile_adds_embed_and_css_flags(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        commands = _capture_commands(converter)
+        input_file = tmp_path / "book.txt"
+        input_file.write_text("hello")
+
+        await converter.convert_ebook_many(
+            input_file,
+            "pdf",
+            options=ConversionOptions(pdf_font_profile="amiri"),
+        )
+
+        command = commands[0]
+        assert _contains_flag_pair(command, "--pdf-serif-family", "Amiri")
+        assert _contains_flag_pair(command, "--pdf-sans-family", "Amiri")
+        assert _contains_flag_pair(command, "--embed-font-family", "Amiri")
+        assert "--embed-all-fonts" in command
+        assert _contains_flag_pair(command, "--extra-css", str(PDF_FONTS_DIR / "amiri.css"))
 
     asyncio.run(run())
 
