@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import re
-import uuid
 import zipfile
 from contextlib import suppress
 from dataclasses import dataclass
@@ -484,7 +483,9 @@ def map_toc(
     )
 
 
-BASE_CSS = "*{direction: rtl}\nbody{line-height:1.7;margin:1.5rem;color:#1f1f1f}\n.text-center,h1,h2,h3{text-align:center}"
+BASE_CSS = (
+    "body{line-height:1.7;margin:1.5rem;color:#1f1f1f}\n.text-center,h1,h2,h3{text-align:center}"
+)
 
 
 def render_page(title: str, text_html: str) -> str:
@@ -546,13 +547,7 @@ def render_ncx_items(toc: list[Any], page_map: dict[int, str]) -> str:
 
 def render_nav(title: str, toc_tree: list[Any], page_map: dict[int, str]) -> str:
     toc_html = render_nav_items(toc_tree, page_map) if toc_tree else ""
-    info_link = '<li><a href="info.xhtml">بطاقة الكتاب</a></li>'
-    nav_link = '<li><a href="nav.xhtml">فهرس الموضوعات</a></li>'
-    nav_items = (
-        toc_html.replace("<ol>", f"<ol>{info_link}{nav_link}", 1)
-        if toc_html.startswith("<ol>")
-        else f"<ol>{info_link}{nav_link}</ol>"
-    )
+    nav_items = toc_html or "<ol></ol>"
 
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
@@ -586,14 +581,6 @@ def render_ncx(title: str, toc_tree: list[Any], page_map: dict[int, str], *, uid
     <text>{escape_xml(title)}</text>
   </docTitle>
   <navMap>
-    <navPoint id="info">
-      <navLabel><text>بطاقة الكتاب</text></navLabel>
-      <content src="info.xhtml"/>
-    </navPoint>
-    <navPoint id="nav">
-      <navLabel><text>فهرس الموضوعات</text></navLabel>
-      <content src="nav.xhtml"/>
-    </navPoint>
     {ncx_items}
   </navMap>
 </ncx>
@@ -606,10 +593,10 @@ def render_opf(  # noqa: PLR0913
     manifest_items: str,
     spine_items: str,
     *,
+    identifier: str,
     include_toc_page: bool,
     modified: str,
 ) -> str:
-    identifier = "urn:shamela_bok:0"
     author_xml = f"<dc:creator>{escape_xml(author)}</dc:creator>" if author else ""
     include_toc = '<itemref idref="nav" />' if include_toc_page else ""
 
@@ -653,8 +640,8 @@ def write_epub(out_file: Path, book: EpubBook, *, include_toc_page: bool) -> Non
 
     page_map = {page_number: f"text/{file_name}" for page_number, file_name, _ in page_entries}
 
-    modified = datetime.now(tz=UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-    uid = str(uuid.uuid4())
+    identifier = "urn:shamela_bok:0"
+    modified = datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     with zipfile.ZipFile(out_file, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         mimetype = zipfile.ZipInfo("mimetype")
@@ -695,7 +682,7 @@ def write_epub(out_file: Path, book: EpubBook, *, include_toc_page: bool) -> Non
         )
 
         z.writestr("OEBPS/nav.xhtml", render_nav(book.title, book.toc_tree, page_map))
-        z.writestr("OEBPS/toc.ncx", render_ncx(book.title, book.toc_tree, page_map, uid=uid))
+        z.writestr("OEBPS/toc.ncx", render_ncx(book.title, book.toc_tree, page_map, uid=identifier))
 
         manifest_items = "".join(
             f'<item id="p{page_number}" href="text/{file_name}" media-type="application/xhtml+xml" />'
@@ -711,6 +698,7 @@ def write_epub(out_file: Path, book: EpubBook, *, include_toc_page: bool) -> Non
                 book.author,
                 manifest_items,
                 spine_items,
+                identifier=identifier,
                 include_toc_page=include_toc_page,
                 modified=modified,
             ),
