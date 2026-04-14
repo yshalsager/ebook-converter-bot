@@ -3,10 +3,12 @@ from time import monotonic
 
 from ebook_converter_bot.utils.converter_options import (
     ConversionRequestState,
+    apply_persisted_options,
     build_options_keyboard,
     cleanup_expired_requests,
     format_button_rows,
     set_request_option,
+    state_to_persisted_options,
 )
 from telethon.tl.types import KeyboardButtonCallback
 
@@ -298,3 +300,97 @@ def test_cleanup_expired_requests_removes_stale_state_and_file(tmp_path: Path) -
     assert stale_file.exists() is False
     assert "fresh" in queue
     assert fresh_file.exists() is True
+
+
+def test_state_to_persisted_options_omits_runtime_fields() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.epub",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="epub",
+        force_rtl=True,
+        docx_page_size="a4",
+        options_context="epub",
+    )
+
+    persisted = state_to_persisted_options(state)
+
+    assert "input_file_path" not in persisted
+    assert "queued_at" not in persisted
+    assert "input_ext" not in persisted
+    assert persisted["force_rtl"] is True
+    assert persisted["docx_page_size"] == "a4"
+    assert persisted["options_context"] == "epub"
+
+
+def test_apply_persisted_options_applies_valid_values() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.epub",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="epub",
+    )
+
+    apply_persisted_options(
+        state,
+        {
+            "force_rtl": True,
+            "smarten_punctuation": True,
+            "change_justification": "justify",
+            "docx_page_size": "a4",
+            "options_context": "kfx",
+            "kfx_pages": 0,
+            "epub_standardize_footnotes": True,
+        },
+    )
+
+    assert state.force_rtl is True
+    assert state.smarten_punctuation is True
+    assert state.change_justification == "justify"
+    assert state.docx_page_size == "a4"
+    assert state.options_context == "kfx"
+    assert state.kfx_pages == 0
+    assert state.epub_standardize_footnotes is True
+
+
+def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.pdf",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="pdf",
+    )
+
+    apply_persisted_options(
+        state,
+        {
+            "force_rtl": "yes",
+            "change_justification": "wide",
+            "options_context": "invalid",
+            "epub_standardize_footnotes": True,
+            "epub_split_volumes": True,
+            "pdf_paper_size": "a4",
+            "unknown_option": True,
+        },
+    )
+
+    assert state.force_rtl is False
+    assert state.change_justification == "original"
+    assert state.options_context == "docx"
+    assert state.epub_standardize_footnotes is False
+    assert state.epub_split_volumes is False
+    assert state.pdf_paper_size == "a4"
+
+
+def test_persisted_snapshot_changes_only_after_valid_option_change() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.pdf",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="pdf",
+    )
+    initial = state_to_persisted_options(state)
+
+    assert set_request_option(state, "smarten", "1") is True
+    after_valid = state_to_persisted_options(state)
+    assert after_valid["smarten_punctuation"] is True
+
+    assert set_request_option(state, "epub_standardize_footnotes", "1") is False
+    assert state_to_persisted_options(state) == after_valid
+    assert initial != after_valid

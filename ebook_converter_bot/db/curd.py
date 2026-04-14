@@ -1,4 +1,7 @@
+import json
+import logging
 from collections.abc import Callable
+from datetime import UTC, datetime
 from functools import wraps
 from typing import Any
 
@@ -8,7 +11,10 @@ from sqlalchemy.sql.functions import sum as sql_sum
 from ebook_converter_bot.db.models.analytics import Analytics
 from ebook_converter_bot.db.models.chat import Chat
 from ebook_converter_bot.db.models.preference import Preference
+from ebook_converter_bot.db.models.user_option_default import UserOptionDefault
 from ebook_converter_bot.db.session import get_session
+
+LOGGER = logging.getLogger(__name__)
 
 
 def with_session(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -121,3 +127,36 @@ def get_top_formats(*, session: Session) -> tuple[dict[str, int], dict[str, int]
 @with_session
 def get_all_chats(*, session: Session) -> list[Chat]:
     return session.query(Chat).all()
+
+
+@with_session
+def get_user_option_defaults(user_id: int, *, session: Session) -> dict[str, Any] | None:
+    options_json = (
+        session.query(UserOptionDefault.options_json)
+        .filter(UserOptionDefault.user_id == user_id)
+        .scalar()
+    )
+    if not options_json:
+        return None
+    try:
+        parsed = json.loads(options_json)
+    except json.JSONDecodeError:
+        LOGGER.warning("Invalid user options JSON for user_id=%s", user_id)
+        return None
+    if not isinstance(parsed, dict):
+        LOGGER.warning("User options JSON must be an object for user_id=%s", user_id)
+        return None
+    return parsed
+
+
+@with_session
+def upsert_user_option_defaults(user_id: int, options: dict[str, Any], *, session: Session) -> None:
+    defaults = session.query(UserOptionDefault).filter(UserOptionDefault.user_id == user_id).first()
+    options_json = json.dumps(options, ensure_ascii=False, separators=(",", ":"))
+    if defaults is None:
+        defaults = UserOptionDefault(user_id=user_id, options_json=options_json)
+        session.add(defaults)
+    else:
+        defaults.options_json = options_json
+        defaults.updated_at = datetime.now(UTC)
+    session.commit()

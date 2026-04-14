@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from time import monotonic
+from typing import Any
 
 from telethon import Button
 from telethon.tl.types import KeyboardButtonCallback
@@ -106,6 +107,33 @@ EPUB_EXTRA_BOOL_OPTIONS: tuple[tuple[str, str], ...] = (
     ("flat_toc", "flat_toc_label"),
     ("epub_standardize_footnotes", "epub_standardize_footnotes_label"),
 )
+PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
+    "force_rtl",
+    "compress_cover",
+    "fix_epub",
+    "flat_toc",
+    "smarten_punctuation",
+    "change_justification",
+    "remove_paragraph_spacing",
+    "kfx_doc_type",
+    "kfx_pages",
+    "options_context",
+    "docx_page_size",
+    "docx_no_toc",
+    "epub_version",
+    "epub_inline_toc",
+    "epub_remove_background",
+    "epub_split_volumes",
+    "epub_standardize_footnotes",
+    "pdf_paper_size",
+    "pdf_page_numbers",
+)
+PERSISTED_OPTION_ATTRS_SET = set(PERSISTED_OPTION_ATTRS)
+PERSISTED_BOOL_ATTRS = set(BOOL_OPTION_ATTRS.values())
+PERSISTED_EPUB_ONLY_BOOL_ATTRS = {BOOL_OPTION_ATTRS[key] for key in EPUB_ONLY_BOOL_OPTIONS}
+PERSISTED_VALUE_ALLOWED_BY_ATTR = {
+    VALUE_OPTION_ATTRS[key]: set(value_map.values()) for key, value_map in VALUE_OPTION_MAP.items()
+}
 
 
 @dataclass
@@ -271,6 +299,37 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         setattr(state, VALUE_OPTION_ATTRS[option_key], VALUE_OPTION_MAP[option_key][option_value])
         return True
     return False
+
+
+def state_to_persisted_options(
+    state: ConversionRequestState,
+) -> dict[str, bool | str | int | None]:
+    return {option_attr: getattr(state, option_attr) for option_attr in PERSISTED_OPTION_ATTRS}
+
+
+def apply_persisted_options(
+    state: ConversionRequestState,
+    persisted: dict[str, Any] | None,
+) -> None:
+    if not isinstance(persisted, dict):
+        return
+    for option_attr, value in persisted.items():
+        if option_attr not in PERSISTED_OPTION_ATTRS_SET:
+            continue
+        if option_attr == "options_context":
+            if isinstance(value, str) and value in CONTEXT_TYPES:
+                state.options_context = value
+            continue
+        if option_attr in PERSISTED_BOOL_ATTRS:
+            if not isinstance(value, bool):
+                continue
+            if option_attr in PERSISTED_EPUB_ONLY_BOOL_ATTRS and state.input_ext != "epub":
+                continue
+            setattr(state, option_attr, value)
+            continue
+        allowed_values = PERSISTED_VALUE_ALLOWED_BY_ATTR.get(option_attr)
+        if allowed_values is not None and value in allowed_values:
+            setattr(state, option_attr, value)
 
 
 def cleanup_expired_requests(

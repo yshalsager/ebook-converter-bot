@@ -11,7 +11,11 @@ from telethon import Button, events
 
 from ebook_converter_bot import TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
-from ebook_converter_bot.db.curd import get_lang
+from ebook_converter_bot.db.curd import (
+    get_lang,
+    get_user_option_defaults,
+    upsert_user_option_defaults,
+)
 from ebook_converter_bot.utils.analytics import analysis
 from ebook_converter_bot.utils.convert import (
     MAX_SPLIT_OUTPUT_FILES,
@@ -22,10 +26,12 @@ from ebook_converter_bot.utils.convert import (
 from ebook_converter_bot.utils.converter_options import (
     CONTEXT_TYPES,
     ConversionRequestState,
+    apply_persisted_options,
     build_options_keyboard,
     cleanup_expired_requests,
     format_button_rows,
     set_request_option,
+    state_to_persisted_options,
 )
 from ebook_converter_bot.utils.i18n import translate as _
 from ebook_converter_bot.utils.telegram import tg_exceptions_handler
@@ -60,6 +66,25 @@ async def cleanup_queue_loop() -> None:
 
 
 queue_cleanup_task = BOT.loop.create_task(cleanup_queue_loop())
+
+
+def build_request_state_for_user(
+    user_id: int,
+    *,
+    input_file_path: str,
+    input_ext: str,
+) -> ConversionRequestState:
+    state = ConversionRequestState(
+        input_file_path=input_file_path,
+        queued_at=monotonic(),
+        input_ext=input_ext,
+    )
+    apply_persisted_options(state, get_user_option_defaults(user_id))
+    return state
+
+
+def save_request_state_defaults(user_id: int, state: ConversionRequestState) -> None:
+    upsert_user_option_defaults(user_id, state_to_persisted_options(state))
 
 
 def options_labels(lang: str) -> dict[str, str]:
@@ -284,9 +309,9 @@ async def file_converter(event: events.NewMessage.Event) -> None:
     random_id = "".join(sample(digits, 8))
     while random_id in queue:
         random_id = "".join(sample(digits, 8))
-    queue[random_id] = ConversionRequestState(
+    queue[random_id] = build_request_state_for_user(
+        event.chat_id,
         input_file_path=downloaded,
-        queued_at=monotonic(),
         input_ext=file_name.lower().split(".")[-1],
     )
     message_text, buttons = render_screen(random_id, queue[random_id], lang)
@@ -319,6 +344,7 @@ async def options_context_callback(event: events.CallbackQuery.Event) -> None:
     if context_name not in CONTEXT_TYPES:
         return
     state.options_context = context_name
+    save_request_state_defaults(event.chat_id, state)
     lang = get_lang(event.chat_id)
     message_text, buttons = render_screen(request_id, state, lang, show_options=True)
     await event.edit(message_text, buttons=buttons)
@@ -335,6 +361,7 @@ async def options_toggle_callback(event: events.CallbackQuery.Event) -> None:
     if not set_request_option(state, option_key, option_value):
         await event.answer(_("This option is not available in this context.", lang), alert=True)
         return
+    save_request_state_defaults(event.chat_id, state)
     message_text, buttons = render_screen(request_id, state, lang, show_options=True)
     await event.edit(message_text, buttons=buttons)
 
