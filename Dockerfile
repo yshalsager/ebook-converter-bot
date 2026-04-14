@@ -1,4 +1,4 @@
-FROM ghcr.io/yshalsager/calibre-with-kfx:20260315-0040
+FROM ghcr.io/yshalsager/calibre-with-kfx:20260412-0043
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/
 WORKDIR /code
