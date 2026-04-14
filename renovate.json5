@@ -2,10 +2,12 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
     'config:recommended',
-    ':enablePreCommit',
     ':rebaseStalePrs',
     'group:allNonMajor',
+    'docker:pinDigests',
+    'helpers:pinGitHubActionDigests',
   ],
+  timezone: 'Africa/Cairo',
   labels: [
     'dependencies',
   ],
@@ -28,19 +30,20 @@
         'digest',
       ],
       automerge: true,
+      minimumReleaseAge: '3 days',
     },
-  ],
-  customManagers: [
     {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/\\.pre-commit-config\\.yaml/',
+      description: 'Handle date-based tags for calibre-with-kfx image',
+      matchManagers: [
+        'dockerfile',
       ],
-      matchStrings: [
-        '(?<depName>[^\'" ]+)==(?<currentValue>[^\'" ,\\s]+)',
+      matchDatasources: [
+        'docker',
       ],
-      datasourceTemplate: 'pypi',
-      versioningTemplate: 'pep440',
+      matchPackageNames: [
+        'ghcr.io/yshalsager/calibre-with-kfx',
+      ],
+      versioning: 'regex:^(?<major>\\d{4})(?<minor>\\d{2})(?<patch>\\d{2})-(?<build>\\d{4})$',
     },
   ],
 }
