@@ -340,6 +340,59 @@ class Converter:
         epub_file.unlink(missing_ok=True)
         return output_file, set_to_rtl, conversion_error
 
+    async def _convert_to_pdf_with_rtl_intermediate(
+        self,
+        input_file: Path,
+        options: ConversionOptions,
+        timeout: int | None = TASK_TIMEOUT,
+    ) -> tuple[Path, bool | None, str]:
+        output_file = input_file.with_suffix(".pdf")
+        epub_options = replace(
+            options,
+            force_rtl=False,
+            compress_cover=False,
+            smarten_punctuation=False,
+            change_justification="original",
+            remove_paragraph_spacing=False,
+            docx_page_size="default",
+            docx_no_toc=False,
+            epub_version="default",
+            epub_inline_toc=False,
+            epub_remove_background=False,
+            epub_split_volumes=False,
+            epub_standardize_footnotes=False,
+            pdf_paper_size="default",
+            pdf_page_numbers=False,
+        )
+        epub_file, _ignored_rtl, conversion_error = await self._convert_non_bok(
+            input_file, "epub", epub_options, timeout=timeout
+        )
+        if conversion_error:
+            epub_file.unlink(missing_ok=True)
+            return output_file, None, conversion_error
+        if not epub_file.exists():
+            return output_file, None, "Failed to build intermediate EPUB for RTL PDF conversion."
+
+        set_to_rtl = set_epub_to_rtl(epub_file)
+        try:
+            pdf_options = replace(
+                options,
+                force_rtl=False,
+                fix_epub=False,
+                flat_toc=False,
+                epub_standardize_footnotes=False,
+                epub_split_volumes=False,
+                epub_version="default",
+                epub_inline_toc=False,
+                epub_remove_background=False,
+            )
+            command = ["ebook-convert", str(epub_file), str(output_file)]
+            self._append_ebook_convert_options(command, "pdf", pdf_options)
+            _, conversion_error = await self._run_command(command, timeout=timeout)
+            return output_file, set_to_rtl, conversion_error
+        finally:
+            epub_file.unlink(missing_ok=True)
+
     async def _convert_non_bok(
         self,
         input_file: Path,
@@ -350,6 +403,11 @@ class Converter:
         conversion_error = ""
         input_type = input_file.suffix.lower()[1:]
         output_file = input_file.with_suffix(f".{output_type}")
+
+        if output_type == "pdf" and options.force_rtl and input_type != "epub":
+            return await self._convert_to_pdf_with_rtl_intermediate(
+                input_file, options, timeout=timeout
+            )
 
         set_to_rtl = (
             self._preprocess_input_epub(input_file, options) if input_type == "epub" else None
@@ -378,9 +436,9 @@ class Converter:
             _, conversion_error = await self._convert_to_kfx(input_file, options, timeout=timeout)
             return output_file, set_to_rtl, conversion_error
 
-        if output_type not in self.supported_output_types:
-            return output_file, set_to_rtl, conversion_error
-        if input_type == output_type and not rebuild_epub:
+        if output_type not in self.supported_output_types or (
+            input_type == output_type and not rebuild_epub
+        ):
             return output_file, set_to_rtl, conversion_error
 
         if output_type == "kepub":

@@ -11,6 +11,7 @@ from ebook_converter_bot.utils.convert import (
 )
 
 EXPECTED_SPLIT_OUTPUTS = 2
+EXPECTED_RTL_PDF_COMMANDS = 2
 OPTION_CASES = [
     {
         "output_type": "docx",
@@ -102,6 +103,94 @@ def test_output_options_are_applied_only_when_changed(
             assert flag in command
         for flag, value in case["expected_pairs"]:
             assert _contains_flag_pair(command, flag, value)
+
+    asyncio.run(run())
+
+
+def test_force_rtl_pdf_uses_epub_intermediate_for_non_epub_input(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        commands: list[list[str]] = []
+        rtl_paths: list[Path] = []
+        input_file = tmp_path / "book.docx"
+        input_file.write_text("hello")
+        output_file = input_file.with_suffix(".pdf")
+        intermediate_epub = input_file.with_suffix(".epub")
+
+        original_rtl = convert_utils.set_epub_to_rtl
+
+        async def fake_run(
+            command: list[str], timeout: int | None = TASK_TIMEOUT
+        ) -> tuple[int | None, str]:
+            commands.append(command)
+            Path(command[2]).write_text("converted")
+            return 0, ""
+
+        converter._run_command = fake_run  # type: ignore[method-assign]
+        convert_utils.set_epub_to_rtl = lambda path: rtl_paths.append(path) or True
+        try:
+            result = await converter.convert_ebook_many(
+                input_file,
+                "pdf",
+                options=ConversionOptions(
+                    force_rtl=True, pdf_paper_size="a4", pdf_page_numbers=True
+                ),
+            )
+        finally:
+            convert_utils.set_epub_to_rtl = original_rtl
+
+        assert result.output_files == [output_file]
+        assert result.converted_to_rtl is True
+        assert result.conversion_error == ""
+        assert len(commands) == EXPECTED_RTL_PDF_COMMANDS
+        assert commands[0][:3] == ["ebook-convert", str(input_file), str(intermediate_epub)]
+        assert commands[1][:3] == ["ebook-convert", str(intermediate_epub), str(output_file)]
+        assert "--paper-size" not in commands[0]
+        assert "--pdf-page-numbers" not in commands[0]
+        assert _contains_flag_pair(commands[1], "--paper-size", "a4")
+        assert "--pdf-page-numbers" in commands[1]
+        assert rtl_paths == [intermediate_epub]
+        assert intermediate_epub.exists() is False
+
+    asyncio.run(run())
+
+
+def test_force_rtl_pdf_with_epub_input_uses_existing_preprocess(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        commands: list[list[str]] = []
+        rtl_paths: list[Path] = []
+        input_file = tmp_path / "book.epub"
+        input_file.write_text("hello")
+        output_file = input_file.with_suffix(".pdf")
+
+        original_rtl = convert_utils.set_epub_to_rtl
+
+        async def fake_run(
+            command: list[str], timeout: int | None = TASK_TIMEOUT
+        ) -> tuple[int | None, str]:
+            commands.append(command)
+            Path(command[2]).write_text("converted")
+            return 0, ""
+
+        converter._run_command = fake_run  # type: ignore[method-assign]
+        convert_utils.set_epub_to_rtl = lambda path: rtl_paths.append(path) or True
+        try:
+            result = await converter.convert_ebook_many(
+                input_file,
+                "pdf",
+                options=ConversionOptions(force_rtl=True, pdf_paper_size="letter"),
+            )
+        finally:
+            convert_utils.set_epub_to_rtl = original_rtl
+
+        assert result.output_files == [output_file]
+        assert result.converted_to_rtl is True
+        assert result.conversion_error == ""
+        assert len(commands) == 1
+        assert commands[0][:3] == ["ebook-convert", str(input_file), str(output_file)]
+        assert _contains_flag_pair(commands[0], "--paper-size", "letter")
+        assert rtl_paths == [input_file]
 
     asyncio.run(run())
 
