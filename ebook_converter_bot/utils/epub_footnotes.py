@@ -14,6 +14,7 @@ HAMESH_LINE_NUMBER_SQUARE_PATTERN = re.compile(r"^\s*(\[\s*\^?[\u0660-\u0669\d]+
 HAMESH_LINE_NUMBER_PLAIN_PATTERN = re.compile(
     r"^\s*([\u0660-\u0669\d]+)(?:\s*[-–—.:،)]\s*|\s+)(.*)$"
 )
+EXPLICIT_HAMESH_LINE_PATTERNS = (HAMESH_LINE_NUMBER_PATTERN, HAMESH_LINE_NUMBER_SQUARE_PATTERN)
 
 BR_TAG_PATTERN = re.compile(r"(?i)</?(?:\w+:)?br\s*/?>")
 LAST_FOOTNOTE_SPAN_PATTERN = re.compile(
@@ -438,12 +439,16 @@ def _append_lines_to_aside_element(aside_elem: etree._Element, lines: list[str])
     aside_elem.insert(span_index, replacement)
 
 
-def _match_hamesh_line_number(line: str) -> re.Match[str] | None:
-    for pattern in (
-        HAMESH_LINE_NUMBER_PATTERN,
-        HAMESH_LINE_NUMBER_SQUARE_PATTERN,
-        HAMESH_LINE_NUMBER_PLAIN_PATTERN,
-    ):
+def _match_hamesh_line_number(line: str, *, allow_plain: bool) -> re.Match[str] | None:
+    patterns = (
+        (
+            *EXPLICIT_HAMESH_LINE_PATTERNS,
+            HAMESH_LINE_NUMBER_PLAIN_PATTERN,
+        )
+        if allow_plain
+        else EXPLICIT_HAMESH_LINE_PATTERNS
+    )
+    for pattern in patterns:
         match = pattern.match(line)
         if match:
             return match
@@ -460,12 +465,17 @@ def get_hamesh_items(hamesh_html: list[str]) -> dict[int, str]:
         lines = [line.strip() for line in BR_TAG_PATTERN.split(current) if line.strip()]
         if not lines:
             continue
+        allow_plain = not any(
+            pattern.match(line) for pattern in EXPLICIT_HAMESH_LINE_PATTERNS for line in lines
+        )
 
         idx = 0
         if lines[0].startswith("="):
             continuation_lines = [lines[0]]
-            idx = 1
-            while idx < len(lines) and not _match_hamesh_line_number(lines[idx]):
+            idx += 1
+            while idx < len(lines) and not _match_hamesh_line_number(
+                lines[idx], allow_plain=allow_plain
+            ):
                 continuation_lines.append(lines[idx])
                 idx += 1
             continuation_text = "<br />".join(continuation_lines).strip()
@@ -475,7 +485,7 @@ def get_hamesh_items(hamesh_html: list[str]) -> dict[int, str]:
                 )
 
         while idx < len(lines):
-            match = _match_hamesh_line_number(lines[idx])
+            match = _match_hamesh_line_number(lines[idx], allow_plain=allow_plain)
             if not match:
                 idx += 1
                 continue
@@ -483,7 +493,9 @@ def get_hamesh_items(hamesh_html: list[str]) -> dict[int, str]:
             number = match.group(1)
             content_lines = [match.group(2).strip()] if match.group(2).strip() else []
             idx += 1
-            while idx < len(lines) and not _match_hamesh_line_number(lines[idx]):
+            while idx < len(lines) and not _match_hamesh_line_number(
+                lines[idx], allow_plain=allow_plain
+            ):
                 content_lines.append(lines[idx])
                 idx += 1
             content = "<br />".join(line.strip() for line in content_lines if line.strip())

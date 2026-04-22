@@ -1,5 +1,6 @@
 # ruff: noqa: RUF001
 
+import re
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
 
@@ -191,6 +192,60 @@ def test_standardize_epub_footnotes_preserves_unlinked_numbered_sublines(tmp_pat
     assert "١ - فرع أول" in page_1
     assert "٢ - فرع ثان" in page_1
     assert '<aside id="fn1"' in page_1
+
+
+def test_standardize_epub_footnotes_ignores_numbered_sublines_when_explicit_markers_exist(
+    tmp_path: Path,
+) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<div><p>نص قبل (^١) ثم نص آخر (^٢)</p><hr /><p class="hamesh">'
+            "(^١) أصل الحاشية<br />١ - فرع أول<br />٢ - فرع ثان<br />٣ - فرع ثالث<br />(^٢) هامش ثان</p></div>"
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    assert 'id="fnref1"' in page_1
+    assert 'id="fnref2"' in page_1
+    assert '<aside id="fn3"' not in page_1
+    assert '<aside id="fn4"' not in page_1
+    fn1 = re.search(r'<aside id="fn1".*?<span>(.*?)</span></aside>', page_1, flags=re.S)
+    fn2 = re.search(r'<aside id="fn2".*?<span>(.*?)</span></aside>', page_1, flags=re.S)
+    assert fn1
+    assert fn2
+    assert "فرع أول" in fn1.group(1)
+    assert "فرع ثان" in fn1.group(1)
+    assert "فرع ثالث" in fn1.group(1)
+    assert "هامش ثان" in fn2.group(1)
+    assert "فرع أول" not in fn2.group(1)
+
+
+def test_standardize_epub_footnotes_keeps_plain_number_style_when_no_explicit_markers(
+    tmp_path: Path,
+) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body='<div><p>متن (١) ثم (٢)</p><hr /><p class="hamesh">١ - هامش أول<br />٢ - هامش ثان</p></div>',
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    assert "هامش أول" in page_1
+    assert "هامش ثان" in page_1
+    assert ">(١)</a>" in page_1
+    assert ">(٢)</a>" in page_1
+    assert '<aside id="fn1"' in page_1
+    assert '<aside id="fn2"' in page_1
 
 
 def test_standardize_epub_footnotes_matches_by_number_not_position(tmp_path: Path) -> None:
