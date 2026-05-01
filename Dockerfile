@@ -1,6 +1,6 @@
 FROM ghcr.io/yshalsager/calibre-with-kfx:20260412-0043@sha256:d48b5010d168ad71c5daa70996819eb4c9532fb8351974a079fa183c37190ffd
 
-COPY --from=ghcr.io/astral-sh/uv:latest@sha256:b1e699368d24c57cda93c338a57a8c5a119009ba809305cc8e86986d4a006754 /uv /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:3b7b60a81d3c57ef471703e5c83fd4aaa33abcd403596fb22ab07db85ae91347 /uv /bin/
 WORKDIR /code
 COPY pyproject.toml uv.lock /code/
 RUN uv sync --frozen --no-cache
