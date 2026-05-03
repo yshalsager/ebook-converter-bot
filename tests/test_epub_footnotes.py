@@ -248,6 +248,134 @@ def test_standardize_epub_footnotes_keeps_plain_number_style_when_no_explicit_ma
     assert '<aside id="fn2"' in page_1
 
 
+def test_standardize_epub_footnotes_supports_section_local_calibre_footnotes(
+    tmp_path: Path,
+) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<p dir="rtl" class="block_">متن أول<span class="text_"><sup class="calibre1">(1)</sup></span>.</p>'
+            '<hr class="calibre2"/>'
+            '<p dir="rtl" class="block_"><span class="text_">(1)</span> هامش أول.</p>'
+            '<p dir="rtl" class="block_">عنوان صفحة</p>'
+            '<hr class="calibre3"/>'
+            '<p dir="rtl" class="block_">متن ثان<span class="text_"><sup class="calibre1">(1)</sup></span>.</p>'
+            '<hr class="calibre2"/>'
+            '<p dir="rtl" class="block_"><span class="text_">(1)</span> هامش ثان.</p>'
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    assert 'href="#fn1"' in page_1
+    assert 'id="fnref1"' in page_1
+    assert 'href="#fn2"' in page_1
+    assert 'id="fnref2"' in page_1
+    assert '<aside id="fn1" epub:type="footnote">' in page_1
+    assert '<aside id="fn2" epub:type="footnote">' in page_1
+    assert page_1.count('<span class="text_">(1)</span>') == 0
+    fn1 = re.search(r'<aside id="fn1".*?<span>(.*?)</span></aside>', page_1, flags=re.S)
+    fn2 = re.search(r'<aside id="fn2".*?<span>(.*?)</span></aside>', page_1, flags=re.S)
+    assert fn1
+    assert fn2
+    assert "هامش أول" in fn1.group(1)
+    assert "هامش ثان" in fn2.group(1)
+
+
+def test_standardize_epub_footnotes_merges_same_file_calibre_continuation(
+    tmp_path: Path,
+) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<p dir="rtl" class="block_">متن أول<span class="text_"><sup class="calibre1">(1)</sup></span>.</p>'
+            '<hr class="calibre2"/>'
+            '<p dir="rtl" class="block_"><span class="text_">(1)</span> بداية الهامش =</p>'
+            '<hr class="calibre3"/>'
+            '<p dir="rtl" class="block_">= تتمة الهامش السابق.</p>'
+            '<p dir="rtl" class="block_"><span class="text_">(1)</span> هامش غير مرتبط.</p>'
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    fn1 = re.search(r'<aside id="fn1".*?<span>(.*?)</span></aside>', page_1, flags=re.S)
+    assert fn1
+    assert "بداية الهامش =" in fn1.group(1)
+    assert "تتمة الهامش السابق" in fn1.group(1)
+    assert "هامش غير مرتبط" not in fn1.group(1)
+    assert "هامش غير مرتبط" in page_1
+
+
+def test_standardize_epub_footnotes_merges_same_file_calibre_continuation_after_page_text(
+    tmp_path: Path,
+) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<p dir="rtl" class="block_">متن أول<span class="text_"><sup class="calibre1">(1)</sup></span>.</p>'
+            '<hr class="calibre2"/>'
+            '<p dir="rtl" class="block_"><span class="text_">(1)</span> بداية الهامش =</p>'
+            '<p dir="rtl" class="block_">عنوان صفحة</p>'
+            '<hr class="calibre3"/>'
+            '<p dir="rtl" class="block_">متن الصفحة التالية</p>'
+            '<p dir="rtl" class="block_1"><span dir="ltr"></span></p>'
+            '<hr class="calibre2"/>'
+            '<p dir="rtl" class="block_">= تتمة الهامش السابق.</p>'
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    fn1 = re.search(r'<aside id="fn1".*?<span>(.*?)</span></aside>', page_1, flags=re.S)
+    assert fn1
+    assert "بداية الهامش =" in fn1.group(1)
+    assert "تتمة الهامش السابق" in fn1.group(1)
+    assert "= تتمة الهامش السابق." not in page_1
+
+
+def test_standardize_epub_footnotes_skips_calibre_continuation_after_unlinked_note(
+    tmp_path: Path,
+) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<p dir="rtl" class="block_">متن أول<span class="text_"><sup class="calibre1">(1)</sup></span>.</p>'
+            '<hr class="calibre2"/>'
+            '<p dir="rtl" class="block_"><span class="text_">(1)</span> هامش مرتبط.</p>'
+            '<p dir="rtl" class="block_">فاصل بلا إحالة</p>'
+            '<hr class="calibre2"/>'
+            '<p dir="rtl" class="block_"><span class="text_">(1)</span> هامش غير مرتبط =</p>'
+            '<hr class="calibre3"/>'
+            '<p dir="rtl" class="block_">= تتمة لا ينبغي نقلها.</p>'
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    fn1 = re.search(r'<aside id="fn1".*?<span>(.*?)</span></aside>', page_1, flags=re.S)
+    assert fn1
+    assert "هامش مرتبط" in fn1.group(1)
+    assert "تتمة لا ينبغي نقلها" not in fn1.group(1)
+    assert "= تتمة لا ينبغي نقلها." in page_1
+
+
 def test_standardize_epub_footnotes_matches_by_number_not_position(tmp_path: Path) -> None:
     epub_path = tmp_path / "book.epub"
     _create_epub(

@@ -265,6 +265,12 @@ def _replace_paragraph_in_tree(old: etree._Element, new_fragment: str) -> bool:
 def _build_paragraph_contexts(root: etree._Element) -> list[_ParagraphContext]:
     paragraphs: list[etree._Element] = []
     _collect_body_paragraphs(root, paragraphs)
+    return _build_paragraph_contexts_from_paragraphs(paragraphs)
+
+
+def _build_paragraph_contexts_from_paragraphs(
+    paragraphs: list[etree._Element],
+) -> list[_ParagraphContext]:
     contexts: list[_ParagraphContext] = []
     for paragraph in paragraphs:
         paragraph_html = etree.tostring(paragraph, encoding="unicode", method="xml")
@@ -329,6 +335,14 @@ def _rewrite_body_footnote_links(
     new_hamesh_asides: list[etree._Element],
 ) -> int:
     contexts = _build_paragraph_contexts(root)
+    return _rewrite_context_footnote_links(contexts, hamesh_items, new_hamesh_asides)
+
+
+def _rewrite_context_footnote_links(
+    contexts: list[_ParagraphContext],
+    hamesh_items: dict[int, str],
+    new_hamesh_asides: list[etree._Element],
+) -> int:
     if not contexts:
         return 0
 
@@ -379,6 +393,205 @@ def _replace_hamesh_nodes(
         if node in list(parent):
             parent.remove(node)
     return True
+
+
+def _calibre_footnote_marker_elem(paragraph: etree._Element) -> etree._Element | None:
+    if _tag_name(paragraph) != "p" or (paragraph.text or "").strip():
+        return None
+    first_child = next(iter(paragraph), None)
+    if first_child is None or _tag_name(first_child) != "span":
+        return None
+    marker = "".join(first_child.itertext()).strip()
+    return first_child if REFERENCE_MARKER_PATTERN.fullmatch(marker) else None
+
+
+def _calibre_footnote_line(paragraph: etree._Element) -> str | None:
+    marker_elem = _calibre_footnote_marker_elem(paragraph)
+    if marker_elem is None:
+        return None
+    marker = "".join(marker_elem.itertext()).strip()
+    clone = etree.fromstring(etree.tostring(paragraph, encoding="utf-8"))
+    clone_marker = _calibre_footnote_marker_elem(clone)
+    if clone_marker is None:
+        return None
+    tail = clone_marker.tail or ""
+    children = list(clone)
+    marker_index = children.index(clone_marker)
+    if marker_index == 0:
+        clone.text = (clone.text or "") + tail
+    else:
+        previous = children[marker_index - 1]
+        previous.tail = (previous.tail or "") + tail
+    clone.remove(clone_marker)
+    content = _inner_html(clone).strip()
+    return f"{marker} {content}" if content else marker
+
+
+def _calibre_continuation_line(paragraph: etree._Element) -> str | None:
+    if _tag_name(paragraph) != "p" or _calibre_footnote_marker_elem(paragraph) is not None:
+        return None
+    content = _inner_html(paragraph).strip().lstrip()
+    if not content.startswith("="):
+        return None
+    return content[1:].strip() or None
+
+
+def _collect_paragraphs_in_nodes(nodes: list[etree._Element]) -> list[etree._Element]:
+    paragraphs: list[etree._Element] = []
+    for node in nodes:
+        if _tag_name(node) == "p" and _calibre_footnote_marker_elem(node) is None:
+            paragraphs.append(node)
+        _collect_body_paragraphs(node, paragraphs)
+    return paragraphs
+
+
+def _renumber_hamesh_items(hamesh_items: dict[int, str], start_at: int) -> dict[int, str]:
+    renumbered: dict[int, str] = {}
+    for old_id, aside_html in hamesh_items.items():
+        note_id = start_at + old_id - 1
+        aside = _parse_fragment_element(aside_html)
+        if aside is None:
+            continue
+        aside.set("id", f"fn{note_id}")
+        anchor = next((child for child in list(aside) if _tag_name(child) == "a"), None)
+        if anchor is not None:
+            anchor.set("href", f"#fnref{note_id}")
+        renumbered[note_id] = etree.tostring(aside, encoding="unicode", method="xml")
+    return renumbered
+
+
+def _replace_calibre_footnote_nodes(
+    footnote_nodes: list[etree._Element],
+    new_hamesh_asides: list[etree._Element],
+    note_ids: list[int],
+) -> bool:
+    if not footnote_nodes or not new_hamesh_asides:
+        return False
+    linked_ids = {
+        int(str(aside.get("id"))[2:])
+        for aside in new_hamesh_asides
+        if str(aside.get("id")).startswith("fn") and str(aside.get("id"))[2:].isdigit()
+    }
+    linked_nodes = [
+        node
+        for node, note_id in zip(footnote_nodes, note_ids, strict=True)
+        if note_id in linked_ids
+    ]
+    if not linked_nodes:
+        return False
+    parent = linked_nodes[0].getparent()
+    if parent is None:
+        return False
+    try:
+        first_index = list(parent).index(linked_nodes[0])
+    except ValueError:
+        return False
+    new_hamesh = etree.Element("div", {"class": "hamesh"})
+    for aside in new_hamesh_asides:
+        new_hamesh.append(aside)
+    for node in linked_nodes:
+        if node in list(parent):
+            parent.remove(node)
+    parent.insert(first_index, new_hamesh)
+    return True
+
+
+def _immediate_footnote_aside_before(elem: etree._Element) -> etree._Element | None:
+    sibling = elem.getprevious()
+    while sibling is not None:
+        if _calibre_footnote_marker_elem(sibling) is not None:
+            return None
+        descendants = [sibling, *list(sibling.iterdescendants())]
+        for candidate in reversed(descendants):
+            if _tag_name(candidate) != "aside":
+                continue
+            footnote_type = (
+                str(candidate.attrib.get(f"{{{EPUB_NS}}}type") or "").strip()
+                or str(candidate.attrib.get("epub:type") or "").strip()
+            )
+            if footnote_type == "footnote":
+                span = next(
+                    (child for child in list(candidate) if _tag_name(child) == "span"), None
+                )
+                if span is not None and _inner_html(span).rstrip().endswith("="):
+                    return candidate
+        sibling = sibling.getprevious()
+    return None
+
+
+def _calibre_group_after_hr(
+    children: list[etree._Element], index: int
+) -> tuple[etree._Element | None, str | None, list[etree._Element], list[str]]:
+    continuation_node: etree._Element | None = None
+    continuation = None
+    first_after_hr = children[index + 1] if index + 1 < len(children) else None
+    if first_after_hr is not None:
+        continuation = _calibre_continuation_line(first_after_hr)
+        if continuation:
+            continuation_node = first_after_hr
+
+    footnote_nodes: list[etree._Element] = []
+    footnote_lines: list[str] = []
+    start_index = index + 2 if continuation_node is not None else index + 1
+    for candidate in children[start_index:]:
+        line = _calibre_footnote_line(candidate)
+        if line is None:
+            break
+        footnote_nodes.append(candidate)
+        footnote_lines.append(line)
+    return continuation_node, continuation, footnote_nodes, footnote_lines
+
+
+def _merge_calibre_continuation(
+    hr: etree._Element,
+    continuation_node: etree._Element | None,
+    continuation: str | None,
+) -> bool:
+    if not continuation:
+        return False
+    last_aside = _immediate_footnote_aside_before(hr)
+    if last_aside is None:
+        return False
+    _append_lines_to_aside_element(last_aside, [continuation])
+    parent = continuation_node.getparent() if continuation_node is not None else None
+    if parent is not None:
+        parent.remove(continuation_node)
+    return True
+
+
+def _update_calibre_footnote_html(root: etree._Element) -> bool:
+    changed = False
+    next_note_id = 1
+    for parent in list(root.iter()):
+        children = list(parent)
+        previous_hr_index = -1
+        for index, child in enumerate(children):
+            if _tag_name(child) != "hr":
+                continue
+            continuation_node, continuation, footnote_nodes, footnote_lines = (
+                _calibre_group_after_hr(children, index)
+            )
+            changed = _merge_calibre_continuation(child, continuation_node, continuation) or changed
+            if footnote_lines:
+                hamesh_items = get_hamesh_items(
+                    [f'<p class="hamesh">{"<br />".join(footnote_lines)}</p>']
+                )
+                hamesh_items = _renumber_hamesh_items(hamesh_items, next_note_id)
+                note_ids = list(range(next_note_id, next_note_id + len(footnote_nodes)))
+                next_note_id = max((*hamesh_items, next_note_id - 1)) + 1
+                new_hamesh_asides: list[etree._Element] = []
+                contexts = _build_paragraph_contexts_from_paragraphs(
+                    _collect_paragraphs_in_nodes(children[previous_hr_index + 1 : index])
+                )
+                linked_notes = _rewrite_context_footnote_links(
+                    contexts, hamesh_items, new_hamesh_asides
+                )
+                if linked_notes and _replace_calibre_footnote_nodes(
+                    footnote_nodes, new_hamesh_asides, note_ids
+                ):
+                    changed = True
+            previous_hr_index = index
+    return changed
 
 
 def _footnote_aside_html_to_line(aside_html: str) -> str | None:
@@ -517,7 +730,7 @@ def update_hamesh_html(html_fragment: str) -> str:
     hamesh_nodes: list[tuple[etree._Element, etree._Element]] = []
     _collect_hamesh_nodes(root, hamesh_nodes)
     if not hamesh_nodes:
-        return html_fragment
+        return _inner_html(root) if _update_calibre_footnote_html(root) else html_fragment
 
     hamesh_items = get_hamesh_items(
         [etree.tostring(node, encoding="unicode", method="xml") for _parent, node in hamesh_nodes]
