@@ -10,6 +10,8 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Africa/Cairo
+    security_opt:
+      - seccomp=/etc/docker/seccomp-profile-v0.2.1.json
     restart: unless-stopped
     volumes:
       - "./:/app"
