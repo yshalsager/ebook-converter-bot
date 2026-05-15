@@ -28,8 +28,10 @@ from ebook_converter_bot.utils.converter_options import (
     ConversionRequestState,
     apply_persisted_options,
     build_options_keyboard,
+    build_route_options_keyboard,
     cleanup_expired_requests,
     format_button_rows,
+    route_option_values,
     set_request_option,
     state_to_persisted_options,
 )
@@ -42,6 +44,7 @@ CB_VIEW = "view"
 CB_OPT = "opt"
 CB_CTX = "ctx"
 CB_FMT = "fmt"
+CB_RUN = "run"
 CB_CANCEL = "cancel"
 
 converter = Converter()
@@ -113,6 +116,11 @@ def options_labels(lang: str) -> dict[str, str]:
         "amiri_label": _("Amiri", lang),
         "ibm_plex_sans_arabic_label": _("IBM Plex Sans Arabic", lang),
         "pdf_page_numbers_label": _("PDF: page numbers", lang),
+        "conversion_backend_label": _("Conversion backend", lang),
+        "calibre_label": _("Calibre", lang),
+        "pandoc_label": _("Pandoc", lang),
+        "pandoc_toc_label": _("Table of contents", lang),
+        "pandoc_number_sections_label": _("Number sections", lang),
         "kfx_doc_type_label": _("KFX doc type", lang),
         "kfx_pages_label": _("KFX pages", lang),
         "default_label": _("Default", lang),
@@ -123,6 +131,7 @@ def options_labels(lang: str) -> dict[str, str]:
         "pdoc_label": "PDOC",
         "ebok_label": "EBOK",
         "reset_options_label": _("Reset options", lang),
+        "convert_label": f"🔄 {_('Convert', lang)}",
         "back_to_formats_label": _("Back to formats", lang),
         "cancel_label": _("Cancel", lang),
     }
@@ -183,6 +192,12 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 _("PDF Arabic font: {}", lang).format(state.pdf_font_profile.replace("_", " ")),
             ),
             (state.pdf_page_numbers, _("PDF: page numbers", lang)),
+            (
+                state.conversion_backend == "pandoc",
+                _("Conversion backend: Pandoc", lang),
+            ),
+            (state.pandoc_toc, _("Table of contents", lang)),
+            (state.pandoc_number_sections, _("Number sections", lang)),
             (state.kfx_doc_type == "book", _("KFX doc type: EBOK", lang)),
             (state.kfx_pages == 0, _("KFX pages: Auto", lang)),
         )
@@ -191,8 +206,17 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
     return "\n".join(summary_parts)
 
 
-def build_conversion_options(state: ConversionRequestState) -> ConversionOptions:
+def build_conversion_options(
+    state: ConversionRequestState,
+    output_type: str | None = None,
+) -> ConversionOptions:
     options = ConversionOptions()
+    if output_type is not None:
+        for key, value in route_option_values(state, output_type).items():
+            if hasattr(options, key):
+                setattr(options, key, value)
+        return options
+
     is_epub_input = state.input_ext == "epub"
     option_values = {
         "force_rtl": state.force_rtl,
@@ -219,6 +243,9 @@ def build_conversion_options(state: ConversionRequestState) -> ConversionOptions
         "pdf_paper_size": state.pdf_paper_size,
         "pdf_font_profile": state.pdf_font_profile,
         "pdf_page_numbers": state.pdf_page_numbers,
+        "conversion_backend": state.conversion_backend,
+        "pandoc_toc": state.pandoc_toc,
+        "pandoc_number_sections": state.pandoc_number_sections,
     }
     for key, value in option_values.items():
         if hasattr(options, key):
@@ -243,18 +270,25 @@ def render_screen(
         )
         buttons = build_options_keyboard(request_id, state, labels)
         return message_text, buttons
-    message_text = (
-        f"{_('Select the format you want to convert to:', lang)}\n\n{summary}"
-        if summary
-        else _("Select the format you want to convert to:", lang)
+    message_text = _("Select the format you want to convert to:", lang)
+    buttons = format_button_rows(
+        request_id,
+        converter.get_supported_output_types_for_input(state.input_ext),
+        per_row=3,
     )
-    buttons = format_button_rows(request_id, converter.supported_output_types, per_row=3)
-    buttons.append(
-        [
-            Button.inline(_("Options ⚙️", lang), data=f"{CB_VIEW}|opts|{request_id}"),
-            Button.inline(_("Cancel", lang), data=f"{CB_CANCEL}|{request_id}"),
-        ]
-    )
+    buttons.append([Button.inline(_("Cancel", lang), data=f"{CB_CANCEL}|{request_id}")])
+    return message_text, buttons
+
+
+def render_route_options_screen(
+    request_id: str,
+    state: ConversionRequestState,
+    output_type: str,
+    lang: str,
+) -> tuple[str, list[list]]:
+    labels = options_labels(lang)
+    message_text = f"{_('Conversion options:', lang)} {output_type}"
+    buttons = build_route_options_keyboard(request_id, state, output_type, labels)
     return message_text, buttons
 
 
@@ -345,6 +379,7 @@ async def view_switch_callback(event: events.CallbackQuery.Event) -> None:
         message_text, buttons = render_screen(request_id, state, lang, show_options=True)
         await event.edit(message_text, buttons=buttons)
         return
+    state.selected_output_type = None
     message_text, buttons = render_screen(request_id, state, lang)
     await event.edit(message_text, buttons=buttons)
 
@@ -361,7 +396,12 @@ async def options_context_callback(event: events.CallbackQuery.Event) -> None:
     state.options_context = context_name
     save_request_state_defaults(event.chat_id, state)
     lang = get_lang(event.chat_id)
-    message_text, buttons = render_screen(request_id, state, lang, show_options=True)
+    if state.selected_output_type:
+        message_text, buttons = render_route_options_screen(
+            request_id, state, state.selected_output_type, lang
+        )
+    else:
+        message_text, buttons = render_screen(request_id, state, lang, show_options=True)
     await event.edit(message_text, buttons=buttons)
 
 
@@ -377,7 +417,12 @@ async def options_toggle_callback(event: events.CallbackQuery.Event) -> None:
         await event.answer(_("This option is not available in this context.", lang), alert=True)
         return
     save_request_state_defaults(event.chat_id, state)
-    message_text, buttons = render_screen(request_id, state, lang, show_options=True)
+    if state.selected_output_type:
+        message_text, buttons = render_route_options_screen(
+            request_id, state, state.selected_output_type, lang
+        )
+    else:
+        message_text, buttons = render_screen(request_id, state, lang, show_options=True)
     await event.edit(message_text, buttons=buttons)
 
 
@@ -395,6 +440,19 @@ async def cancel_conversion_callback(event: events.CallbackQuery.Event) -> None:
 
 @BOT.on(events.CallbackQuery(pattern=rf"{CB_FMT}\|[\w-]+\|\d+"))
 @tg_exceptions_handler
+async def format_selected_callback(event: events.CallbackQuery.Event) -> None:
+    _fmt, output_type, request_id = event.data.decode().split("|")
+    state = await get_request_state(event, request_id)
+    if not state:
+        return
+    state.selected_output_type = output_type
+    lang = get_lang(event.chat_id)
+    message_text, buttons = render_route_options_screen(request_id, state, output_type, lang)
+    await event.edit(message_text, buttons=buttons)
+
+
+@BOT.on(events.CallbackQuery(pattern=rf"{CB_RUN}\|[\w-]+\|\d+"))
+@tg_exceptions_handler
 @analysis
 async def converter_callback(
     event: events.CallbackQuery.Event,
@@ -402,13 +460,13 @@ async def converter_callback(
     """Converter callback handler."""
     lang = get_lang(event.chat_id)
     converted = False
-    _fmt, output_type, request_id = event.data.decode().split("|")
+    _run, output_type, request_id = event.data.decode().split("|")
     state = await get_request_state(event, request_id, pop=True)
     if not state:
         return None
     reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
     input_file = Path(state.input_file_path)
-    options = build_conversion_options(state)
+    options = build_conversion_options(state, output_type)
     batch_result = await converter.convert_ebook_many(
         input_file,
         output_type,

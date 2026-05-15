@@ -6,8 +6,48 @@ from typing import Any
 from telethon import Button
 from telethon.tl.types import KeyboardButtonCallback
 
-HIGHLIGHTED_FORMATS: set[str] = {"azw3", "docx", "epub", "kfx", "mobi", "pdf"}
+HIGHLIGHTED_FORMATS: set[str] = {"azw3", "docx", "epub", "kfx", "md", "mobi", "pdf"}
 CONTEXT_TYPES: tuple[str, ...] = ("docx", "epub", "pdf", "kfx")
+PANDOC_SHARED_INPUT_TYPES: set[str] = {"docx", "epub", "html", "md", "odt", "rtf", "txt"}
+PANDOC_ONLY_INPUT_TYPES: set[str] = {
+    "adoc",
+    "asciidoc",
+    "mediawiki",
+    "org",
+    "rst",
+    "t2t",
+    "tex",
+    "textile",
+    "tsv",
+    "typ",
+    "typst",
+}
+SHARED_BACKEND_OUTPUT_TYPES: set[str] = {"docx", "epub", "txt"}
+PANDOC_ONLY_OUTPUT_TYPES: set[str] = {"adoc", "html", "md", "org", "rst", "tex", "typ", "typst"}
+PANDOC_TOC_OUTPUT_TYPES: set[str] = {"docx", "epub", "html", "md", "rst", "tex", "typ", "typst"}
+PANDOC_NUMBER_SECTION_OUTPUT_TYPES: set[str] = {"docx", "epub", "html", "tex"}
+CALIBRE_COMMON_OUTPUT_TYPES: set[str] = {
+    "azw3",
+    "docx",
+    "epub",
+    "fb2",
+    "htmlz",
+    "kepub",
+    "lit",
+    "lrf",
+    "mobi",
+    "oeb",
+    "pdb",
+    "pmlz",
+    "rb",
+    "rtf",
+    "snb",
+    "tcr",
+    "txt",
+    "txtz",
+    "zip",
+}
+POLISH_OUTPUT_TYPES: set[str] = {"azw3", "epub", "kepub"}
 GLOBAL_BOOL_OPTIONS: tuple[tuple[str, str], ...] = (
     ("rtl", "force_rtl_label"),
     ("compress_cover", "compress_cover_label"),
@@ -31,6 +71,11 @@ GLOBAL_VALUE_OPTIONS: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] =
             ("200", "200%"),
         ),
     ),
+)
+BACKEND_VALUE_OPTION: tuple[str, str, tuple[tuple[str, str], ...]] = (
+    "conversion_backend",
+    "conversion_backend_label",
+    (("calibre", "calibre_label"), ("pandoc", "pandoc_label")),
 )
 CONTEXT_VALUE_OPTIONS: dict[str, tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...]] = {
     "docx": (
@@ -100,6 +145,8 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
     "epub_split_volumes": "epub_split_volumes",
     "epub_standardize_footnotes": "epub_standardize_footnotes",
     "pdf_page_numbers": "pdf_page_numbers",
+    "pandoc_toc": "pandoc_toc",
+    "pandoc_number_sections": "pandoc_number_sections",
 }
 EPUB_ONLY_BOOL_OPTIONS: set[str] = {
     "fix_epub",
@@ -116,6 +163,7 @@ VALUE_OPTION_ATTRS: dict[str, str] = {
     "epub_version": "epub_version",
     "pdf_paper_size": "pdf_paper_size",
     "pdf_font_profile": "pdf_font_profile",
+    "conversion_backend": "conversion_backend",
 }
 VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "change_justification": {"original": "original", "left": "left", "justify": "justify"},
@@ -131,6 +179,7 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
         "amiri": "amiri",
         "ibm_plex_sans_arabic": "ibm_plex_sans_arabic",
     },
+    "conversion_backend": {"calibre": "calibre", "pandoc": "pandoc"},
 }
 EPUB_EXTRA_BOOL_OPTIONS: tuple[tuple[str, str], ...] = (
     ("fix_epub", "fix_epub_label"),
@@ -159,6 +208,9 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "pdf_paper_size",
     "pdf_font_profile",
     "pdf_page_numbers",
+    "conversion_backend",
+    "pandoc_toc",
+    "pandoc_number_sections",
 )
 PERSISTED_OPTION_ATTRS_SET = set(PERSISTED_OPTION_ATTRS)
 PERSISTED_BOOL_ATTRS = set(BOOL_OPTION_ATTRS.values())
@@ -173,6 +225,7 @@ class ConversionRequestState:
     input_file_path: str
     queued_at: float
     input_ext: str
+    selected_output_type: str | None = None
     force_rtl: bool = False
     compress_cover: bool = False
     fix_epub: bool = False
@@ -194,6 +247,9 @@ class ConversionRequestState:
     pdf_paper_size: str = "default"
     pdf_font_profile: str = "default"
     pdf_page_numbers: bool = False
+    conversion_backend: str = "calibre"
+    pandoc_toc: bool = False
+    pandoc_number_sections: bool = False
 
 
 @dataclass
@@ -278,6 +334,8 @@ def build_options_keyboard(
         _append_bool_row(keyboard_context, option_key, label_key)
     for option_key, prefix_label_key, value_specs in GLOBAL_VALUE_OPTIONS:
         _append_value_row(keyboard_context, option_key, prefix_label_key, value_specs)
+    if state.input_ext in PANDOC_SHARED_INPUT_TYPES:
+        _append_value_row(keyboard_context, *BACKEND_VALUE_OPTION)
 
     for option_key, prefix_label_key, value_specs in CONTEXT_VALUE_OPTIONS[state.options_context]:
         _append_value_row(keyboard_context, option_key, prefix_label_key, value_specs)
@@ -291,6 +349,179 @@ def build_options_keyboard(
             _append_bool_row(keyboard_context, option_key, label_key)
 
     rows.append([Button.inline(labels["reset_options_label"], data=f"opt|reset|1|{request_id}")])
+    rows.append(
+        [
+            Button.inline(labels["back_to_formats_label"], data=f"view|formats|{request_id}"),
+            Button.inline(labels["cancel_label"], data=f"cancel|{request_id}"),
+        ]
+    )
+    return rows
+
+
+def route_uses_pandoc(state: ConversionRequestState, output_type: str) -> bool:
+    return (
+        output_type in PANDOC_ONLY_OUTPUT_TYPES
+        or state.input_ext in PANDOC_ONLY_INPUT_TYPES
+        or (
+            state.conversion_backend == "pandoc"
+            and state.input_ext in PANDOC_SHARED_INPUT_TYPES
+            and output_type in SHARED_BACKEND_OUTPUT_TYPES
+        )
+    )
+
+
+def route_supports_rtl(state: ConversionRequestState, output_type: str) -> bool:
+    if route_uses_pandoc(state, output_type):
+        return output_type in {"epub", "html", "md"}
+    return output_type in {"epub", "pdf"}
+
+
+def route_option_values(
+    state: ConversionRequestState,
+    output_type: str,
+) -> dict[str, bool | str | int | None]:
+    uses_pandoc = route_uses_pandoc(state, output_type)
+    is_epub_input = state.input_ext == "epub"
+    values: dict[str, bool | str | int | None] = {
+        "force_rtl": state.force_rtl if route_supports_rtl(state, output_type) else False,
+        "compress_cover": False,
+        "fix_epub": state.fix_epub if is_epub_input else False,
+        "flat_toc": state.flat_toc if is_epub_input else False,
+        "smarten_punctuation": False,
+        "change_justification": "original",
+        "line_height": None,
+        "remove_paragraph_spacing": False,
+        "kfx_doc_type": "doc",
+        "kfx_pages": None,
+        "docx_page_size": "default",
+        "docx_no_toc": False,
+        "epub_version": "default",
+        "epub_inline_toc": False,
+        "epub_remove_background": False,
+        "epub_split_volumes": False,
+        "epub_standardize_footnotes": state.epub_standardize_footnotes if is_epub_input else False,
+        "pdf_paper_size": "default",
+        "pdf_font_profile": "default",
+        "pdf_page_numbers": False,
+        "conversion_backend": "pandoc" if uses_pandoc else "calibre",
+        "pandoc_toc": state.pandoc_toc
+        if uses_pandoc and output_type in PANDOC_TOC_OUTPUT_TYPES
+        else False,
+        "pandoc_number_sections": (
+            state.pandoc_number_sections
+            if uses_pandoc and output_type in PANDOC_NUMBER_SECTION_OUTPUT_TYPES
+            else False
+        ),
+    }
+    if uses_pandoc:
+        return values
+
+    if output_type in POLISH_OUTPUT_TYPES:
+        values["compress_cover"] = state.compress_cover
+    if output_type in CALIBRE_COMMON_OUTPUT_TYPES:
+        values.update(
+            {
+                "smarten_punctuation": state.smarten_punctuation,
+                "change_justification": state.change_justification,
+                "line_height": state.line_height,
+                "remove_paragraph_spacing": state.remove_paragraph_spacing,
+            }
+        )
+    if output_type == "docx":
+        values.update({"docx_page_size": state.docx_page_size, "docx_no_toc": state.docx_no_toc})
+    elif output_type == "epub":
+        values.update(
+            {
+                "epub_version": state.epub_version,
+                "epub_inline_toc": state.epub_inline_toc,
+                "epub_remove_background": state.epub_remove_background,
+                "epub_split_volumes": state.epub_split_volumes if is_epub_input else False,
+            }
+        )
+    elif output_type == "pdf":
+        values.update(
+            {
+                "pdf_paper_size": state.pdf_paper_size,
+                "pdf_font_profile": state.pdf_font_profile,
+                "pdf_page_numbers": state.pdf_page_numbers,
+            }
+        )
+    elif output_type == "kfx":
+        values.update({"kfx_doc_type": state.kfx_doc_type, "kfx_pages": state.kfx_pages})
+    return values
+
+
+def _append_route_global_options(
+    context: OptionsKeyboardContext,
+    output_type: str,
+) -> None:
+    uses_pandoc = route_uses_pandoc(context.state, output_type)
+    if route_supports_rtl(context.state, output_type):
+        _append_bool_row(context, "rtl", "force_rtl_label")
+    if uses_pandoc and output_type in PANDOC_TOC_OUTPUT_TYPES:
+        _append_bool_row(context, "pandoc_toc", "pandoc_toc_label")
+    if uses_pandoc and output_type in PANDOC_NUMBER_SECTION_OUTPUT_TYPES:
+        _append_bool_row(context, "pandoc_number_sections", "pandoc_number_sections_label")
+    if not uses_pandoc and output_type in POLISH_OUTPUT_TYPES:
+        _append_bool_row(context, "compress_cover", "compress_cover_label")
+    if not uses_pandoc and output_type in CALIBRE_COMMON_OUTPUT_TYPES:
+        for option_key, label_key in (
+            ("smarten", "smarten_punctuation_label"),
+            ("remove_paragraph_spacing", "remove_paragraph_spacing_label"),
+        ):
+            _append_bool_row(context, option_key, label_key)
+        for option_key, prefix_label_key, value_specs in GLOBAL_VALUE_OPTIONS:
+            _append_value_row(context, option_key, prefix_label_key, value_specs)
+
+
+def _append_route_context_options(
+    context: OptionsKeyboardContext,
+    output_type: str,
+) -> None:
+    if route_uses_pandoc(context.state, output_type):
+        return
+    if output_type not in CONTEXT_TYPES:
+        return
+    for option_key, prefix_label_key, value_specs in CONTEXT_VALUE_OPTIONS[output_type]:
+        _append_value_row(context, option_key, prefix_label_key, value_specs)
+    for option_key, label_key in CONTEXT_BOOL_OPTIONS[output_type]:
+        if option_key == "epub_split_volumes":
+            continue
+        _append_bool_row(context, option_key, label_key)
+
+
+def _append_route_epub_input_options(
+    context: OptionsKeyboardContext,
+    output_type: str,
+) -> None:
+    if context.state.input_ext != "epub":
+        return
+    for option_key, label_key in EPUB_EXTRA_BOOL_OPTIONS:
+        _append_bool_row(context, option_key, label_key)
+    if output_type == "epub" and not route_uses_pandoc(context.state, output_type):
+        _append_bool_row(context, "epub_split_volumes", "epub_split_volumes_label")
+
+
+def build_route_options_keyboard(
+    request_id: str,
+    state: ConversionRequestState,
+    output_type: str,
+    labels: dict[str, str],
+) -> list[list[KeyboardButtonCallback]]:
+    rows: list[list[KeyboardButtonCallback]] = []
+    keyboard_context = OptionsKeyboardContext(rows, request_id, state, labels)
+
+    if state.input_ext in PANDOC_SHARED_INPUT_TYPES and output_type in SHARED_BACKEND_OUTPUT_TYPES:
+        _append_value_row(keyboard_context, *BACKEND_VALUE_OPTION)
+    _append_route_global_options(keyboard_context, output_type)
+    _append_route_context_options(keyboard_context, output_type)
+    _append_route_epub_input_options(keyboard_context, output_type)
+
+    if rows:
+        rows.append(
+            [Button.inline(labels["reset_options_label"], data=f"opt|reset|1|{request_id}")]
+        )
+    rows.append([Button.inline(labels["convert_label"], data=f"run|{output_type}|{request_id}")])
     rows.append(
         [
             Button.inline(labels["back_to_formats_label"], data=f"view|formats|{request_id}"),
@@ -322,6 +553,9 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.pdf_paper_size = "default"
         state.pdf_font_profile = "default"
         state.pdf_page_numbers = False
+        state.conversion_backend = "calibre"
+        state.pandoc_toc = False
+        state.pandoc_number_sections = False
         return True
     bool_value = {"1": True, "0": False}.get(option_value)
     if option_key in BOOL_OPTION_ATTRS:

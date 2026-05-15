@@ -5,8 +5,11 @@ from ebook_converter_bot.utils.converter_options import (
     ConversionRequestState,
     apply_persisted_options,
     build_options_keyboard,
+    build_route_options_keyboard,
     cleanup_expired_requests,
     format_button_rows,
+    route_option_values,
+    route_uses_pandoc,
     set_request_option,
     state_to_persisted_options,
 )
@@ -40,6 +43,11 @@ LABELS = {
     "amiri_label": "Amiri",
     "ibm_plex_sans_arabic_label": "IBM Plex Sans Arabic",
     "pdf_page_numbers_label": "PDF: page numbers",
+    "conversion_backend_label": "Conversion backend",
+    "calibre_label": "Calibre",
+    "pandoc_label": "Pandoc",
+    "pandoc_toc_label": "Table of contents",
+    "pandoc_number_sections_label": "Number sections",
     "kfx_doc_type_label": "KFX doc type",
     "kfx_pages_label": "KFX pages",
     "default_label": "Default",
@@ -50,6 +58,7 @@ LABELS = {
     "pdoc_label": "PDOC",
     "ebok_label": "EBOK",
     "reset_options_label": "Reset options",
+    "convert_label": "Convert",
     "back_to_formats_label": "Back to formats",
     "cancel_label": "Cancel",
 }
@@ -62,12 +71,12 @@ def _flatten_data(rows: list[list[KeyboardButtonCallback]]) -> list[bytes]:
 def test_format_button_rows_are_chunked_to_three() -> None:
     rows: list[list[KeyboardButtonCallback]] = format_button_rows(
         "12345678",
-        ["azw3", "docx", "epub", "fb2", "htmlz", "kepub", "kfx"],
+        ["azw3", "docx", "epub", "fb2", "htmlz", "md", "kfx"],
     )
     assert [len(row) for row in rows] == [3, 3, 1]
     assert rows[0][0].text == "🔸 azw3"
     assert rows[0][0].data == b"fmt|azw3|12345678"
-    assert rows[1][2].text == "kepub"
+    assert rows[1][2].text == "🔸 md"
 
 
 def test_options_keyboard_context_tabs_and_docx_controls() -> None:
@@ -94,6 +103,8 @@ def test_options_keyboard_context_tabs_and_docx_controls() -> None:
     assert b"opt|line_height|150|12345678" in data
     assert b"opt|line_height|175|12345678" in data
     assert b"opt|line_height|200|12345678" in data
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
     assert b"opt|docx_page_size|default|12345678" in data
     assert b"opt|docx_page_size|letter|12345678" in data
     assert b"opt|docx_page_size|a4|12345678" in data
@@ -149,6 +160,34 @@ def test_options_keyboard_epub_context_has_remove_background_toggle() -> None:
     assert b"opt|epub_split_volumes|1|12345678" in data
 
 
+def test_options_keyboard_shows_backend_selector_for_pandoc_capable_input() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        options_context="epub",
+    )
+    rows = build_options_keyboard("12345678", state, LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
+
+
+def test_options_keyboard_hides_backend_selector_for_pandoc_only_input() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.adoc",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="adoc",
+        options_context="epub",
+    )
+    rows = build_options_keyboard("12345678", state, LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|conversion_backend|calibre|12345678" not in data
+    assert b"opt|conversion_backend|pandoc|12345678" not in data
+
+
 def test_options_keyboard_epub_context_hides_epub_only_toggles_for_non_epub_input() -> None:
     state = ConversionRequestState(
         input_file_path="/tmp/book.pdf",  # noqa: S108
@@ -177,6 +216,180 @@ def test_options_keyboard_kfx_pages_none_and_auto_only() -> None:
     assert b"opt|kfx_pages|none|12345678" in data
     assert b"opt|kfx_pages|auto|12345678" in data
     assert all(b"opt|kfx_pages|200|" not in item for item in data)
+
+
+def test_route_options_for_docx_to_md_show_only_pandoc_relevant_controls() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.docx",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="docx",
+    )
+    rows = build_route_options_keyboard("12345678", state, "md", LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|rtl|1|12345678" in data
+    assert b"opt|pandoc_toc|1|12345678" in data
+    assert b"opt|pandoc_number_sections|1|12345678" not in data
+    assert b"opt|conversion_backend|calibre|12345678" not in data
+    assert b"opt|compress_cover|1|12345678" not in data
+    assert b"opt|docx_page_size|default|12345678" not in data
+    assert b"run|md|12345678" in data
+
+
+def test_route_options_for_shared_epub_output_show_backend_and_calibre_controls() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        conversion_backend="calibre",
+    )
+    rows = build_route_options_keyboard("12345678", state, "epub", LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
+    assert b"opt|rtl|1|12345678" in data
+    assert b"opt|smarten|1|12345678" in data
+    assert b"opt|epub_version|default|12345678" in data
+    assert b"opt|epub_inline_toc|1|12345678" in data
+    assert b"opt|docx_page_size|default|12345678" not in data
+    assert b"run|epub|12345678" in data
+
+
+def test_route_options_for_shared_epub_output_hide_calibre_controls_when_pandoc_selected() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        conversion_backend="pandoc",
+    )
+    rows = build_route_options_keyboard("12345678", state, "epub", LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
+    assert b"opt|rtl|1|12345678" in data
+    assert b"opt|pandoc_toc|1|12345678" in data
+    assert b"opt|pandoc_number_sections|1|12345678" in data
+    assert b"opt|smarten|1|12345678" not in data
+    assert b"opt|epub_version|default|12345678" not in data
+    assert b"run|epub|12345678" in data
+
+
+def test_route_options_for_epub_to_md_show_safe_preprocess_only() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.epub",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="epub",
+    )
+    rows = build_route_options_keyboard("12345678", state, "md", LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|rtl|1|12345678" in data
+    assert b"opt|pandoc_toc|1|12345678" in data
+    assert b"opt|pandoc_number_sections|1|12345678" not in data
+    assert b"opt|fix_epub|1|12345678" in data
+    assert b"opt|flat_toc|1|12345678" in data
+    assert b"opt|epub_standardize_footnotes|1|12345678" in data
+    assert b"opt|epub_split_volumes|1|12345678" not in data
+    assert b"opt|conversion_backend|calibre|12345678" not in data
+    assert b"opt|smarten|1|12345678" not in data
+
+
+def test_route_options_for_pandoc_only_input_to_epub_show_only_pandoc_relevant_options() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.adoc",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="adoc",
+    )
+    rows = build_route_options_keyboard("12345678", state, "epub", LABELS)
+    data = _flatten_data(rows)
+
+    assert route_uses_pandoc(state, "epub") is True
+    assert b"run|epub|12345678" in data
+    assert b"opt|reset|1|12345678" in data
+    assert b"opt|conversion_backend|calibre|12345678" not in data
+    assert b"opt|rtl|1|12345678" in data
+    assert b"opt|pandoc_toc|1|12345678" in data
+    assert b"opt|pandoc_number_sections|1|12345678" in data
+    assert b"opt|epub_version|default|12345678" not in data
+
+
+def test_route_options_hide_pandoc_toc_for_plain_text_output() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        conversion_backend="pandoc",
+    )
+    rows = build_route_options_keyboard("12345678", state, "txt", LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
+    assert b"opt|pandoc_toc|1|12345678" not in data
+    assert b"opt|pandoc_number_sections|1|12345678" not in data
+
+
+def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        conversion_backend="pandoc",
+        force_rtl=True,
+        pandoc_toc=True,
+        pandoc_number_sections=True,
+        smarten_punctuation=True,
+        epub_version="3",
+        epub_inline_toc=True,
+        compress_cover=True,
+    )
+
+    values = route_option_values(state, "epub")
+
+    assert values["conversion_backend"] == "pandoc"
+    assert values["force_rtl"] is True
+    assert values["pandoc_toc"] is True
+    assert values["pandoc_number_sections"] is True
+    assert values["smarten_punctuation"] is False
+    assert values["epub_version"] == "default"
+    assert values["epub_inline_toc"] is False
+    assert values["compress_cover"] is False
+
+
+def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.epub",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="epub",
+        force_rtl=True,
+        pandoc_toc=True,
+        pandoc_number_sections=True,
+        fix_epub=True,
+        flat_toc=True,
+        smarten_punctuation=True,
+        docx_page_size="a4",
+        epub_version="3",
+        epub_split_volumes=True,
+        pdf_page_numbers=True,
+        kfx_pages=0,
+    )
+
+    values = route_option_values(state, "docx")
+
+    assert values["conversion_backend"] == "calibre"
+    assert values["force_rtl"] is False
+    assert values["pandoc_toc"] is False
+    assert values["pandoc_number_sections"] is False
+    assert values["fix_epub"] is True
+    assert values["flat_toc"] is True
+    assert values["smarten_punctuation"] is True
+    assert values["docx_page_size"] == "a4"
+    assert values["epub_version"] == "default"
+    assert values["epub_split_volumes"] is False
+    assert values["pdf_page_numbers"] is False
+    assert values["kfx_pages"] is None
 
 
 def test_set_request_option_mutates_only_selected_flag() -> None:
@@ -218,6 +431,12 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.pdf_paper_size == "letter"
     assert set_request_option(state, "pdf_font_profile", "amiri") is True
     assert state.pdf_font_profile == "amiri"
+    assert set_request_option(state, "conversion_backend", "pandoc") is True
+    assert state.conversion_backend == "pandoc"
+    assert set_request_option(state, "pandoc_toc", "1") is True
+    assert state.pandoc_toc is True
+    assert set_request_option(state, "pandoc_number_sections", "1") is True
+    assert state.pandoc_number_sections is True
 
 
 def test_set_request_option_is_idempotent_and_validates_values() -> None:
@@ -266,6 +485,9 @@ def test_set_request_option_reset_clears_all_options() -> None:
         pdf_paper_size="letter",
         pdf_font_profile="amiri",
         pdf_page_numbers=True,
+        conversion_backend="pandoc",
+        pandoc_toc=True,
+        pandoc_number_sections=True,
     )
 
     assert set_request_option(state, "reset", "1") is True
@@ -289,6 +511,9 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.pdf_paper_size == "default"
     assert state.pdf_font_profile == "default"
     assert state.pdf_page_numbers is False
+    assert state.conversion_backend == "calibre"
+    assert state.pandoc_toc is False
+    assert state.pandoc_number_sections is False
 
 
 def test_set_request_option_rejects_epub_only_flags_for_non_epub() -> None:
@@ -338,6 +563,9 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
         docx_page_size="a4",
         line_height=LINE_HEIGHT_150,
         options_context="epub",
+        conversion_backend="pandoc",
+        pandoc_toc=True,
+        pandoc_number_sections=True,
     )
 
     persisted = state_to_persisted_options(state)
@@ -349,6 +577,9 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     assert persisted["docx_page_size"] == "a4"
     assert persisted["line_height"] == LINE_HEIGHT_150
     assert persisted["options_context"] == "epub"
+    assert persisted["conversion_backend"] == "pandoc"
+    assert persisted["pandoc_toc"] is True
+    assert persisted["pandoc_number_sections"] is True
 
 
 def test_apply_persisted_options_applies_valid_values() -> None:
@@ -370,6 +601,9 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "kfx_pages": 0,
             "epub_standardize_footnotes": True,
             "pdf_font_profile": "ibm_plex_sans_arabic",
+            "conversion_backend": "pandoc",
+            "pandoc_toc": True,
+            "pandoc_number_sections": True,
         },
     )
 
@@ -382,6 +616,9 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.kfx_pages == 0
     assert state.epub_standardize_footnotes is True
     assert state.pdf_font_profile == "ibm_plex_sans_arabic"
+    assert state.conversion_backend == "pandoc"
+    assert state.pandoc_toc is True
+    assert state.pandoc_number_sections is True
 
 
 def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags() -> None:
@@ -402,6 +639,9 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
             "epub_split_volumes": True,
             "pdf_paper_size": "a4",
             "pdf_font_profile": "unknown",
+            "conversion_backend": "unknown",
+            "pandoc_toc": "yes",
+            "pandoc_number_sections": "yes",
             "unknown_option": True,
         },
     )
@@ -414,6 +654,9 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
     assert state.epub_split_volumes is False
     assert state.pdf_paper_size == "a4"
     assert state.pdf_font_profile == "default"
+    assert state.conversion_backend == "calibre"
+    assert state.pandoc_toc is False
+    assert state.pandoc_number_sections is False
 
 
 def test_persisted_snapshot_changes_only_after_valid_option_change() -> None:
