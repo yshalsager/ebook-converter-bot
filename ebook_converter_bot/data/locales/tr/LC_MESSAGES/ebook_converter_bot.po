@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-17 01:15+0200\n"
+"POT-Creation-Date: 2026-05-15 20:53+0300\n"
 "PO-Revision-Date: 2021-08-28 22:48+0200\n"
 "Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
 "Language-Team: - \n"
@@ -38,238 +38,267 @@ msgstr "**Bot dilini seçiniz**"
 msgid "**Language has been set to**: {} ({})"
 msgstr "**Seçilen dil**: {} ({})"
 
-#: ebook_converter_bot/modules/converter.py:60
-#: ebook_converter_bot/modules/converter.py:94
+#: ebook_converter_bot/modules/converter.py:92
+#: ebook_converter_bot/modules/converter.py:135
 msgid "Force RTL"
 msgstr "RTL'ye zorla"
 
-#: ebook_converter_bot/modules/converter.py:61
-#: ebook_converter_bot/modules/converter.py:97
+#: ebook_converter_bot/modules/converter.py:93
+#: ebook_converter_bot/modules/converter.py:136
 msgid "Compress cover"
 msgstr "Kapak görselini sıkıştır"
 
-#: ebook_converter_bot/modules/converter.py:62
-#: ebook_converter_bot/modules/converter.py:103
+#: ebook_converter_bot/modules/converter.py:94
+#: ebook_converter_bot/modules/converter.py:149
 msgid "Fix EPUB before converting"
 msgstr "Dönüştürmeden önce EPUB'u düzelt"
 
-#: ebook_converter_bot/modules/converter.py:63
-#: ebook_converter_bot/modules/converter.py:107
+#: ebook_converter_bot/modules/converter.py:95
+#: ebook_converter_bot/modules/converter.py:153
 msgid "Flatten EPUB TOC"
 msgstr "EPUB içindekiler tablosunu düzleştir"
 
-#: ebook_converter_bot/modules/converter.py:63
-#: ebook_converter_bot/modules/converter.py:95
+#: ebook_converter_bot/modules/converter.py:96
+#: ebook_converter_bot/modules/converter.py:137
 msgid "Smarten punctuation"
 msgstr "Noktalama işaretlerini iyileştir"
 
-#: ebook_converter_bot/modules/converter.py:64
+#: ebook_converter_bot/modules/converter.py:97
 msgid "Text justification"
 msgstr "Metin hizalaması"
 
-#: ebook_converter_bot/modules/converter.py:65
-#: ebook_converter_bot/modules/converter.py:96
+#: ebook_converter_bot/modules/converter.py:98
+msgid "Line height"
+msgstr "Satır yüksekliği"
+
+#: ebook_converter_bot/modules/converter.py:99
+#: ebook_converter_bot/modules/converter.py:138
 msgid "Remove paragraph spacing"
 msgstr "Paragraf boşluklarını kaldır"
 
-#: ebook_converter_bot/modules/converter.py:66
+#: ebook_converter_bot/modules/converter.py:100
 msgid "Original"
 msgstr "Özgün"
 
-#: ebook_converter_bot/modules/converter.py:67
+#: ebook_converter_bot/modules/converter.py:101
 msgid "Left"
 msgstr "Sola"
 
-#: ebook_converter_bot/modules/converter.py:68
+#: ebook_converter_bot/modules/converter.py:102
 msgid "Justify"
 msgstr "İki yana yasla"
 
-#: ebook_converter_bot/modules/converter.py:69
+#: ebook_converter_bot/modules/converter.py:103
 msgid "DOCX page size"
 msgstr "DOCX sayfa boyutu"
 
-#: ebook_converter_bot/modules/converter.py:70
-#: ebook_converter_bot/modules/converter.py:113
+#: ebook_converter_bot/modules/converter.py:104
+#: ebook_converter_bot/modules/converter.py:159
 msgid "DOCX: disable generated TOC"
 msgstr "DOCX: oluşturulan içindekileri devre dışı bırak"
 
-#: ebook_converter_bot/modules/converter.py:71
+#: ebook_converter_bot/modules/converter.py:105
 msgid "EPUB version"
 msgstr "EPUB sürümü"
 
-#: ebook_converter_bot/modules/converter.py:72
-#: ebook_converter_bot/modules/converter.py:118
+#: ebook_converter_bot/modules/converter.py:106
+#: ebook_converter_bot/modules/converter.py:164
 msgid "EPUB: inline TOC"
 msgstr "EPUB: satır içi içindekiler"
 
-#: ebook_converter_bot/modules/converter.py:73
-#: ebook_converter_bot/modules/converter.py:119
+#: ebook_converter_bot/modules/converter.py:107
+#: ebook_converter_bot/modules/converter.py:167
 msgid "Remove EPUB background"
 msgstr "EPUB arka planını kaldır"
 
-#: ebook_converter_bot/modules/converter.py:74
-#: ebook_converter_bot/modules/converter.py:122
+#: ebook_converter_bot/modules/converter.py:108
+#: ebook_converter_bot/modules/converter.py:171
 msgid "Split EPUB volumes"
 msgstr "EPUB ciltlerini böl"
 
-#: ebook_converter_bot/modules/converter.py:75
-#: ebook_converter_bot/modules/converter.py:123
+#: ebook_converter_bot/modules/converter.py:109
+#: ebook_converter_bot/modules/converter.py:175
 msgid "Standardize EPUB footnotes"
 msgstr "EPUB dipnotlarını standartlaştır"
 
-#: ebook_converter_bot/modules/converter.py:74
+#: ebook_converter_bot/modules/converter.py:110
 msgid "PDF paper size"
 msgstr "PDF kağıt boyutu"
 
-#: ebook_converter_bot/modules/converter.py:75
-#: ebook_converter_bot/modules/converter.py:124
+#: ebook_converter_bot/modules/converter.py:111
+msgid "PDF Arabic font"
+msgstr "PDF Arapça yazı tipi"
+
+#: ebook_converter_bot/modules/converter.py:112
+msgid "Noto Naskh Arabic"
+msgstr "Noto Naskh Arabic"
+
+#: ebook_converter_bot/modules/converter.py:113
+msgid "Amiri"
+msgstr "Amiri"
+
+#: ebook_converter_bot/modules/converter.py:114
+msgid "IBM Plex Sans Arabic"
+msgstr "IBM Plex Sans Arabic"
+
+#: ebook_converter_bot/modules/converter.py:115
+#: ebook_converter_bot/modules/converter.py:185
 msgid "PDF: page numbers"
 msgstr "PDF: sayfa numaraları"
 
-#: ebook_converter_bot/modules/converter.py:76
+#: ebook_converter_bot/modules/converter.py:116
 msgid "KFX doc type"
 msgstr "KFX belge türü"
 
-#: ebook_converter_bot/modules/converter.py:77
+#: ebook_converter_bot/modules/converter.py:117
 msgid "KFX pages"
 msgstr "KFX sayfaları"
 
-#: ebook_converter_bot/modules/converter.py:78
+#: ebook_converter_bot/modules/converter.py:118
 msgid "Default"
 msgstr "Varsayılan"
 
-#: ebook_converter_bot/modules/converter.py:79
+#: ebook_converter_bot/modules/converter.py:119
 msgid "Letter"
 msgstr "Letter"
 
-#: ebook_converter_bot/modules/converter.py:80
+#: ebook_converter_bot/modules/converter.py:120
 msgid "A4"
 msgstr "A4"
 
-#: ebook_converter_bot/modules/converter.py:81
+#: ebook_converter_bot/modules/converter.py:121
 msgid "None"
 msgstr "Yok"
 
-#: ebook_converter_bot/modules/converter.py:82
+#: ebook_converter_bot/modules/converter.py:122
 msgid "Auto"
 msgstr "Otomatik"
 
-#: ebook_converter_bot/modules/converter.py:85
+#: ebook_converter_bot/modules/converter.py:125
 msgid "Reset options"
 msgstr "Seçenekleri sıfırla"
 
-#: ebook_converter_bot/modules/converter.py:86
+#: ebook_converter_bot/modules/converter.py:126
 msgid "Back to formats"
 msgstr "Biçimlere geri dön"
 
-#: ebook_converter_bot/modules/converter.py:87
-#: ebook_converter_bot/modules/converter.py:160
+#: ebook_converter_bot/modules/converter.py:127
+#: ebook_converter_bot/modules/converter.py:255
 msgid "Cancel"
 msgstr "İptal"
 
-#: ebook_converter_bot/modules/converter.py:99
+#: ebook_converter_bot/modules/converter.py:141
 #, python-brace-format
 msgid "Text justification: {}"
 msgstr "Metin hizalaması: {}"
 
-#: ebook_converter_bot/modules/converter.py:111
+#: ebook_converter_bot/modules/converter.py:145
+#, python-brace-format
+msgid "Line height: {}%"
+msgstr "Satır yüksekliği: {}%"
+
+#: ebook_converter_bot/modules/converter.py:157
 #, python-brace-format
 msgid "DOCX page size: {}"
 msgstr "DOCX sayfa boyutu: {}"
 
-#: ebook_converter_bot/modules/converter.py:116
+#: ebook_converter_bot/modules/converter.py:162
 #, python-brace-format
 msgid "EPUB version: {}"
 msgstr "EPUB sürümü: {}"
 
-#: ebook_converter_bot/modules/converter.py:122
+#: ebook_converter_bot/modules/converter.py:179
 #, python-brace-format
 msgid "PDF paper size: {}"
 msgstr "PDF kağıt boyutu: {}"
 
-#: ebook_converter_bot/modules/converter.py:125
+#: ebook_converter_bot/modules/converter.py:183
+#, python-brace-format
+msgid "PDF Arabic font: {}"
+msgstr "PDF Arapça yazı tipi: {}"
+
+#: ebook_converter_bot/modules/converter.py:186
 msgid "KFX doc type: EBOK"
 msgstr "KFX belge türü: EBOK"
 
-#: ebook_converter_bot/modules/converter.py:126
+#: ebook_converter_bot/modules/converter.py:187
 msgid "KFX pages: Auto"
 msgstr "KFX sayfaları: Otomatik"
 
-#: ebook_converter_bot/modules/converter.py:144
-#: ebook_converter_bot/modules/converter.py:146
+#: ebook_converter_bot/modules/converter.py:240
+#: ebook_converter_bot/modules/converter.py:242
 msgid "Conversion options:"
 msgstr "Dönüştürme seçenekleri:"
 
-#: ebook_converter_bot/modules/converter.py:151
-#: ebook_converter_bot/modules/converter.py:153
+#: ebook_converter_bot/modules/converter.py:247
+#: ebook_converter_bot/modules/converter.py:249
 msgid "Select the format you want to convert to:"
 msgstr "Dönüştürmek istediğiniz türü seçiniz:"
 
-#: ebook_converter_bot/modules/converter.py:158
+#: ebook_converter_bot/modules/converter.py:254
 msgid "Options ⚙️"
 msgstr "Seçenekler ⚙️"
 
-#: ebook_converter_bot/modules/converter.py:176
-#: ebook_converter_bot/modules/converter.py:292
+#: ebook_converter_bot/modules/converter.py:272
 msgid "This conversion request expired. Please send the file again."
 msgstr "Bu dönüştürme isteğinin süresi doldu. Lütfen dosyayı tekrar gönderin."
 
-#: ebook_converter_bot/modules/converter.py:184
+#: ebook_converter_bot/modules/converter.py:280
 msgid "The source file is no longer available. Please send it again."
 msgstr "Kaynak dosya artık kullanılamıyor. Lütfen tekrar gönderin."
 
-#: ebook_converter_bot/modules/converter.py:202
+#: ebook_converter_bot/modules/converter.py:300
 msgid "Reply to a supported file to convert it."
 msgstr "Dönüştürmek için desteklenen bir dosyayı yanıtlayın."
 
 #. Unsupported file
-#: ebook_converter_bot/modules/converter.py:213
+#: ebook_converter_bot/modules/converter.py:311
 msgid "The file you sent is not a supported type!"
 msgstr "Gönderdiğiniz dosya türü desteklenmemektedir!"
 
-#: ebook_converter_bot/modules/converter.py:216
+#: ebook_converter_bot/modules/converter.py:314
 msgid "Files larger than 25 MB are not supported!"
 msgstr "25 MB üzerindeki dosyalar desteklenmemektedir!"
 
-#: ebook_converter_bot/modules/converter.py:218
+#: ebook_converter_bot/modules/converter.py:316
 msgid "Downloading the file..."
 msgstr "Dosya indiriliyor..."
 
-#: ebook_converter_bot/modules/converter.py:223
+#: ebook_converter_bot/modules/converter.py:321
 msgid "Failed to download the file. Please send it again."
 msgstr "Dosya indirilemedi. Lütfen tekrar gönderin."
 
-#: ebook_converter_bot/modules/converter.py:278
+#: ebook_converter_bot/modules/converter.py:377
 msgid "This option is not available in this context."
 msgstr "Bu seçenek bu bağlamda kullanılamaz."
 
-#: ebook_converter_bot/modules/converter.py:364
-#, python-brace-format
-msgid "Split produced {} files, maximum allowed is {}."
-msgstr "Bölme işlemi {} dosya üretti, izin verilen en yüksek sayı {}."
-
-#: ebook_converter_bot/modules/converter.py:297
+#: ebook_converter_bot/modules/converter.py:393
 msgid "Conversion request canceled."
 msgstr "Dönüştürme isteği iptal edildi."
 
-#: ebook_converter_bot/modules/converter.py:313
+#: ebook_converter_bot/modules/converter.py:409
 #, python-brace-format
 msgid "Converting the file to {}..."
 msgstr "Dosya {} türüne dönüştürülüyor..."
 
-#: ebook_converter_bot/modules/converter.py:340
+#: ebook_converter_bot/modules/converter.py:420
+#, python-brace-format
+msgid "Split produced {} files, maximum allowed is {}."
+msgstr "Bölme işlemi {} dosya üretti, izin verilen en yüksek sayı {}."
+
+#: ebook_converter_bot/modules/converter.py:427
 msgid "Converted to RTL successfully!\n"
 msgstr "RTL'ye başarıyla dönüştürüldü!\n"
 
-#: ebook_converter_bot/modules/converter.py:341
-msgid "Done! Uploading the converted file..."
-msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
-
-#: ebook_converter_bot/modules/converter.py:341
+#: ebook_converter_bot/modules/converter.py:429
 msgid "Done! Uploading the converted files..."
 msgstr "İşlem tamamlandı! Dönüştürülen dosyalar yükleniyor..."
 
-#: ebook_converter_bot/modules/converter.py:347
+#: ebook_converter_bot/modules/converter.py:431
+msgid "Done! Uploading the converted file..."
+msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
+
+#: ebook_converter_bot/modules/converter.py:441
 #, python-brace-format
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "(`{}`) dosyası {} dosyasına dönüştürülürken hata oluştu :("
@@ -337,4 +366,6 @@ msgstr "Yayın tamamlandı! Mesaj {} sohbete gönderildi\n"
 msgid ""
 "Failed to broadcast to {} chats, most likely because bot has been stopped or "
 "kicked out."
-msgstr "{} sohbete yayın gönderilemedi, büyük olasılıkla bot durduruldu veya gruptan atıldı."
+msgstr ""
+"{} sohbete yayın gönderilemedi, büyük olasılıkla bot durduruldu veya gruptan "
+"atıldı."
