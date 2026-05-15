@@ -1,5 +1,8 @@
 FROM ghcr.io/yshalsager/calibre-with-kfx:20260503-0052@sha256:698b0d28b370a1d1b41304d5b3f579f3b87b562119b0d0a9b9bf169e82b5213a
 
+ARG PANDOC_VERSION=3.9.0.2
+ARG PANDOC_SHA256=a69abfababda8a56969a254b09f9553a7be89ddec00d4e0fe9fd585d71a67508
+
 COPY --from=ghcr.io/astral-sh/uv:latest@sha256:3a59a3cdd5f7c217faa36e32dbc7fddbb0412889c2a0a5229f6d790e5a019dd7 /uv /bin/
 WORKDIR /code
 COPY pyproject.toml uv.lock /code/
@@ -10,8 +13,13 @@ USER root
 COPY ebook_converter_bot/data/fonts/pdf /tmp/vendor-pdf-fonts
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends pandoc; \
+    apt-get install -y --no-install-recommends ca-certificates curl; \
     rm -rf /var/lib/apt/lists/*; \
+    curl -fsSL -o /tmp/pandoc.tar.gz "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz"; \
+    echo "${PANDOC_SHA256}  /tmp/pandoc.tar.gz" | sha256sum -c -; \
+    tar -xzf /tmp/pandoc.tar.gz --strip-components=1 -C /usr/local; \
+    rm /tmp/pandoc.tar.gz; \
+    pandoc --version; \
     mkdir -p /usr/local/share/fonts/ebook-converter-bot; \
     find /tmp/vendor-pdf-fonts -type f -name '*.ttf' -exec cp '{}' /usr/local/share/fonts/ebook-converter-bot/ ';'; \
     fc-cache -f -v; \
