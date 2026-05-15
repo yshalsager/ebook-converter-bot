@@ -9,6 +9,9 @@ ENV PATH="/code/.venv/bin:$PATH"
 USER root
 COPY ebook_converter_bot/data/fonts/pdf /tmp/vendor-pdf-fonts
 RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends pandoc; \
+    rm -rf /var/lib/apt/lists/*; \
     mkdir -p /usr/local/share/fonts/ebook-converter-bot; \
     find /tmp/vendor-pdf-fonts -type f -name '*.ttf' -exec cp '{}' /usr/local/share/fonts/ebook-converter-bot/ ';'; \
     fc-cache -f -v; \
