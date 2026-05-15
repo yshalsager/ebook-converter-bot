@@ -21,6 +21,20 @@
       'before 5am on saturday',
     ],
   },
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^Dockerfile$/',
+      ],
+      matchStrings: [
+        'ARG PANDOC_VERSION=(?<currentValue>[^\\s]+)',
+      ],
+      depNameTemplate: 'jgm/pandoc',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+    },
+  ],
   packageRules: [
     {
       matchUpdateTypes: [
