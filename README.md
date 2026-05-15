@@ -11,7 +11,7 @@
 [![Patreon](https://img.shields.io/badge/Patreon-Support-F96854?style=flat&labelColor=F96854&logo=Patreon&logoColor=white&link=https://www.patreon.com/XiaomiFirmwareUpdater)](https://www.patreon.com/XiaomiFirmwareUpdater)
 [![Liberapay](https://img.shields.io/badge/Liberapay-Support-F6C915?style=flat&labelColor=F6C915&logo=Liberapay&logoColor=white&link=https://liberapay.com/yshalsager)](https://liberapay.com/yshalsager)
 
-A bot that converts e-books to various formats, powered by [calibre](https://calibre-ebook.com/) and [Pandoc](https://pandoc.org/)!
+A bot that converts e-books to various formats, powered by [calibre](https://calibre-ebook.com/), [Pandoc](https://pandoc.org/), and [Antiword](https://www.winfield.demon.nl/)!
 It currently supports 49 input formats and 29 output formats.
 
 You can start using it or adding it to your group [here on Telegram](https://t.me/ebook_converter_bot).
@@ -23,6 +23,7 @@ This project is a modular bot, made using Python 3 and the following:
 - [Telethon Library](https://github.com/LonamiWebs/Telethon/)
 - [Calibre](https://calibre-ebook.com/)
 - [Pandoc](https://pandoc.org/)
+- [Antiword](https://www.winfield.demon.nl/)
 
 ## Bot features:
 
@@ -52,6 +53,7 @@ Some more features of the bot:
 - Multilingual support, you can contribute and add your own languages if you want :).
 - Flatten book's table of contents.
 - Convert Shamela old `.bok` files by first generating an EPUB in Python then using the existing calibre pipeline for other outputs.
+- Convert legacy Word `.doc` files by extracting text with Antiword, then using the existing Calibre or Pandoc pipeline.
 - Interactive conversion options before selecting output format.
 - Optional Pandoc backend for supported document routes, with Calibre as the default when both can convert the same route.
 - Markdown-family, HTML, reStructuredText, AsciiDoc, Org, LaTeX, Typst, and plain-text document routes through Pandoc.
@@ -131,6 +133,10 @@ You can go through the Dockerfile to see how the bot requirements are being inst
 
 - The conversion process is done by utilizing [Calibre](https://calibre-ebook.com/) and its ebook-convert, so make sure
   you have it installed.
+- Pandoc is required for Pandoc-backed document routes such as Markdown, HTML, reStructuredText, AsciiDoc, Org, LaTeX,
+  Typst, and some DOCX/EPUB/TXT conversions.
+- Antiword is required for legacy Word `.doc` input files. The bot extracts `.doc` text first, then converts the
+  extracted text to the requested output format.
 - To convert from and to KFX, you need to install [KFX Input](https://www.mobileread.com/forums/showthread.php?t=291290)
   and [KFX Output](https://www.mobileread.com/forums/showthread.php?t=272407) plugins in calibre, this can be done from
   the command line by using the following commands:

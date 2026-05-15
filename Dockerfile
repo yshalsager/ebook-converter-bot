@@ -13,7 +13,7 @@ USER root
 COPY ebook_converter_bot/data/fonts/pdf /tmp/vendor-pdf-fonts
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends ca-certificates curl; \
+    apt-get install -y --no-install-recommends antiword ca-certificates curl; \
     rm -rf /var/lib/apt/lists/*; \
     curl -fsSL -o /tmp/pandoc.tar.gz "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz"; \
     echo "${PANDOC_SHA256}  /tmp/pandoc.tar.gz" | sha256sum -c -; \

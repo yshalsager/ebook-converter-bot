@@ -8,7 +8,7 @@ from telethon.tl.types import KeyboardButtonCallback
 
 HIGHLIGHTED_FORMATS: set[str] = {"azw3", "docx", "epub", "kfx", "md", "mobi", "pdf"}
 CONTEXT_TYPES: tuple[str, ...] = ("docx", "epub", "pdf", "kfx")
-PANDOC_SHARED_INPUT_TYPES: set[str] = {"docx", "epub", "html", "md", "odt", "rtf", "txt"}
+PANDOC_SHARED_INPUT_TYPES: set[str] = {"doc", "docx", "epub", "html", "md", "odt", "rtf", "txt"}
 PANDOC_ONLY_INPUT_TYPES: set[str] = {
     "adoc",
     "asciidoc",

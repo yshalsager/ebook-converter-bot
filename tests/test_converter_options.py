@@ -174,6 +174,20 @@ def test_options_keyboard_shows_backend_selector_for_pandoc_capable_input() -> N
     assert b"opt|conversion_backend|pandoc|12345678" in data
 
 
+def test_options_keyboard_shows_backend_selector_for_legacy_doc_input() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.doc",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="doc",
+        options_context="epub",
+    )
+    rows = build_options_keyboard("12345678", state, LABELS)
+    data = _flatten_data(rows)
+
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
+
+
 def test_options_keyboard_hides_backend_selector_for_pandoc_only_input() -> None:
     state = ConversionRequestState(
         input_file_path="/tmp/book.adoc",  # noqa: S108
@@ -253,6 +267,23 @@ def test_route_options_for_shared_epub_output_show_backend_and_calibre_controls(
     assert b"opt|epub_version|default|12345678" in data
     assert b"opt|epub_inline_toc|1|12345678" in data
     assert b"opt|docx_page_size|default|12345678" not in data
+    assert b"run|epub|12345678" in data
+
+
+def test_route_options_for_legacy_doc_shared_output_show_backend_selector() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.doc",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="doc",
+        conversion_backend="calibre",
+    )
+    rows = build_route_options_keyboard("12345678", state, "epub", LABELS)
+    data = _flatten_data(rows)
+
+    assert route_uses_pandoc(state, "md") is True
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
+    assert b"opt|smarten|1|12345678" in data
     assert b"run|epub|12345678" in data
 
 

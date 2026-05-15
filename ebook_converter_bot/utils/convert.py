@@ -736,6 +736,8 @@ class Converter:
 
     @classmethod
     def get_supported_output_types_for_input(cls, input_type: str) -> list[str]:
+        if input_type == "doc":
+            return [*cls.calibre_output_types, *cls.pandoc_only_output_types]
         if input_type not in cls.pandoc_input_types:
             return cls.calibre_output_types
         if input_type in cls.pandoc_only_input_types:
@@ -757,25 +759,36 @@ class Converter:
 
     @staticmethod
     async def _run_command(
-        command: list[str], timeout: int | None = TASK_TIMEOUT
+        command: list[str],
+        timeout: int | None = TASK_TIMEOUT,
+        stdout_file: Path | None = None,
     ) -> tuple[int | None, str]:
         conversion_error = ""
-        process: Process = await asyncio.create_subprocess_exec(
-            *command,
-            stdin=PIPE,
-            stdout=PIPE,
-            stderr=STDOUT,
-            preexec_fn=setsid,
-        )
+        stdout_handle = stdout_file.open("wb") if stdout_file else None
         try:
+            process: Process = await asyncio.create_subprocess_exec(
+                *command,
+                stdin=PIPE,
+                stdout=stdout_handle or PIPE,
+                stderr=PIPE if stdout_file else STDOUT,
+                preexec_fn=setsid,
+            )
+        except FileNotFoundError:
+            if stdout_handle:
+                stdout_handle.close()
+            return None, f"{command[0]} is required but was not found."
+
+        try:
+            timeout_error = ""
             if timeout is None:
-                stdout, _ = await process.communicate()
+                stdout, stderr = await process.communicate()
             else:
-                stdout, _ = await asyncio.wait_for(process.communicate(), timeout=timeout)
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+            output_bytes = stderr if stdout_file else stdout
             output = "\n".join(
                 [
                     i
-                    for i in stdout.decode().splitlines()
+                    for i in (output_bytes or b"").decode(errors="replace").splitlines()
                     if all(word not in i for word in [":fixme:", "DEBUG -", "INFO -"])
                 ]
             )
@@ -787,15 +800,20 @@ class Converter:
                 conversion_error = "\n".join(
                     [error[0].strip() or error[1].strip() for error in errors_list]
                 ).replace("*", "")
+            elif process.returncode not in (0, None) and output:
+                conversion_error = output
         except asyncio.exceptions.TimeoutError:
             logger.info(f"Timeout while running command: {command}")
+            timeout_error = f"Timeout while running command: {command[0]}"
         try:
             # If it timed out terminate the process and its child processes.
             killpg(getpgid(process.pid), SIGKILL)
             process.kill()
         except OSError:
             pass  # Ignore 'no such process' error
-        return process.returncode, conversion_error
+        if stdout_handle:
+            stdout_handle.close()
+        return process.returncode, conversion_error or timeout_error
 
     @staticmethod
     def _append_common_options(command: list[str], options: ConversionOptions) -> None:
@@ -964,6 +982,79 @@ class Converter:
         )
         epub_file.unlink(missing_ok=True)
         return output_file, set_to_rtl, conversion_error
+
+    async def _prepare_doc_input(
+        self,
+        input_file: Path,
+        timeout: int | None = TASK_TIMEOUT,
+    ) -> tuple[Path, str]:
+        with NamedTemporaryFile(
+            dir=input_file.parent,
+            prefix=f"{input_file.stem}.antiword-",
+            suffix=".txt",
+            delete=False,
+        ) as temp_file:
+            prepared_file = Path(temp_file.name)
+
+        return_code, conversion_error = await self._run_command(
+            ["antiword", "-m", "UTF-8.txt", "-w", "0", str(input_file)],
+            timeout=timeout,
+            stdout_file=prepared_file,
+        )
+        if return_code != 0:
+            prepared_file.unlink(missing_ok=True)
+            return (
+                prepared_file,
+                conversion_error or "antiword failed to extract text from the .doc file.",
+            )
+        if not prepared_file.read_bytes().strip():
+            prepared_file.unlink(missing_ok=True)
+            return prepared_file, "antiword did not extract any text from the .doc file."
+
+        text = prepared_file.read_text(errors="replace")
+        prepared_file.write_text("\n".join(line.lstrip() for line in text.splitlines()) + "\n")
+        return prepared_file, ""
+
+    async def _convert_from_doc(
+        self,
+        input_file: Path,
+        output_type: str,
+        options: ConversionOptions,
+        timeout: int | None = TASK_TIMEOUT,
+    ) -> tuple[Path, bool | None, str]:
+        output_file = input_file.with_suffix(
+            ".kepub" if output_type == "kepub" else f".{output_type}"
+        )
+        prepared_file, conversion_error = await self._prepare_doc_input(
+            input_file,
+            timeout=timeout,
+        )
+        if conversion_error:
+            return output_file, None, conversion_error
+
+        try:
+            if output_type == "txt":
+                copy2(prepared_file, output_file)
+                return output_file, None, ""
+
+            temp_output_file, converted_to_rtl, conversion_error = await self._convert_non_bok(
+                prepared_file,
+                output_type,
+                options,
+                timeout=timeout,
+            )
+            if not temp_output_file.exists():
+                return (
+                    output_file,
+                    converted_to_rtl,
+                    conversion_error
+                    or f"Failed to convert the extracted DOC text to {output_type}.",
+                )
+            if temp_output_file != output_file:
+                temp_output_file.replace(output_file)
+            return output_file, converted_to_rtl, conversion_error
+        finally:
+            prepared_file.unlink(missing_ok=True)
 
     @staticmethod
     def _preprocess_input_epub(input_file: Path, options: ConversionOptions) -> bool | None:
@@ -1289,8 +1380,12 @@ class Converter:
 
         if input_type == "epub" and output_type == "epub" and options.epub_split_volumes:
             return await self._convert_epub_split_volumes(input_file, options, timeout=timeout)
-        if input_type in {"bok", "pdf"}:
-            convert_fn = self._convert_from_bok if input_type == "bok" else self._convert_from_pdf
+        if input_type in {"bok", "doc", "pdf"}:
+            convert_fn = {
+                "bok": self._convert_from_bok,
+                "doc": self._convert_from_doc,
+                "pdf": self._convert_from_pdf,
+            }[input_type]
             output_file, converted_to_rtl, conversion_error = await convert_fn(
                 input_file, output_type, options, timeout=timeout
             )

@@ -442,6 +442,88 @@ def test_docx_to_md_uses_pandoc_only_route(tmp_path: Path) -> None:
     asyncio.run(run())
 
 
+def test_doc_to_epub_extracts_with_antiword_then_uses_calibre_by_default(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        antiword_commands: list[list[str]] = []
+        commands: list[list[str]] = []
+        input_file = tmp_path / "book.doc"
+        input_file.write_bytes(b"legacy doc")
+        output_file = input_file.with_suffix(".epub")
+
+        async def fake_run(
+            command: list[str],
+            timeout: int | None = TASK_TIMEOUT,
+            stdout_file: Path | None = None,
+        ) -> tuple[int | None, str]:
+            if stdout_file:
+                antiword_commands.append(command)
+                stdout_file.write_text("مرحبا\n")
+                return 0, ""
+            commands.append(command)
+            Path(command[2]).write_text("converted")
+            return 0, ""
+
+        converter._run_command = fake_run  # type: ignore[method-assign]
+
+        result = await converter.convert_ebook_many(input_file, "epub")
+
+        assert result.output_files == [output_file]
+        assert result.conversion_error == ""
+        assert output_file.read_text() == "converted"
+        assert antiword_commands == [["antiword", "-m", "UTF-8.txt", "-w", "0", str(input_file)]]
+        assert commands[0][0] == "ebook-convert"
+        assert Path(commands[0][1]).suffix == ".txt"
+        assert Path(commands[0][1]).exists() is False
+        assert Path(commands[0][2]).suffix == ".epub"
+        assert Path(commands[0][2]).exists() is False
+
+    asyncio.run(run())
+
+
+def test_doc_to_md_extracts_with_antiword_then_uses_pandoc_plain_input(
+    tmp_path: Path,
+) -> None:
+    async def run() -> None:
+        converter = Converter()
+        antiword_commands: list[list[str]] = []
+        commands: list[list[str]] = []
+        input_file = tmp_path / "book.doc"
+        input_file.write_bytes(b"legacy doc")
+        output_file = input_file.with_suffix(".md")
+
+        async def fake_run(
+            command: list[str],
+            timeout: int | None = TASK_TIMEOUT,
+            stdout_file: Path | None = None,
+        ) -> tuple[int | None, str]:
+            if stdout_file:
+                antiword_commands.append(command)
+                stdout_file.write_text("    indented text\n")
+                return 0, ""
+            commands.append(command)
+            assert Path(command[1]).read_text() == "indented text\n"
+            Path(command[-1]).write_text("converted")
+            return 0, ""
+
+        converter._run_command = fake_run  # type: ignore[method-assign]
+
+        result = await converter.convert_ebook_many(input_file, "md")
+
+        assert result.output_files == [output_file]
+        assert result.conversion_error == ""
+        assert output_file.read_text() == "converted"
+        assert antiword_commands == [["antiword", "-m", "UTF-8.txt", "-w", "0", str(input_file)]]
+        assert commands[0][0] == "pandoc"
+        assert Path(commands[0][1]).suffix == ".txt"
+        assert commands[0][2:5] == ["-f", "markdown", "-t"]
+        assert Path(commands[0][1]).exists() is False
+        assert Path(commands[0][-1]).suffix == ".md"
+        assert Path(commands[0][-1]).exists() is False
+
+    asyncio.run(run())
+
+
 def test_html_to_md_uses_pandoc_markdown_route(tmp_path: Path) -> None:
     async def run() -> None:
         converter = Converter()

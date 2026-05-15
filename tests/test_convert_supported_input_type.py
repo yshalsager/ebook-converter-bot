@@ -10,6 +10,7 @@ def test_is_supported_input_type_is_case_insensitive() -> None:
 
 
 def test_shared_pandoc_inputs_expose_markdown_output_but_non_pandoc_inputs_do_not() -> None:
+    assert "md" in Converter.get_supported_output_types_for_input("doc")
     assert "md" in Converter.get_supported_output_types_for_input("docx")
     assert "md" in Converter.get_supported_output_types_for_input("epub")
     assert "md" not in Converter.get_supported_output_types_for_input("mobi")
