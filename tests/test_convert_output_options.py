@@ -19,12 +19,17 @@ OPTION_CASES = [
         "options": ConversionOptions(
             smarten_punctuation=True,
             change_justification="left",
+            line_height=150,
             remove_paragraph_spacing=True,
             docx_page_size="a4",
             docx_no_toc=True,
         ),
         "expected_flags": ["--smarten-punctuation", "--remove-paragraph-spacing", "--docx-no-toc"],
-        "expected_pairs": [("--change-justification", "left"), ("--docx-page-size", "a4")],
+        "expected_pairs": [
+            ("--change-justification", "left"),
+            ("--minimum-line-height", "150"),
+            ("--docx-page-size", "a4"),
+        ],
     },
     {
         "output_type": "epub",

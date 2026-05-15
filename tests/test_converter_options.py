@@ -12,6 +12,9 @@ from ebook_converter_bot.utils.converter_options import (
 )
 from telethon.tl.types import KeyboardButtonCallback
 
+LINE_HEIGHT_150 = 150
+LINE_HEIGHT_175 = 175
+
 LABELS = {
     "force_rtl_label": "Force RTL",
     "compress_cover_label": "Compress cover",
@@ -19,6 +22,7 @@ LABELS = {
     "flat_toc_label": "Flatten EPUB TOC",
     "smarten_punctuation_label": "Smarten punctuation",
     "change_justification_label": "Text justification",
+    "line_height_label": "Line height",
     "remove_paragraph_spacing_label": "Remove paragraph spacing",
     "original_label": "Original",
     "left_label": "Left",
@@ -85,6 +89,11 @@ def test_options_keyboard_context_tabs_and_docx_controls() -> None:
 
     data = _flatten_data(rows)
     assert b"opt|compress_cover|1|12345678" in data
+    assert b"opt|line_height|default|12345678" in data
+    assert b"opt|line_height|125|12345678" in data
+    assert b"opt|line_height|150|12345678" in data
+    assert b"opt|line_height|175|12345678" in data
+    assert b"opt|line_height|200|12345678" in data
     assert b"opt|docx_page_size|default|12345678" in data
     assert b"opt|docx_page_size|letter|12345678" in data
     assert b"opt|docx_page_size|a4|12345678" in data
@@ -188,6 +197,9 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.change_justification == "left"
     assert state.docx_page_size == "default"
 
+    assert set_request_option(state, "line_height", "175") is True
+    assert state.line_height == LINE_HEIGHT_175
+
     assert set_request_option(state, "docx_page_size", "a4") is True
     assert state.docx_page_size == "a4"
     assert state.epub_version == "default"
@@ -226,6 +238,7 @@ def test_set_request_option_is_idempotent_and_validates_values() -> None:
 
     assert set_request_option(state, "epub_version", "4") is False
     assert set_request_option(state, "docx_page_size", "legal") is False
+    assert set_request_option(state, "line_height", "250") is False
 
 
 def test_set_request_option_reset_clears_all_options() -> None:
@@ -239,6 +252,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         flat_toc=True,
         smarten_punctuation=True,
         change_justification="justify",
+        line_height=LINE_HEIGHT_175,
         remove_paragraph_spacing=True,
         kfx_doc_type="book",
         kfx_pages=0,
@@ -261,6 +275,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.flat_toc is False
     assert state.smarten_punctuation is False
     assert state.change_justification == "original"
+    assert state.line_height is None
     assert state.remove_paragraph_spacing is False
     assert state.kfx_doc_type == "doc"
     assert state.kfx_pages is None
@@ -321,6 +336,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
         input_ext="epub",
         force_rtl=True,
         docx_page_size="a4",
+        line_height=LINE_HEIGHT_150,
         options_context="epub",
     )
 
@@ -331,6 +347,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     assert "input_ext" not in persisted
     assert persisted["force_rtl"] is True
     assert persisted["docx_page_size"] == "a4"
+    assert persisted["line_height"] == LINE_HEIGHT_150
     assert persisted["options_context"] == "epub"
 
 
@@ -347,6 +364,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "force_rtl": True,
             "smarten_punctuation": True,
             "change_justification": "justify",
+            "line_height": LINE_HEIGHT_175,
             "docx_page_size": "a4",
             "options_context": "kfx",
             "kfx_pages": 0,
@@ -358,6 +376,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.force_rtl is True
     assert state.smarten_punctuation is True
     assert state.change_justification == "justify"
+    assert state.line_height == LINE_HEIGHT_175
     assert state.docx_page_size == "a4"
     assert state.options_context == "kfx"
     assert state.kfx_pages == 0
@@ -377,6 +396,7 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
         {
             "force_rtl": "yes",
             "change_justification": "wide",
+            "line_height": 250,
             "options_context": "invalid",
             "epub_standardize_footnotes": True,
             "epub_split_volumes": True,
@@ -388,6 +408,7 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
 
     assert state.force_rtl is False
     assert state.change_justification == "original"
+    assert state.line_height is None
     assert state.options_context == "docx"
     assert state.epub_standardize_footnotes is False
     assert state.epub_split_volumes is False

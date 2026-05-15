@@ -73,6 +73,7 @@ class ConversionOptions:
     flat_toc: bool = False
     smarten_punctuation: bool = False
     change_justification: str = "original"
+    line_height: int | None = None
     remove_paragraph_spacing: bool = False
     kfx_doc_type: str = "doc"
     kfx_pages: int | None = None
@@ -232,6 +233,8 @@ class Converter:
             command.append("--remove-paragraph-spacing")
         if options.change_justification != "original":
             command.extend(["--change-justification", options.change_justification])
+        if options.line_height is not None:
+            command.extend(["--minimum-line-height", str(options.line_height)])
 
     @staticmethod
     def _append_docx_options(command: list[str], options: ConversionOptions) -> None:

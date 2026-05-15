@@ -95,6 +95,7 @@ def options_labels(lang: str) -> dict[str, str]:
         "flat_toc_label": _("Flatten EPUB TOC", lang),
         "smarten_punctuation_label": _("Smarten punctuation", lang),
         "change_justification_label": _("Text justification", lang),
+        "line_height_label": _("Line height", lang),
         "remove_paragraph_spacing_label": _("Remove paragraph spacing", lang),
         "original_label": _("Original", lang),
         "left_label": _("Left", lang),
@@ -138,6 +139,10 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
             (
                 state.change_justification != "original",
                 _("Text justification: {}", lang).format(state.change_justification),
+            ),
+            (
+                state.line_height is not None,
+                _("Line height: {}%", lang).format(state.line_height),
             ),
             (
                 state.input_ext == "epub" and state.fix_epub,
@@ -196,6 +201,7 @@ def build_conversion_options(state: ConversionRequestState) -> ConversionOptions
         "flat_toc": state.flat_toc if is_epub_input else False,
         "smarten_punctuation": state.smarten_punctuation,
         "change_justification": state.change_justification,
+        "line_height": state.line_height,
         "remove_paragraph_spacing": state.remove_paragraph_spacing,
         "kfx_doc_type": state.kfx_doc_type,
         "kfx_pages": state.kfx_pages,

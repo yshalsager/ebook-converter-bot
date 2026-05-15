@@ -20,6 +20,17 @@ GLOBAL_VALUE_OPTIONS: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] =
         "change_justification_label",
         (("original", "original_label"), ("left", "left_label"), ("justify", "justify_label")),
     ),
+    (
+        "line_height",
+        "line_height_label",
+        (
+            ("default", "default_label"),
+            ("125", "125%"),
+            ("150", "150%"),
+            ("175", "175%"),
+            ("200", "200%"),
+        ),
+    ),
 )
 CONTEXT_VALUE_OPTIONS: dict[str, tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...]] = {
     "docx": (
@@ -98,6 +109,7 @@ EPUB_ONLY_BOOL_OPTIONS: set[str] = {
 }
 VALUE_OPTION_ATTRS: dict[str, str] = {
     "change_justification": "change_justification",
+    "line_height": "line_height",
     "kfx_doc_type": "kfx_doc_type",
     "kfx_pages": "kfx_pages",
     "docx_page_size": "docx_page_size",
@@ -107,6 +119,7 @@ VALUE_OPTION_ATTRS: dict[str, str] = {
 }
 VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "change_justification": {"original": "original", "left": "left", "justify": "justify"},
+    "line_height": {"default": None, "125": 125, "150": 150, "175": 175, "200": 200},
     "kfx_doc_type": {"doc": "doc", "book": "book"},
     "kfx_pages": {"none": None, "auto": 0},
     "docx_page_size": {"default": "default", "letter": "letter", "a4": "a4"},
@@ -131,6 +144,7 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "flat_toc",
     "smarten_punctuation",
     "change_justification",
+    "line_height",
     "remove_paragraph_spacing",
     "kfx_doc_type",
     "kfx_pages",
@@ -165,6 +179,7 @@ class ConversionRequestState:
     flat_toc: bool = False
     smarten_punctuation: bool = False
     change_justification: str = "original"
+    line_height: int | None = None
     remove_paragraph_spacing: bool = False
     kfx_doc_type: str = "doc"
     kfx_pages: int | None = None
@@ -293,6 +308,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.flat_toc = False
         state.smarten_punctuation = False
         state.change_justification = "original"
+        state.line_height = None
         state.remove_paragraph_spacing = False
         state.kfx_doc_type = "doc"
         state.kfx_pages = None
