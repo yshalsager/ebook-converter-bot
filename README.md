@@ -11,8 +11,8 @@
 [![Patreon](https://img.shields.io/badge/Patreon-Support-F96854?style=flat&labelColor=F96854&logo=Patreon&logoColor=white&link=https://www.patreon.com/XiaomiFirmwareUpdater)](https://www.patreon.com/XiaomiFirmwareUpdater)
 [![Liberapay](https://img.shields.io/badge/Liberapay-Support-F6C915?style=flat&labelColor=F6C915&logo=Liberapay&logoColor=white&link=https://liberapay.com/yshalsager)](https://liberapay.com/yshalsager)
 
-A bot that converts e-books to various formats, powered by [calibre](https://calibre-ebook.com/)!
-It currently supports 38 input formats and 21 output formats.
+A bot that converts e-books to various formats, powered by [calibre](https://calibre-ebook.com/) and [Pandoc](https://pandoc.org/)!
+It currently supports 49 input formats and 29 output formats.
 
 You can start using it or adding it to your group [here on Telegram](https://t.me/ebook_converter_bot).
 
@@ -22,6 +22,7 @@ This project is a modular bot, made using Python 3 and the following:
 
 - [Telethon Library](https://github.com/LonamiWebs/Telethon/)
 - [Calibre](https://calibre-ebook.com/)
+- [Pandoc](https://pandoc.org/)
 
 ## Bot features:
 
@@ -30,17 +31,19 @@ This bot aims to provide an easy way for telegram users to convert e-books from 
 It supports converting from the following formats:
 
 ```python
-['azw', 'azw3', 'azw4', 'azw8', 'bok', 'cb7', 'cbc', 'cbr', 'cbz', 'chm', 'djvu',
- 'doc', 'docx', 'epub', 'fb2', 'fbz', 'html', 'htmlz', 'kepub', 'kfx', 'kfx-zip', 'kpf',
- 'lit', 'lrf', 'md', 'mobi', 'odt', 'opf', 'pdb', 'pdf', 'pml', 'prc', 'rb', 'rtf',
- 'snb', 'tcr', 'txt', 'txtz']
+['azw', 'azw3', 'azw4', 'azw8', 'adoc', 'asciidoc', 'bok', 'cb7', 'cbc', 'cbr',
+ 'cbz', 'chm', 'djvu', 'doc', 'docx', 'epub', 'fb2', 'fbz', 'html', 'htmlz',
+ 'kepub', 'kfx', 'kfx-zip', 'kpf', 'lit', 'lrf', 'md', 'mediawiki', 'mobi', 'odt',
+ 'opf', 'org', 'pdb', 'pdf', 'pml', 'prc', 'rb', 'rst', 'rtf', 'snb', 't2t',
+ 'tcr', 'tex', 'textile', 'tsv', 'txt', 'txtz', 'typ', 'typst']
 ```
 
 To the following formats:
 
 ```python
-['azw3', 'docx', 'epub', 'fb2', 'htmlz', 'kepub', 'kfx', 'lit', 'lrf', 'mobi', 'oeb',
- 'pdb', 'pdf', 'pmlz', 'rb', 'rtf', 'snb', 'tcr', 'txt', 'txtz', 'zip']
+['azw3', 'adoc', 'docx', 'epub', 'fb2', 'html', 'htmlz', 'kepub', 'kfx', 'lit',
+ 'lrf', 'md', 'mobi', 'oeb', 'org', 'pdb', 'pdf', 'pmlz', 'rb', 'rst', 'rtf',
+ 'snb', 'tcr', 'tex', 'txt', 'txtz', 'typ', 'typst', 'zip']
 ```
 
 Some more features of the bot:
@@ -50,6 +53,8 @@ Some more features of the bot:
 - Flatten book's table of contents.
 - Convert Shamela old `.bok` files by first generating an EPUB in Python then using the existing calibre pipeline for other outputs.
 - Interactive conversion options before selecting output format.
+- Optional Pandoc backend for supported document routes, with Calibre as the default when both can convert the same route.
+- Markdown-family, HTML, reStructuredText, AsciiDoc, Org, LaTeX, Typst, and plain-text document routes through Pandoc.
 - Global output options: cover compression, smart punctuation, text justification, and paragraph spacing cleanup.
 - DOCX options: page size and generated TOC toggle.
 - EPUB output options: version selection, inline TOC, and background removal.
