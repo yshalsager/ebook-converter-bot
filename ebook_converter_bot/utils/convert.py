@@ -749,7 +749,8 @@ class Converter:
         return [
             output_type
             for output_type in [*cls.calibre_output_types, *cls.pandoc_only_output_types]
-            if not PandocBackend.is_same_format_route(input_type, output_type)
+            if (input_type == "epub" and output_type == "epub")
+            or not PandocBackend.is_same_format_route(input_type, output_type)
         ]
 
     def is_supported_input_type(self, input_file: str | None) -> bool:

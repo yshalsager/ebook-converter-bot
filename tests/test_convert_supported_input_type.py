@@ -23,6 +23,10 @@ def test_shared_pandoc_inputs_do_not_expose_same_format_output() -> None:
     assert "typst" not in Converter.get_supported_output_types_for_input("typ")
 
 
+def test_epub_input_keeps_epub_output_for_preprocess_routes() -> None:
+    assert "epub" in Converter.get_supported_output_types_for_input("epub")
+
+
 def test_pandoc_capable_inputs_expose_extended_markup_outputs() -> None:
     output_types = Converter.get_supported_output_types_for_input("adoc")
     asciidoc_output_types = Converter.get_supported_output_types_for_input("asciidoc")
