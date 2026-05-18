@@ -3,6 +3,7 @@ FROM ghcr.io/yshalsager/calibre-with-kfx:20260503-0052@sha256:698b0d28b370a1d1b4
 ARG PANDOC_VERSION=3.9.0.2
 
 COPY --from=ghcr.io/astral-sh/uv:latest@sha256:3a59a3cdd5f7c217faa36e32dbc7fddbb0412889c2a0a5229f6d790e5a019dd7 /uv /uvx /bin/
+USER root
 ENV PATH="/opt/venv/bin:$PATH" \
     UV_COMPILE_BYTECODE=1 \
     UV_NO_CACHE=1 \
@@ -13,7 +14,6 @@ WORKDIR /code
 COPY pyproject.toml uv.lock /code/
 RUN uv sync --frozen --no-install-project
 
-USER root
 COPY ebook_converter_bot/data/fonts/pdf /tmp/vendor-pdf-fonts
 RUN set -eux; \
     apt-get update; \
