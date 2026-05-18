@@ -13,7 +13,8 @@ dependencies = [
     "hachoir>=3.2.0",
     "sqlalchemy>=2.0.14",
     "lxml>=6.1.0",
-    "pymupdf>=1.26.0"
+    "pymupdf>=1.26.0",
+    "alembic>=1.18.4",
 ]
 
 [dependency-groups]

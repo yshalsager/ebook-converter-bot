@@ -1,0 +1,49 @@
+from pathlib import Path
+
+from alembic import command
+from ebook_converter_bot.db import Analytics, Chat, Preference, UserOptionDefault  # noqa: F401
+from ebook_converter_bot.db import session as db_session
+from sqlalchemy import create_engine, inspect, text
+
+BASELINE_REVISION = "20260518_0001"
+
+
+def _patch_database(monkeypatch, db_path: Path) -> None:
+    engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+    monkeypatch.setattr(db_session, "db_connection_string", f"sqlite:///{db_path}")
+    monkeypatch.setattr(db_session, "engine", engine)
+
+
+def test_initialize_database_upgrades_fresh_database(monkeypatch, tmp_path: Path) -> None:
+    _patch_database(monkeypatch, tmp_path / "fresh.db")
+
+    db_session.initialize_database()
+
+    inspector = inspect(db_session.engine)
+    assert {
+        "alembic_version",
+        "analytics",
+        "chats",
+        "preferences",
+        "user_option_defaults",
+    }.issubset(inspector.get_table_names())
+    with db_session.engine.connect() as connection:
+        assert (
+            connection.execute(text("select version_num from alembic_version")).scalar_one()
+            == BASELINE_REVISION
+        )
+
+
+def test_initialize_database_uses_manually_stamped_baseline_database(
+    monkeypatch, tmp_path: Path
+) -> None:
+    _patch_database(monkeypatch, tmp_path / "existing.db")
+    command.upgrade(db_session.get_alembic_config(), BASELINE_REVISION)
+
+    db_session.initialize_database()
+
+    with db_session.engine.connect() as connection:
+        assert (
+            connection.execute(text("select version_num from alembic_version")).scalar_one()
+            == BASELINE_REVISION
+        )

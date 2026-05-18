@@ -11,6 +11,7 @@ from telethon.tl.types import User
 
 from ebook_converter_bot import API_HASH, API_KEY, BOT_TOKEN
 from ebook_converter_bot.db.curd import generate_analytics_columns
+from ebook_converter_bot.db.session import initialize_database
 from ebook_converter_bot.modules import ALL_MODULES
 from ebook_converter_bot.utils.convert import Converter
 from ebook_converter_bot.utils.loader import load_modules
@@ -28,6 +29,7 @@ BOT_INFO = {}
 
 def main() -> None:
     """Main."""
+    initialize_database()
     generate_analytics_columns(Converter.get_supported_types())
     BOT.loop.run_until_complete(run())
 

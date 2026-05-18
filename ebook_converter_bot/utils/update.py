@@ -13,7 +13,14 @@ from ebook_converter_bot import PARENT_DIR
 
 DEFAULT_UPDATE_REPO_URL = "https://github.com/yshalsager/ebook-converter-bot.git"
 DEFAULT_UPDATE_REPO_BRANCH = "master"
-UPDATE_ROOT_FILES = ("pyproject.toml", "uv.lock", "Dockerfile", "docker-compose.yml", "mise.toml")
+UPDATE_ROOT_FILES = (
+    "pyproject.toml",
+    "uv.lock",
+    "Dockerfile",
+    "docker-compose.yml",
+    "mise.toml",
+    "alembic.ini",
+)
 UPDATE_DIRS = ("ebook_converter_bot",)
 COMMAND_TIMEOUT_SECONDS = 600
 
