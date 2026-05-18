@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import UTC, datetime, timedelta
 
 from ebook_converter_bot.db import curd
 from ebook_converter_bot.db.base import Base
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 LONG_ERROR_LENGTH = 2500
 TRUNCATED_ERROR_LENGTH = 2000
+RECENT_DAYS = 3
 
 
 def _configure_test_session(monkeypatch) -> sessionmaker[Session]:
@@ -120,3 +122,44 @@ def test_record_conversion_event_truncates_error_and_applies_defaults(monkeypatc
     assert len(event.error_message or "") == TRUNCATED_ERROR_LENGTH
     assert event.created_at is not None
     assert event.duration_ms is None
+
+
+def test_get_broadcast_chats_filters_username_and_active_users(monkeypatch) -> None:
+    testing_session_local = _configure_test_session(monkeypatch)
+    now = datetime.now(UTC)
+
+    with testing_session_local() as session:
+        session.add_all(
+            [
+                Chat(user_id=1, user_name="", type=0),
+                Chat(user_id=2, user_name="active", type=0),
+                Chat(user_id=3, user_name="old", type=0),
+                ConversionEvent(
+                    user_id=2,
+                    input_format="epub",
+                    output_format="pdf",
+                    success=True,
+                    created_at=now,
+                ),
+                ConversionEvent(
+                    user_id=3,
+                    input_format="epub",
+                    output_format="pdf",
+                    success=True,
+                    created_at=now - timedelta(days=RECENT_DAYS),
+                ),
+            ]
+        )
+        session.commit()
+
+    active_after = now - timedelta(days=1)
+
+    assert [chat.user_id for chat in curd.get_broadcast_chats()] == [1, 2, 3]
+    assert [chat.user_id for chat in curd.get_broadcast_chats({"username_only": True})] == [2, 3]
+    assert [chat.user_id for chat in curd.get_broadcast_chats({"active_after": active_after})] == [
+        2
+    ]
+    assert [
+        chat.user_id
+        for chat in curd.get_broadcast_chats({"username_only": True, "active_after": active_after})
+    ] == [2]

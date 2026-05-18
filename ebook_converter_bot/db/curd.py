@@ -263,6 +263,21 @@ def get_all_chats(*, session: Session) -> list[Chat]:
 
 
 @with_session
+def get_broadcast_chats(filters: dict[str, Any] | None = None, *, session: Session) -> list[Chat]:
+    stmt = select(Chat).order_by(Chat.user_id)
+    if filters:
+        if filters.get("username_only"):
+            stmt = stmt.where(Chat.user_name != "")
+        active_after = filters.get("active_after")
+        if active_after:
+            active_users = select(ConversionEvent.user_id).where(
+                ConversionEvent.created_at >= active_after
+            )
+            stmt = stmt.where(Chat.user_id.in_(active_users))
+    return list(session.scalars(stmt).all())
+
+
+@with_session
 def get_user_option_defaults(user_id: int, *, session: Session) -> dict[str, Any] | None:
     options_json = session.scalar(
         select(UserOptionDefault.options_json).where(UserOptionDefault.user_id == user_id)

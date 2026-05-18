@@ -1,24 +1,19 @@
 """Bot broadcast module."""
 
-import logging
-from asyncio import sleep
-
 from telethon import events
-from telethon.errors import (
-    ChannelPrivateError,
-    ChatWriteForbiddenError,
-    UserIsBlockedError,
-)
 from telethon.tl.types import Message
 
 from ebook_converter_bot import TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
-from ebook_converter_bot.db.curd import get_all_chats, get_lang, remove_chat
-from ebook_converter_bot.db.models.chat import Chat
+from ebook_converter_bot.db.curd import get_broadcast_chats, get_lang, remove_chat
+from ebook_converter_bot.utils.broadcast import (
+    broadcast_to_chats,
+    extract_filters_text,
+    filters_help_text,
+    parse_broadcast_filters,
+)
 from ebook_converter_bot.utils.i18n import translate as _
 from ebook_converter_bot.utils.telegram import tg_exceptions_handler
-
-logger = logging.getLogger(__name__)
 
 
 @BOT.on(
@@ -32,24 +27,24 @@ logger = logging.getLogger(__name__)
 async def broadcast_handler(event: events.NewMessage.Event) -> None:
     """Broadcasts message to bot users."""
     lang = get_lang(event.chat_id)
+    filters_text = extract_filters_text(event.message.message)
+    filters_payload, error = parse_broadcast_filters(filters_text)
+    if error:
+        await event.reply(f"{error}\n{filters_help_text()}")
+        return
+
+    chats = get_broadcast_chats(filters_payload or None)
+    if not chats:
+        await event.reply(_("No recipients to broadcast to.", lang))
+        return
+
     message_to_send: Message = await event.get_reply_message()
-    failed_to_send = 0
-    sent_successfully = 0
-    chat: Chat
-    for chat in get_all_chats():
-        try:
-            await BOT.send_message(chat.user_id, message_to_send)
-            sent_successfully += 1
-            await sleep(2)
-        except (
-            ValueError,
-            ChatWriteForbiddenError,
-            ChannelPrivateError,
-            UserIsBlockedError,
-        ) as err:
-            failed_to_send += 1
-            logger.warning(f"Failed to send message to {chat}:\n{err}")
-            remove_chat(chat.user_id)
+    sent_successfully, failed_to_send = await broadcast_to_chats(
+        BOT.send_message,
+        message_to_send,
+        chats,
+        remove_chat,
+    )
     broadcast_status_message: str = _(
         "Broadcasting completed! Message was sent to {} chats\n",
         lang,
