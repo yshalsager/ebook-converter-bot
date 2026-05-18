@@ -55,15 +55,19 @@ Some more features of the bot:
 - Convert Shamela old `.bok` files by first generating an EPUB in Python then using the existing calibre pipeline for other outputs.
 - Convert legacy Word `.doc` files by extracting text with Antiword, then using the existing Calibre or Pandoc pipeline.
 - Interactive conversion options before selecting output format.
+- Per-user conversion option defaults are remembered automatically.
 - Optional Pandoc backend for supported document routes, with Calibre as the default when both can convert the same route.
 - Markdown-family, HTML, reStructuredText, AsciiDoc, Org, LaTeX, Typst, and plain-text document routes through Pandoc.
-- Global output options: cover compression, smart punctuation, text justification, and paragraph spacing cleanup.
+- Global output options: cover compression, smart punctuation, text justification, line height, and paragraph spacing cleanup.
 - DOCX options: page size and generated TOC toggle.
 - EPUB output options: version selection, inline TOC, and background removal.
-- PDF options: paper size and page numbers.
+- PDF options: paper size, page numbers, cover-page generation, chapter page breaks, and Arabic font selection.
 - KFX options: PDOC/EBOK type and pages mode.
 - EPUB input preprocessing options: fix EPUB metadata/spine issues, flatten TOC, and standardize footnotes.
 - EPUB-to-EPUB volume splitting with per-volume output processing (up to 35 split files).
+- Admin stats track users, recent attempts, success/failure rates, active users, and top conversion pairs.
+- Admin broadcasts retry flood waits per recipient, remove permanently unreachable chats, and support `active_within` and
+  `username_only` filters.
 
 ## Usage
 
@@ -71,6 +75,18 @@ Some more features of the bot:
   reply you with the converted file.
 - The bot works in groups too. Reply with `/convert` to any file then do the same steps as in private.
 - You can change the preferences of the bot such as language using `/settings` or `/preferences` commands.
+
+Admin-only commands:
+
+- `/stats` shows user and conversion activity statistics.
+- `/broadcast` sends the replied message to all stored chats. You can add optional filters under the command:
+  ```text
+  /broadcast
+  active_within 30
+  username_only yes
+  ```
+- `/update` updates the bot from a GitHub source archive without requiring git in the runtime container.
+- `/restart` restarts the bot.
 
 ## Before setting up the bot
 
@@ -88,7 +104,7 @@ Some more features of the bot:
   ```
 - Compile the translation files using the following command:
   ```bash
-  make i18n-compile 
+  mise run i18n_compile
   ```
 
 ## Setting up the bot
@@ -100,32 +116,37 @@ Before all, clone this repository.
 - Simply, run the following command:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
 ```
+
+The Docker setup uses uv for Python dependencies, installs runtime dependencies into `/opt/venv`, and runs the bot from
+the repository mounted at `/app`.
+
+For KFX conversion on recent Docker versions, the compose file uses Docker's targeted seccomp workaround for Wine:
+
+```yaml
+security_opt:
+  - seccomp=/etc/docker/seccomp-profile-v0.2.1.json
+```
+
+Download that profile on the host before starting the container, or remove this setting if you do not need KFX/Wine
+conversion.
 
 ### Without Docker [NOT RECOMMENDED]
 
 #### Python dependencies
 
-It requires Python 3.7 with pip v19+ installed or poetry if you use it.
+It requires Python 3.14 and uv.
 
-Clone the repository and run any of the following commands:
-
-##### Using poetry
+Clone the repository and run:
 
 ```bash
-poetry install
-```
-
-##### Using Pip
-
-```bash
-pip install .
+uv sync --frozen
 ```
 
 #### Database
 
-The bot depends on sqlite database. Make sure that your system has it installed.
+The bot uses SQLite through SQLAlchemy. Alembic runs database migrations automatically on startup.
 
 #### Other requirements
 
@@ -156,22 +177,22 @@ You can go through the Dockerfile to see how the bot requirements are being inst
 If you finally managed to get all pieces in its place without using docker, run the bot using:
 
 ```bash
-python3 -m ebook_converter_bot
+uv run -m ebook_converter_bot
 ```
 
 ### Internationalization (i18n)
 
-The bot uses gettext for internationalization and makefile for running i18n tasks easily.
+The bot uses gettext for internationalization and mise tasks for running i18n commands easily.
 
-- First, generate .pot template using `make i18n-generate-messages`.
-- Update the current translation files using `make i18n-merge`, then edit the translation strings.
-- Compile the translation files using `make i18n-compile`.
+- First, generate .pot template using `mise run i18n_generate_messages`.
+- Update the current translation files using `mise run i18n_merge`, then edit the translation strings.
+- Compile the translation files using `mise run i18n_compile`.
 
 To add a new language to the bot, run the following command (change 'ar' to your language code) then edit the new
 language file with translation and compile.
 
 ```bash
-LANG=ar make i18n-init-lang
+mise run i18n_init_lang -- ar
 ```
 
 ## `.bok` Notes
