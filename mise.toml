@@ -28,7 +28,7 @@ run = 'mkdir -p ebook_converter_bot/data/locales/${usage_lang}/LC_MESSAGES/ && c
 
 [tasks.i18n_merge]
 description = 'Merge updated .pot into all existing .po files'
-run = 'find ebook_converter_bot/data/locales -name "*.po" -print0 | xargs -0 -I {} msgmerge --update {} ebook_converter_bot/data/locales/ebook_converter_bot.pot'
+run = "find ebook_converter_bot/data/locales -name '*.po' -print0 | xargs -0 -I {} sh -c 'msgmerge --update --backup=none \"$1\" ebook_converter_bot/data/locales/ebook_converter_bot.pot && msgattrib --no-obsolete -o \"$1\" \"$1\"' sh {}"
 
 [tasks.i18n_compile]
 description = 'Compile all .po files into .mo files'
