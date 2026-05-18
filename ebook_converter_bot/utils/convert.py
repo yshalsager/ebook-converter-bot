@@ -89,6 +89,8 @@ class ConversionOptions:
     pdf_paper_size: str = "default"
     pdf_font_profile: str = "default"
     pdf_page_numbers: bool = False
+    pdf_no_cover: bool = True
+    pdf_no_chapter_pagebreak: bool = False
     conversion_backend: str = "calibre"
     pandoc_toc: bool = False
     pandoc_number_sections: bool = False
@@ -245,6 +247,8 @@ class PandocBackend(ConversionBackend):
                 options.pdf_paper_size != "default",
                 options.pdf_font_profile != "default",
                 options.pdf_page_numbers,
+                options.pdf_no_cover and output_type == "pdf",
+                options.pdf_no_chapter_pagebreak,
                 options.pandoc_toc and output_type not in PandocBackend.toc_output_types,
                 options.pandoc_number_sections
                 and output_type not in PandocBackend.number_sections_output_types,
@@ -850,6 +854,10 @@ class Converter:
             command.extend(["--paper-size", options.pdf_paper_size])
         if options.pdf_page_numbers:
             command.append("--pdf-page-numbers")
+        if options.pdf_no_cover:
+            command.append("--pdf-no-cover")
+        if options.pdf_no_chapter_pagebreak:
+            command.extend(["--chapter-mark", "none"])
         Converter._append_pdf_font_profile_options(command, options)
 
     @staticmethod
@@ -1127,6 +1135,8 @@ class Converter:
             pdf_paper_size="default",
             pdf_font_profile="default",
             pdf_page_numbers=False,
+            pdf_no_cover=False,
+            pdf_no_chapter_pagebreak=False,
             conversion_backend="calibre",
         )
         epub_file, _ignored_rtl, conversion_error = await self._convert_non_bok(
@@ -1270,6 +1280,8 @@ class Converter:
                     pdf_paper_size="default",
                     pdf_font_profile="default",
                     pdf_page_numbers=False,
+                    pdf_no_cover=False,
+                    pdf_no_chapter_pagebreak=False,
                     conversion_backend="calibre",
                 )
                 epub_file, set_to_rtl, conversion_error = await self._convert_non_bok(

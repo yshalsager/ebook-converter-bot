@@ -147,6 +147,16 @@ msgid "PDF: page numbers"
 msgstr "PDF: sayfa numaraları"
 
 #: ebook_converter_bot/modules/converter.py:119
+#: ebook_converter_bot/modules/converter.py:197
+msgid "PDF: no cover page"
+msgstr "PDF: kapak sayfası yok"
+
+#: ebook_converter_bot/modules/converter.py:120
+#: ebook_converter_bot/modules/converter.py:198
+msgid "PDF: no chapter page breaks"
+msgstr "PDF: bölüm sayfa sonları yok"
+
+#: ebook_converter_bot/modules/converter.py:119
 msgid "Conversion backend"
 msgstr "Dönüştürme arka ucu"
 

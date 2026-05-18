@@ -43,6 +43,8 @@ LABELS = {
     "amiri_label": "Amiri",
     "ibm_plex_sans_arabic_label": "IBM Plex Sans Arabic",
     "pdf_page_numbers_label": "PDF: page numbers",
+    "pdf_no_cover_label": "PDF: no cover page",
+    "pdf_no_chapter_pagebreak_label": "PDF: no chapter page breaks",
     "conversion_backend_label": "Conversion backend",
     "calibre_label": "Calibre",
     "pandoc_label": "Pandoc",
@@ -139,6 +141,8 @@ def test_options_keyboard_shows_selected_context_controls_only() -> None:
     assert b"opt|pdf_font_profile|amiri|12345678" in data
     assert b"opt|pdf_font_profile|ibm_plex_sans_arabic|12345678" in data
     assert b"opt|pdf_page_numbers|1|12345678" in data
+    assert b"opt|pdf_no_cover|0|12345678" in data
+    assert b"opt|pdf_no_chapter_pagebreak|1|12345678" in data
     assert b"opt|docx_page_size|default|12345678" not in data
     assert b"opt|epub_version|default|12345678" not in data
     assert b"opt|kfx_doc_type|doc|12345678" not in data
@@ -375,6 +379,8 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
         epub_version="3",
         epub_inline_toc=True,
         compress_cover=True,
+        pdf_no_cover=True,
+        pdf_no_chapter_pagebreak=True,
     )
 
     values = route_option_values(state, "epub")
@@ -387,6 +393,8 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
     assert values["epub_version"] == "default"
     assert values["epub_inline_toc"] is False
     assert values["compress_cover"] is False
+    assert values["pdf_no_cover"] is False
+    assert values["pdf_no_chapter_pagebreak"] is False
 
 
 def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
@@ -404,6 +412,8 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
         epub_version="3",
         epub_split_volumes=True,
         pdf_page_numbers=True,
+        pdf_no_cover=True,
+        pdf_no_chapter_pagebreak=True,
         kfx_pages=0,
     )
 
@@ -420,6 +430,8 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
     assert values["epub_version"] == "default"
     assert values["epub_split_volumes"] is False
     assert values["pdf_page_numbers"] is False
+    assert values["pdf_no_cover"] is False
+    assert values["pdf_no_chapter_pagebreak"] is False
     assert values["kfx_pages"] is None
 
 
@@ -462,6 +474,10 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.pdf_paper_size == "letter"
     assert set_request_option(state, "pdf_font_profile", "amiri") is True
     assert state.pdf_font_profile == "amiri"
+    assert set_request_option(state, "pdf_no_cover", "1") is True
+    assert state.pdf_no_cover is True
+    assert set_request_option(state, "pdf_no_chapter_pagebreak", "1") is True
+    assert state.pdf_no_chapter_pagebreak is True
     assert set_request_option(state, "conversion_backend", "pandoc") is True
     assert state.conversion_backend == "pandoc"
     assert set_request_option(state, "pandoc_toc", "1") is True
@@ -516,6 +532,8 @@ def test_set_request_option_reset_clears_all_options() -> None:
         pdf_paper_size="letter",
         pdf_font_profile="amiri",
         pdf_page_numbers=True,
+        pdf_no_cover=True,
+        pdf_no_chapter_pagebreak=True,
         conversion_backend="pandoc",
         pandoc_toc=True,
         pandoc_number_sections=True,
@@ -542,6 +560,8 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.pdf_paper_size == "default"
     assert state.pdf_font_profile == "default"
     assert state.pdf_page_numbers is False
+    assert state.pdf_no_cover is True
+    assert state.pdf_no_chapter_pagebreak is False
     assert state.conversion_backend == "calibre"
     assert state.pandoc_toc is False
     assert state.pandoc_number_sections is False
@@ -594,6 +614,8 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
         docx_page_size="a4",
         line_height=LINE_HEIGHT_150,
         options_context="epub",
+        pdf_no_cover=True,
+        pdf_no_chapter_pagebreak=True,
         conversion_backend="pandoc",
         pandoc_toc=True,
         pandoc_number_sections=True,
@@ -608,6 +630,8 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     assert persisted["docx_page_size"] == "a4"
     assert persisted["line_height"] == LINE_HEIGHT_150
     assert persisted["options_context"] == "epub"
+    assert persisted["pdf_no_cover"] is True
+    assert persisted["pdf_no_chapter_pagebreak"] is True
     assert persisted["conversion_backend"] == "pandoc"
     assert persisted["pandoc_toc"] is True
     assert persisted["pandoc_number_sections"] is True
@@ -631,6 +655,8 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "options_context": "kfx",
             "kfx_pages": 0,
             "epub_standardize_footnotes": True,
+            "pdf_no_cover": True,
+            "pdf_no_chapter_pagebreak": True,
             "pdf_font_profile": "ibm_plex_sans_arabic",
             "conversion_backend": "pandoc",
             "pandoc_toc": True,
@@ -646,6 +672,8 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.options_context == "kfx"
     assert state.kfx_pages == 0
     assert state.epub_standardize_footnotes is True
+    assert state.pdf_no_cover is True
+    assert state.pdf_no_chapter_pagebreak is True
     assert state.pdf_font_profile == "ibm_plex_sans_arabic"
     assert state.conversion_backend == "pandoc"
     assert state.pandoc_toc is True

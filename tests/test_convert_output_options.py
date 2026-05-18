@@ -58,9 +58,11 @@ OPTION_CASES = [
         "options": ConversionOptions(
             pdf_paper_size="a4",
             pdf_page_numbers=True,
+            pdf_no_cover=True,
+            pdf_no_chapter_pagebreak=True,
         ),
-        "expected_flags": ["--pdf-page-numbers"],
-        "expected_pairs": [("--paper-size", "a4")],
+        "expected_flags": ["--pdf-page-numbers", "--pdf-no-cover"],
+        "expected_pairs": [("--paper-size", "a4"), ("--chapter-mark", "none")],
     },
 ]
 
@@ -152,7 +154,11 @@ def test_force_rtl_pdf_uses_epub_intermediate_for_non_epub_input(tmp_path: Path)
                 input_file,
                 "pdf",
                 options=ConversionOptions(
-                    force_rtl=True, pdf_paper_size="a4", pdf_page_numbers=True
+                    force_rtl=True,
+                    pdf_paper_size="a4",
+                    pdf_page_numbers=True,
+                    pdf_no_cover=True,
+                    pdf_no_chapter_pagebreak=True,
                 ),
             )
         finally:
@@ -166,8 +172,12 @@ def test_force_rtl_pdf_uses_epub_intermediate_for_non_epub_input(tmp_path: Path)
         assert commands[1][:3] == ["ebook-convert", str(intermediate_epub), str(output_file)]
         assert "--paper-size" not in commands[0]
         assert "--pdf-page-numbers" not in commands[0]
+        assert "--pdf-no-cover" not in commands[0]
+        assert "--chapter-mark" not in commands[0]
         assert _contains_flag_pair(commands[1], "--paper-size", "a4")
         assert "--pdf-page-numbers" in commands[1]
+        assert "--pdf-no-cover" in commands[1]
+        assert _contains_flag_pair(commands[1], "--chapter-mark", "none")
         assert rtl_paths == [intermediate_epub]
         assert intermediate_epub.exists() is False
 
@@ -255,6 +265,8 @@ def test_format_specific_flags_do_not_leak_to_other_outputs(tmp_path: Path) -> N
                 epub_remove_background=True,
                 pdf_paper_size="letter",
                 pdf_page_numbers=True,
+                pdf_no_cover=True,
+                pdf_no_chapter_pagebreak=True,
             ),
         )
 
@@ -266,6 +278,8 @@ def test_format_specific_flags_do_not_leak_to_other_outputs(tmp_path: Path) -> N
         assert "--filter-css" not in command
         assert "--paper-size" not in command
         assert "--pdf-page-numbers" not in command
+        assert "--pdf-no-cover" not in command
+        assert "--chapter-mark" not in command
 
     asyncio.run(run())
 

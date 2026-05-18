@@ -129,7 +129,11 @@ CONTEXT_BOOL_OPTIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("epub_remove_background", "epub_remove_background_label"),
         ("epub_split_volumes", "epub_split_volumes_label"),
     ),
-    "pdf": (("pdf_page_numbers", "pdf_page_numbers_label"),),
+    "pdf": (
+        ("pdf_page_numbers", "pdf_page_numbers_label"),
+        ("pdf_no_cover", "pdf_no_cover_label"),
+        ("pdf_no_chapter_pagebreak", "pdf_no_chapter_pagebreak_label"),
+    ),
     "kfx": (),
 }
 BOOL_OPTION_ATTRS: dict[str, str] = {
@@ -145,6 +149,8 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
     "epub_split_volumes": "epub_split_volumes",
     "epub_standardize_footnotes": "epub_standardize_footnotes",
     "pdf_page_numbers": "pdf_page_numbers",
+    "pdf_no_cover": "pdf_no_cover",
+    "pdf_no_chapter_pagebreak": "pdf_no_chapter_pagebreak",
     "pandoc_toc": "pandoc_toc",
     "pandoc_number_sections": "pandoc_number_sections",
 }
@@ -208,6 +214,8 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "pdf_paper_size",
     "pdf_font_profile",
     "pdf_page_numbers",
+    "pdf_no_cover",
+    "pdf_no_chapter_pagebreak",
     "conversion_backend",
     "pandoc_toc",
     "pandoc_number_sections",
@@ -247,6 +255,8 @@ class ConversionRequestState:
     pdf_paper_size: str = "default"
     pdf_font_profile: str = "default"
     pdf_page_numbers: bool = False
+    pdf_no_cover: bool = True
+    pdf_no_chapter_pagebreak: bool = False
     conversion_backend: str = "calibre"
     pandoc_toc: bool = False
     pandoc_number_sections: bool = False
@@ -403,6 +413,8 @@ def route_option_values(
         "pdf_paper_size": "default",
         "pdf_font_profile": "default",
         "pdf_page_numbers": False,
+        "pdf_no_cover": False,
+        "pdf_no_chapter_pagebreak": False,
         "conversion_backend": "pandoc" if uses_pandoc else "calibre",
         "pandoc_toc": state.pandoc_toc
         if uses_pandoc and output_type in PANDOC_TOC_OUTPUT_TYPES
@@ -444,6 +456,8 @@ def route_option_values(
                 "pdf_paper_size": state.pdf_paper_size,
                 "pdf_font_profile": state.pdf_font_profile,
                 "pdf_page_numbers": state.pdf_page_numbers,
+                "pdf_no_cover": state.pdf_no_cover,
+                "pdf_no_chapter_pagebreak": state.pdf_no_chapter_pagebreak,
             }
         )
     elif output_type == "kfx":
@@ -553,6 +567,8 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.pdf_paper_size = "default"
         state.pdf_font_profile = "default"
         state.pdf_page_numbers = False
+        state.pdf_no_cover = True
+        state.pdf_no_chapter_pagebreak = False
         state.conversion_backend = "calibre"
         state.pandoc_toc = False
         state.pandoc_number_sections = False
