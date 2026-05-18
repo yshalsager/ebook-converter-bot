@@ -1,11 +1,11 @@
 import json
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 from typing import Any
 
-from sqlalchemy import desc, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import sum as sql_sum
 
@@ -32,7 +32,7 @@ def with_session(func: Callable[..., Any]) -> Callable[..., Any]:
 
 @with_session
 def generate_analytics_columns(formats: list[str], *, session: Session) -> None:
-    existing = {row[0] for row in session.query(Analytics.format).all()}
+    existing = set(session.scalars(select(Analytics.format)).all())
     missing = [f for f in formats if f not in existing]
     if not missing:
         return
@@ -42,9 +42,7 @@ def generate_analytics_columns(formats: list[str], *, session: Session) -> None:
 
 @with_session
 def update_format_analytics(file_format: str, output: bool = False, *, session: Session) -> None:
-    file_format_analytics: Analytics | None = (
-        session.query(Analytics).filter(Analytics.format == file_format).first()
-    )
+    file_format_analytics = session.scalar(select(Analytics).where(Analytics.format == file_format))
     if not file_format_analytics:
         return
     if output:
@@ -56,14 +54,14 @@ def update_format_analytics(file_format: str, output: bool = False, *, session: 
 
 @with_session
 def add_chat_to_db(user_id: int, user_name: str, chat_type: int, *, session: Session) -> None:
-    if not session.query(Chat).filter(Chat.user_id == user_id).first():
+    if not session.scalar(select(Chat).where(Chat.user_id == user_id)):
         session.add(Chat(user_id=user_id, user_name=user_name, type=chat_type))
         session.commit()
 
 
 @with_session
 def remove_chat(user_id: int, *, session: Session) -> bool:
-    chat = session.query(Chat).filter(Chat.user_id == user_id).first()
+    chat = session.scalar(select(Chat).where(Chat.user_id == user_id))
     if not chat:
         return False
     session.delete(chat)
@@ -73,7 +71,7 @@ def remove_chat(user_id: int, *, session: Session) -> bool:
 
 @with_session
 def increment_usage(user_id: int, *, session: Session) -> None:
-    chat = session.query(Chat).filter(Chat.user_id == user_id).first()
+    chat = session.scalar(select(Chat).where(Chat.user_id == user_id))
     if not chat:
         return
     chat.usage_times += 1
@@ -82,9 +80,7 @@ def increment_usage(user_id: int, *, session: Session) -> None:
 
 @with_session
 def update_language(user_id: int, language: str, *, session: Session) -> None:
-    chat: Preference | None = (
-        session.query(Preference).filter(Preference.user_id == user_id).first()
-    )
+    chat = session.scalar(select(Preference).where(Preference.user_id == user_id))
     if not chat:
         chat = Preference(user_id=user_id, language=language)
         session.add(chat)
@@ -95,9 +91,7 @@ def update_language(user_id: int, language: str, *, session: Session) -> None:
 
 @with_session
 def get_lang(user_id: int, *, session: Session) -> str:
-    language: str = (
-        session.query(Preference.language).filter(Preference.user_id == user_id).scalar()
-    )
+    language = session.scalar(select(Preference.language).where(Preference.user_id == user_id))
     return language or "en"
 
 
@@ -114,16 +108,15 @@ def _percent(part: int, total: int) -> float:
 
 
 def _format_rows(
-    query: Any,
+    rows: Sequence[Any],
     first_key: str,
     second_key: str | None = None,
 ) -> list[dict[str, int | str]]:
     if second_key:
         return [
-            {first_key: first, second_key: second, "count": count}
-            for first, second, count in query.all()
+            {first_key: first, second_key: second, "count": count} for first, second, count in rows
         ]
-    return [{first_key: key, "count": count} for key, count in query.all()]
+    return [{first_key: key, "count": count} for key, count in rows]
 
 
 def _conversion_pair_rows(
@@ -133,17 +126,20 @@ def _conversion_pair_rows(
     *,
     success: bool | None = None,
 ) -> list[dict[str, int | str]]:
-    query = session.query(
+    count = func.count(ConversionEvent.id).label("count")
+    stmt = select(
         ConversionEvent.input_format,
         ConversionEvent.output_format,
-        func.count(ConversionEvent.id).label("count"),
-    ).filter(ConversionEvent.created_at >= cutoff)
+        count,
+    ).where(ConversionEvent.created_at >= cutoff)
     if success is not None:
-        query = query.filter(ConversionEvent.success.is_(success))
+        stmt = stmt.where(ConversionEvent.success.is_(success))
     return _format_rows(
-        query.group_by(ConversionEvent.input_format, ConversionEvent.output_format)
-        .order_by(desc("count"))
-        .limit(top_limit),
+        session.execute(
+            stmt.group_by(ConversionEvent.input_format, ConversionEvent.output_format)
+            .order_by(count.desc())
+            .limit(top_limit)
+        ).all(),
         "input",
         "output",
     )
@@ -159,46 +155,72 @@ def get_stats_snapshot(
     now = datetime.now(UTC)
     recent_cutoff = now - timedelta(days=recent_days)
     week_cutoff = now - timedelta(days=7)
-    all_users = session.query(Chat).count()
-    converted_users = session.query(Chat).filter(Chat.usage_times > 0).count()
-    repeat_users = session.query(Chat).filter(Chat.usage_times >= REPEAT_USER_MIN_USAGE).count()
-    power_users = session.query(Chat).filter(Chat.usage_times >= POWER_USER_MIN_USAGE).count()
-    legacy_successes = session.query(sql_sum(Analytics.output_times)).scalar() or 0
-    legacy_input_total = session.query(sql_sum(Analytics.input_times)).scalar() or 0
-
-    recent_query = session.query(ConversionEvent).filter(
-        ConversionEvent.created_at >= recent_cutoff
+    all_users = session.scalar(select(func.count()).select_from(Chat)) or 0
+    converted_users = session.scalar(select(func.count()).where(Chat.usage_times > 0)) or 0
+    repeat_users = (
+        session.scalar(select(func.count()).where(Chat.usage_times >= REPEAT_USER_MIN_USAGE)) or 0
     )
-    recent_attempts = recent_query.count()
-    recent_successes = recent_query.filter(ConversionEvent.success.is_(True)).count()
-    recent_failures = recent_attempts - recent_successes
-    active_query = session.query(func.count(func.distinct(ConversionEvent.user_id)))
+    power_users = (
+        session.scalar(select(func.count()).where(Chat.usage_times >= POWER_USER_MIN_USAGE)) or 0
+    )
+    legacy_successes = session.scalar(select(sql_sum(Analytics.output_times))) or 0
+    legacy_input_total = session.scalar(select(sql_sum(Analytics.input_times))) or 0
 
-    active_7d = active_query.filter(ConversionEvent.created_at >= week_cutoff).scalar() or 0
-    active_recent = active_query.filter(ConversionEvent.created_at >= recent_cutoff).scalar() or 0
-    avg_duration_ms = (
-        session.query(func.avg(ConversionEvent.duration_ms))
-        .filter(
+    recent_attempts = (
+        session.scalar(select(func.count()).where(ConversionEvent.created_at >= recent_cutoff)) or 0
+    )
+    recent_successes = (
+        session.scalar(
+            select(func.count()).where(
+                ConversionEvent.created_at >= recent_cutoff,
+                ConversionEvent.success.is_(True),
+            )
+        )
+        or 0
+    )
+    recent_failures = recent_attempts - recent_successes
+
+    active_7d = (
+        session.scalar(
+            select(func.count(func.distinct(ConversionEvent.user_id))).where(
+                ConversionEvent.created_at >= week_cutoff
+            )
+        )
+        or 0
+    )
+    active_recent = (
+        session.scalar(
+            select(func.count(func.distinct(ConversionEvent.user_id))).where(
+                ConversionEvent.created_at >= recent_cutoff
+            )
+        )
+        or 0
+    )
+    avg_duration_ms = session.scalar(
+        select(func.avg(ConversionEvent.duration_ms)).where(
             ConversionEvent.created_at >= recent_cutoff,
             ConversionEvent.duration_ms.is_not(None),
         )
-        .scalar()
     )
     top_pairs = _conversion_pair_rows(session, recent_cutoff, top_limit)
     failed_pairs = _conversion_pair_rows(session, recent_cutoff, top_limit, success=False)
 
     output_formats = _format_rows(
-        session.query(Analytics.format, Analytics.output_times)
-        .filter(Analytics.output_times > 0)
-        .order_by(Analytics.output_times.desc())
-        .limit(top_limit),
+        session.execute(
+            select(Analytics.format, Analytics.output_times)
+            .where(Analytics.output_times > 0)
+            .order_by(Analytics.output_times.desc())
+            .limit(top_limit)
+        ).all(),
         "format",
     )
     input_formats = _format_rows(
-        session.query(Analytics.format, Analytics.input_times)
-        .filter(Analytics.input_times > 0)
-        .order_by(Analytics.input_times.desc())
-        .limit(top_limit),
+        session.execute(
+            select(Analytics.format, Analytics.input_times)
+            .where(Analytics.input_times > 0)
+            .order_by(Analytics.input_times.desc())
+            .limit(top_limit)
+        ).all(),
         "format",
     )
 
@@ -237,15 +259,13 @@ def get_stats_snapshot(
 
 @with_session
 def get_all_chats(*, session: Session) -> list[Chat]:
-    return session.query(Chat).all()
+    return list(session.scalars(select(Chat)).all())
 
 
 @with_session
 def get_user_option_defaults(user_id: int, *, session: Session) -> dict[str, Any] | None:
-    options_json = (
-        session.query(UserOptionDefault.options_json)
-        .filter(UserOptionDefault.user_id == user_id)
-        .scalar()
+    options_json = session.scalar(
+        select(UserOptionDefault.options_json).where(UserOptionDefault.user_id == user_id)
     )
     if not options_json:
         return None
@@ -262,7 +282,7 @@ def get_user_option_defaults(user_id: int, *, session: Session) -> dict[str, Any
 
 @with_session
 def upsert_user_option_defaults(user_id: int, options: dict[str, Any], *, session: Session) -> None:
-    defaults = session.query(UserOptionDefault).filter(UserOptionDefault.user_id == user_id).first()
+    defaults = session.scalar(select(UserOptionDefault).where(UserOptionDefault.user_id == user_id))
     options_json = json.dumps(options, ensure_ascii=False, separators=(",", ":"))
     if defaults is None:
         defaults = UserOptionDefault(user_id=user_id, options_json=options_json)

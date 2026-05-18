@@ -32,14 +32,6 @@ python-version = "3.14"
 [tool.ty.rules]
 unresolved-import = "ignore"
 
-[[tool.ty.overrides]]
-include = ["ebook_converter_bot/db/models/**"]
-rules = { invalid-assignment = "ignore" }
-
-[[tool.ty.overrides]]
-include = ["ebook_converter_bot/db/curd.py"]
-rules = { invalid-argument-type = "ignore", no-matching-overload = "ignore", unresolved-attribute = "ignore" }
-
 [tool.ruff]  # https://github.com/charliermarsh/ruff
 fix = true
 line-length = 100

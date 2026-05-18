@@ -14,7 +14,7 @@ module_path = Path(__file__).parent
 db_connection_string = f"sqlite:///{PARENT_DIR}/ebook_converter_bot.db"
 engine = create_engine(db_connection_string, connect_args={"check_same_thread": False})
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(bind=engine)
 
 
 def get_alembic_config() -> Config:

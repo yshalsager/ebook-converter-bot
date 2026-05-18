@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import Any
@@ -11,11 +12,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 def _configure_test_session(monkeypatch: Any) -> sessionmaker[Session]:
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    testing_session_local = sessionmaker(bind=engine)
     Base.metadata.create_all(bind=engine)
 
     @contextmanager
-    def test_get_session() -> Session:
+    def test_get_session() -> Iterator[Session]:
         session = testing_session_local()
         try:
             yield session
