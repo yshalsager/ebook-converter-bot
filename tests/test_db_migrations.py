@@ -1,11 +1,18 @@
 from pathlib import Path
 
 from alembic import command
-from ebook_converter_bot.db import Analytics, Chat, Preference, UserOptionDefault  # noqa: F401
+from ebook_converter_bot.db import (  # noqa: F401
+    Analytics,
+    Chat,
+    ConversionEvent,
+    Preference,
+    UserOptionDefault,
+)
 from ebook_converter_bot.db import session as db_session
 from sqlalchemy import create_engine, inspect, text
 
 BASELINE_REVISION = "20260518_0001"
+HEAD_REVISION = "20260518_0002"
 
 
 def _patch_database(monkeypatch, db_path: Path) -> None:
@@ -24,17 +31,18 @@ def test_initialize_database_upgrades_fresh_database(monkeypatch, tmp_path: Path
         "alembic_version",
         "analytics",
         "chats",
+        "conversion_events",
         "preferences",
         "user_option_defaults",
     }.issubset(inspector.get_table_names())
     with db_session.engine.connect() as connection:
         assert (
             connection.execute(text("select version_num from alembic_version")).scalar_one()
-            == BASELINE_REVISION
+            == HEAD_REVISION
         )
 
 
-def test_initialize_database_uses_manually_stamped_baseline_database(
+def test_initialize_database_upgrades_manually_stamped_baseline_database(
     monkeypatch, tmp_path: Path
 ) -> None:
     _patch_database(monkeypatch, tmp_path / "existing.db")
@@ -42,8 +50,10 @@ def test_initialize_database_uses_manually_stamped_baseline_database(
 
     db_session.initialize_database()
 
+    inspector = inspect(db_session.engine)
+    assert "conversion_events" in inspector.get_table_names()
     with db_session.engine.connect() as connection:
         assert (
             connection.execute(text("select version_num from alembic_version")).scalar_one()
-            == BASELINE_REVISION
+            == HEAD_REVISION
         )

@@ -3,7 +3,13 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from ebook_converter_bot.db import Analytics, Chat, Preference, UserOptionDefault  # noqa: F401
+from ebook_converter_bot.db import (  # noqa: F401
+    Analytics,
+    Chat,
+    ConversionEvent,
+    Preference,
+    UserOptionDefault,
+)
 from ebook_converter_bot.db.base import Base
 from ebook_converter_bot.db.session import db_connection_string
 

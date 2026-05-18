@@ -14,9 +14,12 @@ from ebook_converter_bot.bot import BOT
 from ebook_converter_bot.db.curd import (
     get_lang,
     get_user_option_defaults,
+    increment_usage,
+    record_conversion_event,
+    update_format_analytics,
     upsert_user_option_defaults,
 )
-from ebook_converter_bot.utils.analytics import analysis
+from ebook_converter_bot.db.models.conversion_event import ConversionEvent
 from ebook_converter_bot.utils.convert import (
     MAX_SPLIT_OUTPUT_FILES,
     TASK_TIMEOUT,
@@ -88,6 +91,18 @@ def build_request_state_for_user(
 
 def save_request_state_defaults(user_id: int, state: ConversionRequestState) -> None:
     upsert_user_option_defaults(user_id, state_to_persisted_options(state))
+
+
+def failed_conversion_message(
+    lang: str,
+    input_file_name: str,
+    output_type: str,
+    conversion_error: str | None = None,
+) -> str:
+    message = _("Failed to convert the file (`{}`) to {} :(", lang).format(
+        input_file_name, output_type
+    )
+    return f"{message}\n\n`{conversion_error}`" if conversion_error else message
 
 
 def options_labels(lang: str) -> dict[str, str]:
@@ -459,58 +474,82 @@ async def format_selected_callback(event: events.CallbackQuery.Event) -> None:
 
 @BOT.on(events.CallbackQuery(pattern=rf"{CB_RUN}\|[\w-]+\|\d+"))
 @tg_exceptions_handler
-@analysis
-async def converter_callback(
-    event: events.CallbackQuery.Event,
-) -> tuple[str, str] | None:
+async def converter_callback(event: events.CallbackQuery.Event) -> None:
     """Converter callback handler."""
     lang = get_lang(event.chat_id)
     converted = False
     _run, output_type, request_id = event.data.decode().split("|")
     state = await get_request_state(event, request_id, pop=True)
     if not state:
-        return None
+        return
     reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
     input_file = Path(state.input_file_path)
     options = build_conversion_options(state, output_type)
-    batch_result = await converter.convert_ebook_many(
-        input_file,
-        output_type,
-        options=options,
-        timeout=None if event.sender_id in BOT_ADMIN_IDS else TASK_TIMEOUT,
-    )
-    output_files = [file_path for file_path in batch_result.output_files if file_path.exists()]
-    if batch_result.split_capped:
-        message_text = _("Split produced {} files, maximum allowed is {}.", lang).format(
-            batch_result.split_count, MAX_SPLIT_OUTPUT_FILES
+    output_files = []
+    batch_output_files = []
+    conversion_error = None
+    started_at = monotonic()
+    input_size_bytes = input_file.stat().st_size if input_file.exists() else None
+    try:
+        batch_result = await converter.convert_ebook_many(
+            input_file,
+            output_type,
+            options=options,
+            timeout=None if event.sender_id in BOT_ADMIN_IDS else TASK_TIMEOUT,
         )
-        await reply.edit(message_text)
-    elif output_files:
-        message_text = ""
-        if state.force_rtl and batch_result.converted_to_rtl:
-            message_text += _("Converted to RTL successfully!\n", lang)
-        message_text += (
-            _("Done! Uploading the converted files...", lang)
-            if len(output_files) > 1
-            else _("Done! Uploading the converted file...", lang)
-        )
-        await reply.edit(message_text)
-        for output_file in output_files:
-            await event.client.send_file(
-                event.chat, output_file, reply_to=reply, force_document=True
+        batch_output_files = batch_result.output_files
+        output_files = [file_path for file_path in batch_output_files if file_path.exists()]
+        if batch_result.split_capped:
+            message_text = _("Split produced {} files, maximum allowed is {}.", lang).format(
+                batch_result.split_count, MAX_SPLIT_OUTPUT_FILES
             )
-        converted = True
-    else:
-        input_file_name = input_file.name
-        error_message = _("Failed to convert the file (`{}`) to {} :(", lang).format(
-            input_file_name, output_type
+            conversion_error = message_text
+            await reply.edit(message_text)
+        elif output_files:
+            message_text = ""
+            if state.force_rtl and batch_result.converted_to_rtl:
+                message_text += _("Converted to RTL successfully!\n", lang)
+            message_text += (
+                _("Done! Uploading the converted files...", lang)
+                if len(output_files) > 1
+                else _("Done! Uploading the converted file...", lang)
+            )
+            await reply.edit(message_text)
+            for output_file in output_files:
+                await event.client.send_file(
+                    event.chat, output_file, reply_to=reply, force_document=True
+                )
+            converted = True
+        else:
+            conversion_error = batch_result.conversion_error
+            await reply.edit(
+                failed_conversion_message(lang, input_file.name, output_type, conversion_error)
+            )
+    except Exception as exc:  # noqa: BLE001 - callback boundary must record failed attempts.
+        conversion_error = str(exc)
+        await reply.edit(
+            failed_conversion_message(lang, input_file.name, output_type, conversion_error)
         )
-        if batch_result.conversion_error:
-            error_message += f"\n\n`{batch_result.conversion_error}`"
-        await reply.edit(error_message)
-    input_file.unlink(missing_ok=True)
-    for output_file in batch_result.output_files:
-        output_file.unlink(missing_ok=True)
+    finally:
+        duration_ms = int((monotonic() - started_at) * 1000)
+        output_size_bytes = sum(file_path.stat().st_size for file_path in output_files) or None
+        input_file.unlink(missing_ok=True)
+        for output_file in batch_output_files:
+            output_file.unlink(missing_ok=True)
+        record_conversion_event(
+            ConversionEvent(
+                user_id=event.chat_id,
+                input_format=state.input_ext,
+                output_format=output_type,
+                success=converted,
+                error_message=conversion_error,
+                duration_ms=duration_ms,
+                input_size_bytes=input_size_bytes,
+                output_size_bytes=output_size_bytes,
+                backend=options.conversion_backend,
+            )
+        )
     if converted:
-        return state.input_ext, output_type
-    return None
+        increment_usage(event.chat_id)
+        update_format_analytics(state.input_ext)
+        update_format_analytics(output_type, output=True)
