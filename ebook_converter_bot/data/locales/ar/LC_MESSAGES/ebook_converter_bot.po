@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-18 17:28+0300\n"
+"POT-Creation-Date: 2026-05-18 17:37+0300\n"
 "PO-Revision-Date: 2021-08-26 13:52+0200\n"
 "Last-Translator: yshalsager <ysh-alsager@hotmail.com>\n"
 "Language-Team: Arabic <LL@li.org>\n"
@@ -363,9 +363,39 @@ msgstr "اكتمل التحويل! جاري رفع الملف المحول..."
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "فشل تحويل الملف (`{}`) إلى {} :("
 
-#: ebook_converter_bot/modules/restart.py:19
+#: ebook_converter_bot/modules/restart.py:38
 msgid "Restarting, please wait..."
 msgstr "يٌعاد تشغيل البوت الآن، من فضلك انتظر..."
+
+#: ebook_converter_bot/modules/restart.py:49
+msgid "Updating, please wait..."
+msgstr "يجري التحديث، يرجى الانتظار..."
+
+#: ebook_converter_bot/modules/restart.py:52
+#, python-brace-format
+msgid "Fetching update source from {} ({})..."
+msgstr "يجري جلب مصدر التحديث من {} ({})..."
+
+#: ebook_converter_bot/modules/restart.py:56
+msgid "Failed to fetch update source"
+msgstr "فشل جلب مصدر التحديث"
+
+#: ebook_converter_bot/modules/restart.py:59
+msgid "Source update successful. Updating dependencies..."
+msgstr "اكتمل تحديث المصدر. يجري تحديث الاعتماديات..."
+
+#: ebook_converter_bot/modules/restart.py:62
+#, python-brace-format
+msgid "Updated source, but could not replace: {}"
+msgstr "تحدث المصدر، لكن تعذر استبدال: {}"
+
+#: ebook_converter_bot/modules/restart.py:71
+msgid "Failed to update dependencies"
+msgstr "فشل تحديث الاعتماديات"
+
+#: ebook_converter_bot/modules/restart.py:74
+msgid "Updated successfully!"
+msgstr "تم التحديث بنجاح!"
 
 # python-brace-format
 #: ebook_converter_bot/modules/main.py:26

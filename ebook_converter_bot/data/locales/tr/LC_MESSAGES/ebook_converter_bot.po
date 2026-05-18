@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-18 17:28+0300\n"
+"POT-Creation-Date: 2026-05-18 17:37+0300\n"
 "PO-Revision-Date: 2021-08-28 22:48+0200\n"
 "Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
 "Language-Team: - \n"
@@ -363,9 +363,39 @@ msgstr "İşlem tamamlandı! Dönüştürülen dosya yükleniyor..."
 msgid "Failed to convert the file (`{}`) to {} :("
 msgstr "(`{}`) dosyası {} dosyasına dönüştürülürken hata oluştu :("
 
-#: ebook_converter_bot/modules/restart.py:19
+#: ebook_converter_bot/modules/restart.py:38
 msgid "Restarting, please wait..."
 msgstr "Yeniden başlatılıyor, lütfen bekleyin..."
+
+#: ebook_converter_bot/modules/restart.py:49
+msgid "Updating, please wait..."
+msgstr "Güncelleniyor, lütfen bekleyin..."
+
+#: ebook_converter_bot/modules/restart.py:52
+#, python-brace-format
+msgid "Fetching update source from {} ({})..."
+msgstr "Güncelleme kaynağı {} ({}) konumundan alınıyor..."
+
+#: ebook_converter_bot/modules/restart.py:56
+msgid "Failed to fetch update source"
+msgstr "Güncelleme kaynağı alınamadı"
+
+#: ebook_converter_bot/modules/restart.py:59
+msgid "Source update successful. Updating dependencies..."
+msgstr "Kaynak güncellemesi başarılı. Bağımlılıklar güncelleniyor..."
+
+#: ebook_converter_bot/modules/restart.py:62
+#, python-brace-format
+msgid "Updated source, but could not replace: {}"
+msgstr "Kaynak güncellendi, ancak şunlar değiştirilemedi: {}"
+
+#: ebook_converter_bot/modules/restart.py:71
+msgid "Failed to update dependencies"
+msgstr "Bağımlılıklar güncellenemedi"
+
+#: ebook_converter_bot/modules/restart.py:74
+msgid "Updated successfully!"
+msgstr "Başarıyla güncellendi!"
 
 # python-brace-format
 #: ebook_converter_bot/modules/main.py:26
