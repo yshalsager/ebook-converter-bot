@@ -2,12 +2,16 @@ FROM ghcr.io/yshalsager/calibre-with-kfx:20260503-0052@sha256:698b0d28b370a1d1b4
 
 ARG PANDOC_VERSION=3.9.0.2
 
-COPY --from=ghcr.io/astral-sh/uv:latest@sha256:3a59a3cdd5f7c217faa36e32dbc7fddbb0412889c2a0a5229f6d790e5a019dd7 /uv /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:3a59a3cdd5f7c217faa36e32dbc7fddbb0412889c2a0a5229f6d790e5a019dd7 /uv /uvx /bin/
+ENV PATH="/opt/venv/bin:$PATH" \
+    UV_COMPILE_BYTECODE=1 \
+    UV_NO_CACHE=1 \
+    UV_NO_DEV=1 \
+    UV_PROJECT_ENVIRONMENT="/opt/venv" \
+    UV_PYTHON_DOWNLOADS=0
 WORKDIR /code
 COPY pyproject.toml uv.lock /code/
-RUN uv sync --frozen --no-cache
-ENV PATH="/code/.venv/bin:$PATH" \
-    UV_PROJECT_ENVIRONMENT="/code/.venv"
+RUN uv sync --frozen --no-install-project
 
 USER root
 COPY ebook_converter_bot/data/fonts/pdf /tmp/vendor-pdf-fonts
@@ -22,7 +26,6 @@ RUN set -eux; \
     mkdir -p /usr/local/share/fonts/ebook-converter-bot; \
     find /tmp/vendor-pdf-fonts -type f -name '*.ttf' -exec cp '{}' /usr/local/share/fonts/ebook-converter-bot/ ';'; \
     fc-cache -f -v; \
-    chown -R calibre:calibre /code; \
     rm -rf /tmp/vendor-pdf-fonts /root/.cache/fontconfig/* /root/.cache/calibre/*font*
 USER calibre
 # Override the entrypoint of the parent image
