@@ -81,6 +81,7 @@ class ConversionOptions:
     kfx_pages: int | None = None
     docx_page_size: str = "default"
     docx_no_toc: bool = False
+    docx_header_pagebreaks: bool = False
     epub_version: str = "default"
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
@@ -194,7 +195,7 @@ class PandocBackend(ConversionBackend):
         "typst": "typst",
     }
     markdown_output_types: ClassVar[set[str]] = {"md"}
-    rtl_output_types: ClassVar[set[str]] = {"epub", "html", "md"}
+    rtl_output_types: ClassVar[set[str]] = {"docx", "epub", "html", "md"}
     toc_output_types: ClassVar[set[str]] = {
         "docx",
         "epub",
@@ -239,6 +240,7 @@ class PandocBackend(ConversionBackend):
                 options.kfx_pages is not None,
                 options.docx_page_size != "default",
                 options.docx_no_toc,
+                options.docx_header_pagebreaks and output_type != "docx",
                 options.epub_version != "default",
                 options.epub_inline_toc,
                 options.epub_remove_background,
@@ -440,6 +442,26 @@ end
 """
 
     @staticmethod
+    def _docx_header_pagebreaks_filter_content() -> str:
+        return """local page_break = pandoc.RawBlock('openxml', '<w:p><w:r><w:br w:type="page" /></w:r></w:p>')
+
+function Pandoc(doc)
+  local blocks = {}
+  local seen_heading = false
+  for _, block in ipairs(doc.blocks) do
+    if block.t == 'Header' and block.level <= 2 then
+      if seen_heading then
+        table.insert(blocks, page_break)
+      end
+      seen_heading = true
+    end
+    table.insert(blocks, block)
+  end
+  return pandoc.Pandoc(blocks, doc.meta)
+end
+"""
+
+    @staticmethod
     def _write_lua_filter(output_file: Path, suffix: str, content: str) -> Path:
         lua_filter = output_file.with_suffix(suffix)
         lua_filter.write_text(content)
@@ -481,6 +503,14 @@ end
                     output_file,
                     ".bidi-cleanup.lua",
                     self._bidi_span_cleanup_filter_content(),
+                )
+            )
+        if options.docx_header_pagebreaks and output_type == "docx":
+            filters.append(
+                self._write_lua_filter(
+                    output_file,
+                    ".docx-header-pagebreaks.lua",
+                    self._docx_header_pagebreaks_filter_content(),
                 )
             )
         if options.force_rtl and output_type in self.rtl_output_types:
@@ -1127,6 +1157,7 @@ class Converter:
             remove_paragraph_spacing=False,
             docx_page_size="default",
             docx_no_toc=False,
+            docx_header_pagebreaks=False,
             epub_version="default",
             epub_inline_toc=False,
             epub_remove_background=False,
@@ -1273,6 +1304,7 @@ class Converter:
                     remove_paragraph_spacing=False,
                     docx_page_size="default",
                     docx_no_toc=False,
+                    docx_header_pagebreaks=False,
                     epub_version="default",
                     epub_inline_toc=False,
                     epub_remove_background=False,

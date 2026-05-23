@@ -144,6 +144,7 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
     "smarten": "smarten_punctuation",
     "remove_paragraph_spacing": "remove_paragraph_spacing",
     "docx_no_toc": "docx_no_toc",
+    "docx_header_pagebreaks": "docx_header_pagebreaks",
     "epub_inline_toc": "epub_inline_toc",
     "epub_remove_background": "epub_remove_background",
     "epub_split_volumes": "epub_split_volumes",
@@ -206,6 +207,7 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "options_context",
     "docx_page_size",
     "docx_no_toc",
+    "docx_header_pagebreaks",
     "epub_version",
     "epub_inline_toc",
     "epub_remove_background",
@@ -247,6 +249,7 @@ class ConversionRequestState:
     options_context: str = "docx"
     docx_page_size: str = "default"
     docx_no_toc: bool = False
+    docx_header_pagebreaks: bool = False
     epub_version: str = "default"
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
@@ -382,7 +385,7 @@ def route_uses_pandoc(state: ConversionRequestState, output_type: str) -> bool:
 
 def route_supports_rtl(state: ConversionRequestState, output_type: str) -> bool:
     if route_uses_pandoc(state, output_type):
-        return output_type in {"epub", "html", "md"}
+        return output_type in {"docx", "epub", "html", "md"}
     return output_type in {"epub", "pdf"}
 
 
@@ -405,6 +408,9 @@ def route_option_values(
         "kfx_pages": None,
         "docx_page_size": "default",
         "docx_no_toc": False,
+        "docx_header_pagebreaks": (
+            state.docx_header_pagebreaks if uses_pandoc and output_type == "docx" else False
+        ),
         "epub_version": "default",
         "epub_inline_toc": False,
         "epub_remove_background": False,
@@ -476,6 +482,8 @@ def _append_route_global_options(
         _append_bool_row(context, "pandoc_toc", "pandoc_toc_label")
     if uses_pandoc and output_type in PANDOC_NUMBER_SECTION_OUTPUT_TYPES:
         _append_bool_row(context, "pandoc_number_sections", "pandoc_number_sections_label")
+    if uses_pandoc and output_type == "docx":
+        _append_bool_row(context, "docx_header_pagebreaks", "docx_header_pagebreaks_label")
     if not uses_pandoc and output_type in POLISH_OUTPUT_TYPES:
         _append_bool_row(context, "compress_cover", "compress_cover_label")
     if not uses_pandoc and output_type in CALIBRE_COMMON_OUTPUT_TYPES:
@@ -559,6 +567,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.kfx_pages = None
         state.docx_page_size = "default"
         state.docx_no_toc = False
+        state.docx_header_pagebreaks = False
         state.epub_version = "default"
         state.epub_inline_toc = False
         state.epub_remove_background = False

@@ -20,6 +20,7 @@ EXPECTED_PANDOC_BASE_FILTERS = 2
 EXPECTED_PANDOC_MD_FILTERS = 3
 EXPECTED_PANDOC_RTL_EPUB_FILTERS = 3
 EXPECTED_PANDOC_RTL_MD_FILTERS = 4
+EXPECTED_PANDOC_DOCX_RTL_FILTERS = 4
 EXPECTED_PANDOC_DOCX_RTL_MD_FILTERS = 5
 EXPECTED_PANDOC_DOCX_RTL_HTML_FILTERS = 4
 OPTION_CASES = [
@@ -369,6 +370,72 @@ def test_pandoc_toc_and_number_sections_options_add_flags_for_supported_output(
                 str(output_file),
             ]
         ]
+
+    asyncio.run(run())
+
+
+def test_pandoc_docx_rtl_and_heading_pagebreaks_add_lua_filters(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        commands: list[list[str]] = []
+        input_file = tmp_path / "book.md"
+        input_file.write_text("# عنوان\n\nنص\n\n## فرع")
+        output_file = input_file.with_suffix(".docx")
+
+        async def fake_run(
+            command: list[str], timeout: int | None = TASK_TIMEOUT
+        ) -> tuple[int | None, str]:
+            commands.append(command)
+            filter_paths = [
+                Path(item.removeprefix("--lua-filter="))
+                for item in command
+                if item.startswith("--lua-filter=")
+            ]
+            assert len(filter_paths) == EXPECTED_PANDOC_DOCX_RTL_FILTERS
+            assert "function Para" in filter_paths[0].read_text()
+            assert "starts_arabic_punctuation" in filter_paths[1].read_text()
+            assert 'w:br w:type="page"' in filter_paths[2].read_text()
+            assert "dir = 'rtl'" in filter_paths[3].read_text()
+            output_file.write_text("docx")
+            return 0, ""
+
+        converter._run_command = fake_run  # type: ignore[method-assign]
+
+        result = await converter.convert_ebook_many(
+            input_file,
+            "docx",
+            options=ConversionOptions(
+                conversion_backend="pandoc",
+                force_rtl=True,
+                docx_header_pagebreaks=True,
+            ),
+        )
+
+        assert result.output_files == [output_file]
+        assert result.converted_to_rtl is True
+        assert commands[0] == [
+            "pandoc",
+            str(input_file),
+            "-f",
+            "gfm",
+            "-t",
+            "docx",
+            *_lua_filter_args(
+                output_file,
+                [
+                    ".empty-blocks.lua",
+                    ".arabic-punctuation.lua",
+                    ".docx-header-pagebreaks.lua",
+                    ".rtl-wrap.lua",
+                ],
+            ),
+            "-o",
+            str(output_file),
+        ]
+        assert output_file.with_suffix(".empty-blocks.lua").exists() is False
+        assert output_file.with_suffix(".arabic-punctuation.lua").exists() is False
+        assert output_file.with_suffix(".docx-header-pagebreaks.lua").exists() is False
+        assert output_file.with_suffix(".rtl-wrap.lua").exists() is False
 
     asyncio.run(run())
 

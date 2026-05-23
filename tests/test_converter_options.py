@@ -32,6 +32,7 @@ LABELS = {
     "justify_label": "Justify",
     "docx_page_size_label": "Page size",
     "docx_no_toc_label": "Disable generated TOC",
+    "docx_header_pagebreaks_label": "Page breaks at H1/H2 headings",
     "epub_version_label": "Version",
     "epub_inline_toc_label": "Inline TOC",
     "epub_remove_background_label": "Remove background",
@@ -274,6 +275,26 @@ def test_route_options_for_shared_epub_output_show_backend_and_calibre_controls(
     assert b"run|epub|12345678" in data
 
 
+def test_route_options_for_shared_docx_output_show_pandoc_docx_controls() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        conversion_backend="pandoc",
+    )
+    rows = build_route_options_keyboard("12345678", state, "docx", LABELS)
+    data = _flatten_data(rows)
+
+    assert route_uses_pandoc(state, "docx") is True
+    assert b"opt|conversion_backend|calibre|12345678" in data
+    assert b"opt|conversion_backend|pandoc|12345678" in data
+    assert b"opt|rtl|1|12345678" in data
+    assert b"opt|docx_header_pagebreaks|1|12345678" in data
+    assert b"opt|docx_page_size|default|12345678" not in data
+    assert b"opt|docx_no_toc|1|12345678" not in data
+    assert b"run|docx|12345678" in data
+
+
 def test_route_options_for_legacy_doc_shared_output_show_backend_selector() -> None:
     state = ConversionRequestState(
         input_file_path="/tmp/book.doc",  # noqa: S108
@@ -375,6 +396,7 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
         force_rtl=True,
         pandoc_toc=True,
         pandoc_number_sections=True,
+        docx_header_pagebreaks=True,
         smarten_punctuation=True,
         epub_version="3",
         epub_inline_toc=True,
@@ -389,12 +411,30 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
     assert values["force_rtl"] is True
     assert values["pandoc_toc"] is True
     assert values["pandoc_number_sections"] is True
+    assert values["docx_header_pagebreaks"] is False
     assert values["smarten_punctuation"] is False
     assert values["epub_version"] == "default"
     assert values["epub_inline_toc"] is False
     assert values["compress_cover"] is False
     assert values["pdf_no_cover"] is False
     assert values["pdf_no_chapter_pagebreak"] is False
+
+
+def test_route_option_values_keep_pandoc_docx_options_for_docx_output() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        conversion_backend="pandoc",
+        force_rtl=True,
+        docx_header_pagebreaks=True,
+    )
+
+    values = route_option_values(state, "docx")
+
+    assert values["conversion_backend"] == "pandoc"
+    assert values["force_rtl"] is True
+    assert values["docx_header_pagebreaks"] is True
 
 
 def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
@@ -409,6 +449,7 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
         flat_toc=True,
         smarten_punctuation=True,
         docx_page_size="a4",
+        docx_header_pagebreaks=True,
         epub_version="3",
         epub_split_volumes=True,
         pdf_page_numbers=True,
@@ -427,6 +468,7 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
     assert values["flat_toc"] is True
     assert values["smarten_punctuation"] is True
     assert values["docx_page_size"] == "a4"
+    assert values["docx_header_pagebreaks"] is False
     assert values["epub_version"] == "default"
     assert values["epub_split_volumes"] is False
     assert values["pdf_page_numbers"] is False
@@ -458,6 +500,8 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
 
     assert set_request_option(state, "docx_page_size", "a4") is True
     assert state.docx_page_size == "a4"
+    assert set_request_option(state, "docx_header_pagebreaks", "1") is True
+    assert state.docx_header_pagebreaks is True
     assert state.epub_version == "default"
 
     assert set_request_option(state, "epub_version", "3") is True
@@ -524,6 +568,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         kfx_pages=0,
         docx_page_size="a4",
         docx_no_toc=True,
+        docx_header_pagebreaks=True,
         epub_version="3",
         epub_inline_toc=True,
         epub_remove_background=True,
@@ -552,6 +597,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.kfx_pages is None
     assert state.docx_page_size == "default"
     assert state.docx_no_toc is False
+    assert state.docx_header_pagebreaks is False
     assert state.epub_version == "default"
     assert state.epub_inline_toc is False
     assert state.epub_remove_background is False
@@ -612,6 +658,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
         input_ext="epub",
         force_rtl=True,
         docx_page_size="a4",
+        docx_header_pagebreaks=True,
         line_height=LINE_HEIGHT_150,
         options_context="epub",
         pdf_no_cover=True,
@@ -628,6 +675,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     assert "input_ext" not in persisted
     assert persisted["force_rtl"] is True
     assert persisted["docx_page_size"] == "a4"
+    assert persisted["docx_header_pagebreaks"] is True
     assert persisted["line_height"] == LINE_HEIGHT_150
     assert persisted["options_context"] == "epub"
     assert persisted["pdf_no_cover"] is True
@@ -652,6 +700,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "change_justification": "justify",
             "line_height": LINE_HEIGHT_175,
             "docx_page_size": "a4",
+            "docx_header_pagebreaks": True,
             "options_context": "kfx",
             "kfx_pages": 0,
             "epub_standardize_footnotes": True,
@@ -669,6 +718,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.change_justification == "justify"
     assert state.line_height == LINE_HEIGHT_175
     assert state.docx_page_size == "a4"
+    assert state.docx_header_pagebreaks is True
     assert state.options_context == "kfx"
     assert state.kfx_pages == 0
     assert state.epub_standardize_footnotes is True

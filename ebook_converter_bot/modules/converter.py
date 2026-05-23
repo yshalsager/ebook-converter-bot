@@ -120,6 +120,7 @@ def options_labels(lang: str) -> dict[str, str]:
         "justify_label": _("Justify", lang),
         "docx_page_size_label": _("Page size", lang),
         "docx_no_toc_label": _("Disable generated TOC", lang),
+        "docx_header_pagebreaks_label": _("Page breaks at H1/H2 headings", lang),
         "epub_version_label": _("Version", lang),
         "epub_inline_toc_label": _("Inline TOC", lang),
         "epub_remove_background_label": _("Remove background", lang),
@@ -183,6 +184,10 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 _("DOCX page size: {}", lang).format(state.docx_page_size.upper()),
             ),
             (state.docx_no_toc, _("DOCX: disable generated TOC", lang)),
+            (
+                state.docx_header_pagebreaks,
+                _("DOCX: page breaks at H1/H2 headings", lang),
+            ),
             (
                 state.epub_version != "default",
                 _("EPUB version: {}", lang).format(state.epub_version),
@@ -250,6 +255,7 @@ def build_conversion_options(
         "kfx_pages": state.kfx_pages,
         "docx_page_size": state.docx_page_size,
         "docx_no_toc": state.docx_no_toc,
+        "docx_header_pagebreaks": state.docx_header_pagebreaks,
         "epub_version": state.epub_version,
         "epub_inline_toc": state.epub_inline_toc,
         "epub_remove_background": getattr(state, "epub_remove_background", False),
