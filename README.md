@@ -58,7 +58,7 @@ Some more features of the bot:
 - Per-user conversion option defaults are remembered automatically.
 - Optional Pandoc backend for supported document routes, with Calibre as the default when both can convert the same route.
 - Markdown-family, HTML, reStructuredText, AsciiDoc, Org, LaTeX, Typst, and plain-text document routes through Pandoc.
-- Global output options: cover compression, smart punctuation, text justification, line height, and paragraph spacing cleanup.
+- Global output options: image compression, smart punctuation, text justification, line height, and paragraph spacing cleanup.
 - DOCX options: page size and generated TOC toggle.
 - EPUB output options: version selection, inline TOC, and background removal.
 - PDF options: paper size, page numbers, cover-page generation, chapter page breaks, and Arabic font selection.

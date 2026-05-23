@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-18 23:53+0300\n"
+"POT-Creation-Date: 2026-05-23 10:30+0300\n"
 "PO-Revision-Date: 2021-08-28 22:48+0200\n"
 "Last-Translator: berkantkz <berkantkorkmaz@outlook.com>\n"
 "Language-Team: - \n"
@@ -50,8 +50,8 @@ msgstr "RTL'ye zorla"
 
 #: ebook_converter_bot/modules/converter.py:111
 #: ebook_converter_bot/modules/converter.py:162
-msgid "Compress cover"
-msgstr "Kapak görselini sıkıştır"
+msgid "Compress images"
+msgstr "Görselleri sıkıştır"
 
 #: ebook_converter_bot/modules/converter.py:112
 #: ebook_converter_bot/modules/converter.py:175

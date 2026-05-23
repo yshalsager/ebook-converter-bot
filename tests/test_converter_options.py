@@ -20,7 +20,7 @@ LINE_HEIGHT_175 = 175
 
 LABELS = {
     "force_rtl_label": "Force RTL",
-    "compress_cover_label": "Compress cover",
+    "compress_cover_label": "Compress images",
     "fix_epub_label": "Fix EPUB before converting",
     "flat_toc_label": "Flatten EPUB TOC",
     "smarten_punctuation_label": "Smarten punctuation",

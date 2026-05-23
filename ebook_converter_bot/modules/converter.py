@@ -108,7 +108,7 @@ def failed_conversion_message(
 def options_labels(lang: str) -> dict[str, str]:
     return {
         "force_rtl_label": _("Force RTL", lang),
-        "compress_cover_label": _("Compress cover", lang),
+        "compress_cover_label": _("Compress images", lang),
         "fix_epub_label": _("Fix EPUB before converting", lang),
         "flat_toc_label": _("Flatten EPUB TOC", lang),
         "smarten_punctuation_label": _("Smarten punctuation", lang),
@@ -159,7 +159,7 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
         text
         for enabled, text in (
             (state.force_rtl, _("Force RTL", lang)),
-            (state.compress_cover, _("Compress cover", lang)),
+            (state.compress_cover, _("Compress images", lang)),
             (state.smarten_punctuation, _("Smarten punctuation", lang)),
             (state.remove_paragraph_spacing, _("Remove paragraph spacing", lang)),
             (
