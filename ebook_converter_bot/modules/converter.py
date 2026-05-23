@@ -121,6 +121,7 @@ def options_labels(lang: str) -> dict[str, str]:
         "docx_page_size_label": _("Page size", lang),
         "docx_no_toc_label": _("Disable generated TOC", lang),
         "docx_header_pagebreaks_label": _("Page breaks at H1/H2 headings", lang),
+        "docx_arabic_reference_label": _("Arabic reference style", lang),
         "epub_version_label": _("Version", lang),
         "epub_inline_toc_label": _("Inline TOC", lang),
         "epub_remove_background_label": _("Remove background", lang),
@@ -207,6 +208,7 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 state.docx_header_pagebreaks,
                 _("DOCX: page breaks at H1/H2 headings", lang),
             ),
+            (state.docx_arabic_reference, _("DOCX: Arabic reference style", lang)),
             (
                 state.epub_version != "default",
                 _("EPUB version: {}", lang).format(state.epub_version),
@@ -304,6 +306,7 @@ def build_conversion_options(
         "pandoc_toc": state.pandoc_toc,
         "pandoc_number_sections": state.pandoc_number_sections,
         "pandoc_heading_shift": state.pandoc_heading_shift,
+        "docx_arabic_reference": state.docx_arabic_reference,
     }
     for key, value in option_values.items():
         if hasattr(options, key):

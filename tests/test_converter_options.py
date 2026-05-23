@@ -17,6 +17,7 @@ from telethon.tl.types import KeyboardButtonCallback
 
 LINE_HEIGHT_150 = 150
 LINE_HEIGHT_175 = 175
+MAX_FONT_BUTTONS_PER_ROW = 2
 
 LABELS = {
     "force_rtl_label": "Force RTL",
@@ -33,6 +34,7 @@ LABELS = {
     "docx_page_size_label": "Page size",
     "docx_no_toc_label": "Disable generated TOC",
     "docx_header_pagebreaks_label": "Page breaks at H1/H2 headings",
+    "docx_arabic_reference_label": "Arabic reference style",
     "epub_version_label": "Version",
     "epub_inline_toc_label": "Inline TOC",
     "epub_remove_background_label": "Remove background",
@@ -43,6 +45,10 @@ LABELS = {
     "noto_naskh_arabic_label": "Noto Naskh Arabic",
     "amiri_label": "Amiri",
     "ibm_plex_sans_arabic_label": "IBM Plex Sans Arabic",
+    "scheherazade_new_label": "Scheherazade New",
+    "kfgqpc_uthman_taha_label": "KFGQPC Uthman Taha",
+    "adwaa_lotfi_label": "Adwaa Lotfi",
+    "vazirmatn_label": "Vazirmatn",
     "pdf_page_numbers_label": "Page numbers",
     "pdf_no_cover_label": "No cover page",
     "pdf_no_chapter_pagebreak_label": "Do not start chapters on new pages",
@@ -51,6 +57,9 @@ LABELS = {
     "pandoc_label": "Pandoc",
     "pandoc_toc_label": "Table of contents",
     "pandoc_number_sections_label": "Number sections",
+    "pandoc_heading_shift_label": "Heading levels",
+    "promote_headings_label": "Promote",
+    "demote_headings_label": "Demote",
     "kfx_doc_type_label": "Document type",
     "kfx_pages_label": "Pages",
     "default_label": "Default",
@@ -141,6 +150,15 @@ def test_options_keyboard_shows_selected_context_controls_only() -> None:
     assert b"opt|pdf_font_profile|noto_naskh_arabic|12345678" in data
     assert b"opt|pdf_font_profile|amiri|12345678" in data
     assert b"opt|pdf_font_profile|ibm_plex_sans_arabic|12345678" in data
+    assert b"opt|pdf_font_profile|scheherazade_new|12345678" in data
+    assert b"opt|pdf_font_profile|vazirmatn|12345678" in data
+    assert b"opt|pdf_font_profile|kfgqpc_uthman_taha|12345678" in data
+    assert b"opt|pdf_font_profile|adwaa_lotfi|12345678" in data
+    assert all(
+        len([button for button in row if button.data.startswith(b"opt|pdf_font_profile|")])
+        <= MAX_FONT_BUTTONS_PER_ROW
+        for row in rows
+    )
     assert b"opt|pdf_page_numbers|1|12345678" in data
     assert b"opt|pdf_no_cover|0|12345678" in data
     assert b"opt|pdf_no_chapter_pagebreak|1|12345678" in data
@@ -249,6 +267,9 @@ def test_route_options_for_docx_to_md_show_only_pandoc_relevant_controls() -> No
     assert b"opt|rtl|1|12345678" in data
     assert b"opt|pandoc_toc|1|12345678" in data
     assert b"opt|pandoc_number_sections|1|12345678" not in data
+    assert b"opt|pandoc_heading_shift|default|12345678" in data
+    assert b"opt|pandoc_heading_shift|promote|12345678" in data
+    assert b"opt|pandoc_heading_shift|demote|12345678" in data
     assert b"opt|conversion_backend|calibre|12345678" not in data
     assert b"opt|compress_cover|1|12345678" not in data
     assert b"opt|docx_page_size|default|12345678" not in data
@@ -290,6 +311,10 @@ def test_route_options_for_shared_docx_output_show_pandoc_docx_controls() -> Non
     assert b"opt|conversion_backend|pandoc|12345678" in data
     assert b"opt|rtl|1|12345678" in data
     assert b"opt|docx_header_pagebreaks|1|12345678" in data
+    assert b"opt|docx_arabic_reference|1|12345678" in data
+    assert b"opt|pandoc_heading_shift|default|12345678" in data
+    assert b"opt|pandoc_heading_shift|promote|12345678" in data
+    assert b"opt|pandoc_heading_shift|demote|12345678" in data
     assert b"opt|docx_page_size|default|12345678" not in data
     assert b"opt|docx_no_toc|1|12345678" not in data
     assert b"run|docx|12345678" in data
@@ -396,7 +421,9 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
         force_rtl=True,
         pandoc_toc=True,
         pandoc_number_sections=True,
+        pandoc_heading_shift=-1,
         docx_header_pagebreaks=True,
+        docx_arabic_reference=True,
         smarten_punctuation=True,
         epub_version="3",
         epub_inline_toc=True,
@@ -411,7 +438,9 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
     assert values["force_rtl"] is True
     assert values["pandoc_toc"] is True
     assert values["pandoc_number_sections"] is True
+    assert values["pandoc_heading_shift"] == -1
     assert values["docx_header_pagebreaks"] is False
+    assert values["docx_arabic_reference"] is False
     assert values["smarten_punctuation"] is False
     assert values["epub_version"] == "default"
     assert values["epub_inline_toc"] is False
@@ -428,6 +457,8 @@ def test_route_option_values_keep_pandoc_docx_options_for_docx_output() -> None:
         conversion_backend="pandoc",
         force_rtl=True,
         docx_header_pagebreaks=True,
+        docx_arabic_reference=True,
+        pandoc_heading_shift=1,
     )
 
     values = route_option_values(state, "docx")
@@ -435,6 +466,8 @@ def test_route_option_values_keep_pandoc_docx_options_for_docx_output() -> None:
     assert values["conversion_backend"] == "pandoc"
     assert values["force_rtl"] is True
     assert values["docx_header_pagebreaks"] is True
+    assert values["docx_arabic_reference"] is True
+    assert values["pandoc_heading_shift"] == 1
 
 
 def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
@@ -450,6 +483,8 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
         smarten_punctuation=True,
         docx_page_size="a4",
         docx_header_pagebreaks=True,
+        docx_arabic_reference=True,
+        pandoc_heading_shift=-1,
         epub_version="3",
         epub_split_volumes=True,
         pdf_page_numbers=True,
@@ -469,6 +504,8 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
     assert values["smarten_punctuation"] is True
     assert values["docx_page_size"] == "a4"
     assert values["docx_header_pagebreaks"] is False
+    assert values["docx_arabic_reference"] is False
+    assert values["pandoc_heading_shift"] == 0
     assert values["epub_version"] == "default"
     assert values["epub_split_volumes"] is False
     assert values["pdf_page_numbers"] is False
@@ -502,6 +539,8 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.docx_page_size == "a4"
     assert set_request_option(state, "docx_header_pagebreaks", "1") is True
     assert state.docx_header_pagebreaks is True
+    assert set_request_option(state, "docx_arabic_reference", "1") is True
+    assert state.docx_arabic_reference is True
     assert state.epub_version == "default"
 
     assert set_request_option(state, "epub_version", "3") is True
@@ -528,6 +567,10 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.pandoc_toc is True
     assert set_request_option(state, "pandoc_number_sections", "1") is True
     assert state.pandoc_number_sections is True
+    assert set_request_option(state, "pandoc_heading_shift", "promote") is True
+    assert state.pandoc_heading_shift == -1
+    assert set_request_option(state, "pandoc_heading_shift", "demote") is True
+    assert state.pandoc_heading_shift == 1
 
 
 def test_set_request_option_is_idempotent_and_validates_values() -> None:
@@ -549,6 +592,7 @@ def test_set_request_option_is_idempotent_and_validates_values() -> None:
     assert set_request_option(state, "epub_version", "4") is False
     assert set_request_option(state, "docx_page_size", "legal") is False
     assert set_request_option(state, "line_height", "250") is False
+    assert set_request_option(state, "pandoc_heading_shift", "sideways") is False
 
 
 def test_set_request_option_reset_clears_all_options() -> None:
@@ -569,6 +613,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         docx_page_size="a4",
         docx_no_toc=True,
         docx_header_pagebreaks=True,
+        docx_arabic_reference=True,
         epub_version="3",
         epub_inline_toc=True,
         epub_remove_background=True,
@@ -582,6 +627,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         conversion_backend="pandoc",
         pandoc_toc=True,
         pandoc_number_sections=True,
+        pandoc_heading_shift=1,
     )
 
     assert set_request_option(state, "reset", "1") is True
@@ -598,6 +644,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.docx_page_size == "default"
     assert state.docx_no_toc is False
     assert state.docx_header_pagebreaks is False
+    assert state.docx_arabic_reference is False
     assert state.epub_version == "default"
     assert state.epub_inline_toc is False
     assert state.epub_remove_background is False
@@ -611,6 +658,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.conversion_backend == "calibre"
     assert state.pandoc_toc is False
     assert state.pandoc_number_sections is False
+    assert state.pandoc_heading_shift == 0
 
 
 def test_set_request_option_rejects_epub_only_flags_for_non_epub() -> None:
@@ -659,6 +707,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
         force_rtl=True,
         docx_page_size="a4",
         docx_header_pagebreaks=True,
+        docx_arabic_reference=True,
         line_height=LINE_HEIGHT_150,
         options_context="epub",
         pdf_no_cover=True,
@@ -666,6 +715,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
         conversion_backend="pandoc",
         pandoc_toc=True,
         pandoc_number_sections=True,
+        pandoc_heading_shift=-1,
     )
 
     persisted = state_to_persisted_options(state)
@@ -676,6 +726,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     assert persisted["force_rtl"] is True
     assert persisted["docx_page_size"] == "a4"
     assert persisted["docx_header_pagebreaks"] is True
+    assert persisted["docx_arabic_reference"] is True
     assert persisted["line_height"] == LINE_HEIGHT_150
     assert persisted["options_context"] == "epub"
     assert persisted["pdf_no_cover"] is True
@@ -683,6 +734,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     assert persisted["conversion_backend"] == "pandoc"
     assert persisted["pandoc_toc"] is True
     assert persisted["pandoc_number_sections"] is True
+    assert persisted["pandoc_heading_shift"] == -1
 
 
 def test_apply_persisted_options_applies_valid_values() -> None:
@@ -701,6 +753,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "line_height": LINE_HEIGHT_175,
             "docx_page_size": "a4",
             "docx_header_pagebreaks": True,
+            "docx_arabic_reference": True,
             "options_context": "kfx",
             "kfx_pages": 0,
             "epub_standardize_footnotes": True,
@@ -710,6 +763,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "conversion_backend": "pandoc",
             "pandoc_toc": True,
             "pandoc_number_sections": True,
+            "pandoc_heading_shift": 1,
         },
     )
 
@@ -719,6 +773,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.line_height == LINE_HEIGHT_175
     assert state.docx_page_size == "a4"
     assert state.docx_header_pagebreaks is True
+    assert state.docx_arabic_reference is True
     assert state.options_context == "kfx"
     assert state.kfx_pages == 0
     assert state.epub_standardize_footnotes is True
@@ -728,6 +783,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.conversion_backend == "pandoc"
     assert state.pandoc_toc is True
     assert state.pandoc_number_sections is True
+    assert state.pandoc_heading_shift == 1
 
 
 def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags() -> None:

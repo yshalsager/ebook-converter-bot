@@ -7,7 +7,9 @@ from zipfile import ZipFile
 import ebook_converter_bot.utils.convert as convert_utils
 import pytest
 from ebook_converter_bot.utils.convert import (
+    DOCX_ARABIC_REFERENCE_DOC,
     MAX_SPLIT_OUTPUT_FILES,
+    PDF_FONT_PROFILES,
     PDF_FONTS_DIR,
     TASK_TIMEOUT,
     ConversionOptions,
@@ -248,6 +250,16 @@ def test_pdf_font_profile_adds_embed_and_css_flags(tmp_path: Path) -> None:
     asyncio.run(run())
 
 
+def test_pdf_font_profiles_have_required_assets() -> None:
+    assert {"scheherazade_new", "vazirmatn", "kfgqpc_uthman_taha", "adwaa_lotfi"} <= set(
+        PDF_FONT_PROFILES
+    )
+    for profile in PDF_FONT_PROFILES.values():
+        assert (PDF_FONTS_DIR / profile.css_file).exists()
+        for required_file in profile.required_files:
+            assert (PDF_FONTS_DIR / required_file).exists()
+
+
 def test_format_specific_flags_do_not_leak_to_other_outputs(tmp_path: Path) -> None:
     async def run() -> None:
         converter = Converter()
@@ -438,6 +450,38 @@ def test_pandoc_docx_rtl_and_heading_pagebreaks_add_lua_filters(tmp_path: Path) 
         assert output_file.with_suffix(".rtl-wrap.lua").exists() is False
 
     asyncio.run(run())
+
+
+def test_pandoc_heading_shift_and_docx_reference_add_flags(tmp_path: Path) -> None:
+    async def run() -> None:
+        converter = Converter()
+        commands = _capture_commands(converter)
+        input_file = tmp_path / "book.md"
+        input_file.write_text("# Hello")
+        output_file = input_file.with_suffix(".docx")
+
+        result = await converter.convert_ebook_many(
+            input_file,
+            "docx",
+            options=ConversionOptions(
+                conversion_backend="pandoc",
+                pandoc_heading_shift=-1,
+                docx_arabic_reference=True,
+            ),
+        )
+
+        assert result.output_files == [output_file]
+        assert _contains_flag_pair(commands[0], "--shift-heading-level-by", "-1")
+        assert _contains_flag_pair(commands[0], "--reference-doc", str(DOCX_ARABIC_REFERENCE_DOC))
+
+    asyncio.run(run())
+
+
+def test_docx_heading_pagebreak_filter_accounts_for_heading_shift() -> None:
+    content = Converter().pandoc_backend._docx_header_pagebreaks_filter_content(-1)
+
+    assert "local heading_shift = -1" in content
+    assert "block.level + heading_shift" in content
 
 
 def test_pandoc_backend_rejects_same_format_alias_routes() -> None:

@@ -59,7 +59,7 @@ Some more features of the bot:
 - Optional Pandoc backend for supported document routes, with Calibre as the default when both can convert the same route.
 - Markdown-family, HTML, reStructuredText, AsciiDoc, Org, LaTeX, Typst, and plain-text document routes through Pandoc.
 - Global output options: image compression, smart punctuation, text justification, line height, and paragraph spacing cleanup.
-- DOCX options: page size and generated TOC toggle for Calibre; RTL output, H1/H2 heading page breaks, and heading level shifts for Pandoc.
+- DOCX options: page size and generated TOC toggle for Calibre; RTL output, H1/H2 heading page breaks, heading level shifts, and Arabic reference styling for Pandoc.
 - EPUB output options: version selection, inline TOC, and background removal.
 - PDF options: paper size, page numbers, cover-page generation, chapter page breaks, and Arabic font selection.
 - KFX options: PDOC/EBOK type and pages mode.

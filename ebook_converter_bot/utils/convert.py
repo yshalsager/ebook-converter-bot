@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 TASK_TIMEOUT = 600  # 10 min
 MAX_SPLIT_OUTPUT_FILES = 35
 PDF_FONTS_DIR = Path(__file__).resolve().parents[1] / "data" / "fonts" / "pdf"
+DOCX_ARABIC_REFERENCE_DOC = Path(__file__).resolve().parents[1] / "data" / "reference.docx"
 
 
 @dataclass(frozen=True)
@@ -133,6 +134,7 @@ class ConversionOptions:
     pandoc_toc: bool = False
     pandoc_number_sections: bool = False
     pandoc_heading_shift: int = 0
+    docx_arabic_reference: bool = False
 
 
 @dataclass
@@ -292,6 +294,7 @@ class PandocBackend(ConversionBackend):
                 options.pandoc_toc and output_type not in PandocBackend.toc_output_types,
                 options.pandoc_number_sections
                 and output_type not in PandocBackend.number_sections_output_types,
+                options.docx_arabic_reference and output_type != "docx",
             )
         )
 
@@ -583,6 +586,14 @@ end
             command.append("--number-sections")
         if options.pandoc_heading_shift:
             command.extend(["--shift-heading-level-by", str(options.pandoc_heading_shift)])
+        if options.docx_arabic_reference and output_type == "docx":
+            if DOCX_ARABIC_REFERENCE_DOC.exists():
+                command.extend(["--reference-doc", str(DOCX_ARABIC_REFERENCE_DOC)])
+            else:
+                logger.warning(
+                    "Skipping missing DOCX Arabic reference style: %s",
+                    DOCX_ARABIC_REFERENCE_DOC,
+                )
 
     def _prepare_input_file(self, input_file: Path, options: ConversionOptions) -> Path:
         if input_file.suffix.lower() != ".epub":
@@ -1212,6 +1223,7 @@ class Converter:
             pdf_no_chapter_pagebreak=False,
             conversion_backend="calibre",
             pandoc_heading_shift=0,
+            docx_arabic_reference=False,
         )
         epub_file, _ignored_rtl, conversion_error = await self._convert_non_bok(
             input_file, "epub", epub_options, timeout=timeout, prefer_calibre=True
@@ -1359,6 +1371,7 @@ class Converter:
                     pdf_no_chapter_pagebreak=False,
                     conversion_backend="calibre",
                     pandoc_heading_shift=0,
+                    docx_arabic_reference=False,
                 )
                 epub_file, set_to_rtl, conversion_error = await self._convert_non_bok(
                     htmlz_file, "epub", epub_options, timeout=timeout

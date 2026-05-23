@@ -160,6 +160,7 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
     "remove_paragraph_spacing": "remove_paragraph_spacing",
     "docx_no_toc": "docx_no_toc",
     "docx_header_pagebreaks": "docx_header_pagebreaks",
+    "docx_arabic_reference": "docx_arabic_reference",
     "epub_inline_toc": "epub_inline_toc",
     "epub_remove_background": "epub_remove_background",
     "epub_split_volumes": "epub_split_volumes",
@@ -244,6 +245,7 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "pandoc_toc",
     "pandoc_number_sections",
     "pandoc_heading_shift",
+    "docx_arabic_reference",
 )
 PERSISTED_OPTION_ATTRS_SET = set(PERSISTED_OPTION_ATTRS)
 PERSISTED_BOOL_ATTRS = set(BOOL_OPTION_ATTRS.values())
@@ -287,6 +289,7 @@ class ConversionRequestState:
     pandoc_toc: bool = False
     pandoc_number_sections: bool = False
     pandoc_heading_shift: int = 0
+    docx_arabic_reference: bool = False
 
 
 @dataclass
@@ -460,6 +463,9 @@ def route_option_values(
             else False
         ),
         "pandoc_heading_shift": state.pandoc_heading_shift if uses_pandoc else 0,
+        "docx_arabic_reference": (
+            state.docx_arabic_reference if uses_pandoc and output_type == "docx" else False
+        ),
     }
     if uses_pandoc:
         return values
@@ -513,6 +519,7 @@ def _append_route_pandoc_options(
         _append_value_row(context, option_key, prefix_label_key, value_specs)
     if output_type == "docx":
         _append_bool_row(context, "docx_header_pagebreaks", "docx_header_pagebreaks_label")
+        _append_bool_row(context, "docx_arabic_reference", "docx_arabic_reference_label")
 
 
 def _append_route_global_options(
@@ -622,6 +629,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.pandoc_toc = False
         state.pandoc_number_sections = False
         state.pandoc_heading_shift = 0
+        state.docx_arabic_reference = False
         return True
     bool_value = {"1": True, "0": False}.get(option_value)
     if option_key in BOOL_OPTION_ATTRS:
