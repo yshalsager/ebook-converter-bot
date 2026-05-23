@@ -95,6 +95,7 @@ class ConversionOptions:
     conversion_backend: str = "calibre"
     pandoc_toc: bool = False
     pandoc_number_sections: bool = False
+    pandoc_heading_shift: int = 0
 
 
 @dataclass
@@ -442,14 +443,16 @@ end
 """
 
     @staticmethod
-    def _docx_header_pagebreaks_filter_content() -> str:
-        return """local page_break = pandoc.RawBlock('openxml', '<w:p><w:r><w:br w:type="page" /></w:r></w:p>')
+    def _docx_header_pagebreaks_filter_content(heading_shift: int) -> str:
+        return f"""local page_break = pandoc.RawBlock('openxml', '<w:p><w:r><w:br w:type="page" /></w:r></w:p>')
+local heading_shift = {heading_shift}
 
 function Pandoc(doc)
-  local blocks = {}
+  local blocks = {{}}
   local seen_heading = false
   for _, block in ipairs(doc.blocks) do
-    if block.t == 'Header' and block.level <= 2 then
+    local effective_level = block.t == 'Header' and block.level + heading_shift or nil
+    if effective_level ~= nil and effective_level >= 1 and effective_level <= 2 then
       if seen_heading then
         table.insert(blocks, page_break)
       end
@@ -510,7 +513,7 @@ end
                 self._write_lua_filter(
                     output_file,
                     ".docx-header-pagebreaks.lua",
-                    self._docx_header_pagebreaks_filter_content(),
+                    self._docx_header_pagebreaks_filter_content(options.pandoc_heading_shift),
                 )
             )
         if options.force_rtl and output_type in self.rtl_output_types:
@@ -541,6 +544,8 @@ end
             command.append("--toc")
         if add_number_sections:
             command.append("--number-sections")
+        if options.pandoc_heading_shift:
+            command.extend(["--shift-heading-level-by", str(options.pandoc_heading_shift)])
 
     def _prepare_input_file(self, input_file: Path, options: ConversionOptions) -> Path:
         if input_file.suffix.lower() != ".epub":
@@ -1169,6 +1174,7 @@ class Converter:
             pdf_no_cover=False,
             pdf_no_chapter_pagebreak=False,
             conversion_backend="calibre",
+            pandoc_heading_shift=0,
         )
         epub_file, _ignored_rtl, conversion_error = await self._convert_non_bok(
             input_file, "epub", epub_options, timeout=timeout, prefer_calibre=True
@@ -1315,6 +1321,7 @@ class Converter:
                     pdf_no_cover=False,
                     pdf_no_chapter_pagebreak=False,
                     conversion_backend="calibre",
+                    pandoc_heading_shift=0,
                 )
                 epub_file, set_to_rtl, conversion_error = await self._convert_non_bok(
                     htmlz_file, "epub", epub_options, timeout=timeout

@@ -139,6 +139,9 @@ def options_labels(lang: str) -> dict[str, str]:
         "pandoc_label": _("Pandoc", lang),
         "pandoc_toc_label": _("Table of contents", lang),
         "pandoc_number_sections_label": _("Number sections", lang),
+        "pandoc_heading_shift_label": _("Heading levels", lang),
+        "promote_headings_label": _("Promote", lang),
+        "demote_headings_label": _("Demote", lang),
         "kfx_doc_type_label": _("Document type", lang),
         "kfx_pages_label": _("Pages", lang),
         "default_label": _("Default", lang),
@@ -222,6 +225,12 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
             ),
             (state.pandoc_toc, _("Table of contents", lang)),
             (state.pandoc_number_sections, _("Number sections", lang)),
+            (
+                state.pandoc_heading_shift != 0,
+                _("Heading levels: {}", lang).format(
+                    _("Promote", lang) if state.pandoc_heading_shift < 0 else _("Demote", lang)
+                ),
+            ),
             (state.kfx_doc_type == "book", _("KFX doc type: EBOK", lang)),
             (state.kfx_pages == 0, _("KFX pages: Auto", lang)),
         )
@@ -273,6 +282,7 @@ def build_conversion_options(
         "conversion_backend": state.conversion_backend,
         "pandoc_toc": state.pandoc_toc,
         "pandoc_number_sections": state.pandoc_number_sections,
+        "pandoc_heading_shift": state.pandoc_heading_shift,
     }
     for key, value in option_values.items():
         if hasattr(options, key):

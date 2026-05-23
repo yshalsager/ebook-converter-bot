@@ -77,6 +77,17 @@ BACKEND_VALUE_OPTION: tuple[str, str, tuple[tuple[str, str], ...]] = (
     "conversion_backend_label",
     (("calibre", "calibre_label"), ("pandoc", "pandoc_label")),
 )
+PANDOC_VALUE_OPTIONS: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] = (
+    (
+        "pandoc_heading_shift",
+        "pandoc_heading_shift_label",
+        (
+            ("default", "default_label"),
+            ("promote", "promote_headings_label"),
+            ("demote", "demote_headings_label"),
+        ),
+    ),
+)
 CONTEXT_VALUE_OPTIONS: dict[str, tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...]] = {
     "docx": (
         (
@@ -171,6 +182,7 @@ VALUE_OPTION_ATTRS: dict[str, str] = {
     "pdf_paper_size": "pdf_paper_size",
     "pdf_font_profile": "pdf_font_profile",
     "conversion_backend": "conversion_backend",
+    "pandoc_heading_shift": "pandoc_heading_shift",
 }
 VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "change_justification": {"original": "original", "left": "left", "justify": "justify"},
@@ -187,6 +199,7 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
         "ibm_plex_sans_arabic": "ibm_plex_sans_arabic",
     },
     "conversion_backend": {"calibre": "calibre", "pandoc": "pandoc"},
+    "pandoc_heading_shift": {"default": 0, "promote": -1, "demote": 1},
 }
 EPUB_EXTRA_BOOL_OPTIONS: tuple[tuple[str, str], ...] = (
     ("fix_epub", "fix_epub_label"),
@@ -221,6 +234,7 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "conversion_backend",
     "pandoc_toc",
     "pandoc_number_sections",
+    "pandoc_heading_shift",
 )
 PERSISTED_OPTION_ATTRS_SET = set(PERSISTED_OPTION_ATTRS)
 PERSISTED_BOOL_ATTRS = set(BOOL_OPTION_ATTRS.values())
@@ -263,6 +277,7 @@ class ConversionRequestState:
     conversion_backend: str = "calibre"
     pandoc_toc: bool = False
     pandoc_number_sections: bool = False
+    pandoc_heading_shift: int = 0
 
 
 @dataclass
@@ -430,6 +445,7 @@ def route_option_values(
             if uses_pandoc and output_type in PANDOC_NUMBER_SECTION_OUTPUT_TYPES
             else False
         ),
+        "pandoc_heading_shift": state.pandoc_heading_shift if uses_pandoc else 0,
     }
     if uses_pandoc:
         return values
@@ -471,6 +487,20 @@ def route_option_values(
     return values
 
 
+def _append_route_pandoc_options(
+    context: OptionsKeyboardContext,
+    output_type: str,
+) -> None:
+    if output_type in PANDOC_TOC_OUTPUT_TYPES:
+        _append_bool_row(context, "pandoc_toc", "pandoc_toc_label")
+    if output_type in PANDOC_NUMBER_SECTION_OUTPUT_TYPES:
+        _append_bool_row(context, "pandoc_number_sections", "pandoc_number_sections_label")
+    for option_key, prefix_label_key, value_specs in PANDOC_VALUE_OPTIONS:
+        _append_value_row(context, option_key, prefix_label_key, value_specs)
+    if output_type == "docx":
+        _append_bool_row(context, "docx_header_pagebreaks", "docx_header_pagebreaks_label")
+
+
 def _append_route_global_options(
     context: OptionsKeyboardContext,
     output_type: str,
@@ -478,12 +508,8 @@ def _append_route_global_options(
     uses_pandoc = route_uses_pandoc(context.state, output_type)
     if route_supports_rtl(context.state, output_type):
         _append_bool_row(context, "rtl", "force_rtl_label")
-    if uses_pandoc and output_type in PANDOC_TOC_OUTPUT_TYPES:
-        _append_bool_row(context, "pandoc_toc", "pandoc_toc_label")
-    if uses_pandoc and output_type in PANDOC_NUMBER_SECTION_OUTPUT_TYPES:
-        _append_bool_row(context, "pandoc_number_sections", "pandoc_number_sections_label")
-    if uses_pandoc and output_type == "docx":
-        _append_bool_row(context, "docx_header_pagebreaks", "docx_header_pagebreaks_label")
+    if uses_pandoc:
+        _append_route_pandoc_options(context, output_type)
     if not uses_pandoc and output_type in POLISH_OUTPUT_TYPES:
         _append_bool_row(context, "compress_cover", "compress_cover_label")
     if not uses_pandoc and output_type in CALIBRE_COMMON_OUTPUT_TYPES:
@@ -581,6 +607,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.conversion_backend = "calibre"
         state.pandoc_toc = False
         state.pandoc_number_sections = False
+        state.pandoc_heading_shift = 0
         return True
     bool_value = {"1": True, "0": False}.get(option_value)
     if option_key in BOOL_OPTION_ATTRS:
