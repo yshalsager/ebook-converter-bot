@@ -64,6 +64,43 @@ PDF_FONT_PROFILES: dict[str, PdfFontProfile] = {
             "ibm_plex_sans_arabic/IBMPlexSansArabic-Bold.ttf",
         ),
     ),
+    "scheherazade_new": PdfFontProfile(
+        serif_family="Scheherazade New",
+        sans_family="Scheherazade New",
+        embed_family="Scheherazade New",
+        css_file="scheherazade_new.css",
+        required_files=(
+            "scheherazade_new/ScheherazadeNew-Regular.ttf",
+            "scheherazade_new/ScheherazadeNew-Bold.ttf",
+        ),
+    ),
+    "vazirmatn": PdfFontProfile(
+        serif_family="Vazirmatn",
+        sans_family="Vazirmatn",
+        embed_family="Vazirmatn",
+        css_file="vazirmatn.css",
+        required_files=("vazirmatn/Vazirmatn-Regular.ttf", "vazirmatn/Vazirmatn-Bold.ttf"),
+    ),
+    "kfgqpc_uthman_taha": PdfFontProfile(
+        serif_family="KFGQPC-Uthman Taha Reqular",
+        sans_family="KFGQPC-Uthman Taha Reqular",
+        embed_family="KFGQPC-Uthman Taha Reqular",
+        css_file="kfgqpc_uthman_taha.css",
+        required_files=(
+            "kfgqpc_uthman_taha/KFGQPC Uthman Taha Reqular.ttf",
+            "kfgqpc_uthman_taha/KFGQPC Uthman Taha Bold.ttf",
+        ),
+    ),
+    "adwaa_lotfi": PdfFontProfile(
+        serif_family="_Adwaa Lotfi",
+        sans_family="_Adwaa Lotfi",
+        embed_family="_Adwaa Lotfi",
+        css_file="adwaa_lotfi.css",
+        required_files=(
+            "adwaa_lotfi/_AdwaaLotfi-Regular.ttf",
+            "adwaa_lotfi/_AdwaaLotfi-Bold.ttf",
+        ),
+    ),
 }
 
 

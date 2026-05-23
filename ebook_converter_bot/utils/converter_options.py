@@ -116,7 +116,11 @@ CONTEXT_VALUE_OPTIONS: dict[str, tuple[tuple[str, str, tuple[tuple[str, str], ..
                 ("default", "default_label"),
                 ("noto_naskh_arabic", "noto_naskh_arabic_label"),
                 ("amiri", "amiri_label"),
+                ("scheherazade_new", "scheherazade_new_label"),
+                ("kfgqpc_uthman_taha", "kfgqpc_uthman_taha_label"),
+                ("adwaa_lotfi", "adwaa_lotfi_label"),
                 ("ibm_plex_sans_arabic", "ibm_plex_sans_arabic_label"),
+                ("vazirmatn", "vazirmatn_label"),
             ),
         ),
     ),
@@ -184,6 +188,7 @@ VALUE_OPTION_ATTRS: dict[str, str] = {
     "conversion_backend": "conversion_backend",
     "pandoc_heading_shift": "pandoc_heading_shift",
 }
+VALUE_OPTION_ROW_SIZES: dict[str, int] = {"pdf_font_profile": 2}
 VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "change_justification": {"original": "original", "left": "left", "justify": "justify"},
     "line_height": {"default": None, "125": 125, "150": 150, "175": 175, "200": 200},
@@ -197,6 +202,10 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
         "noto_naskh_arabic": "noto_naskh_arabic",
         "amiri": "amiri",
         "ibm_plex_sans_arabic": "ibm_plex_sans_arabic",
+        "scheherazade_new": "scheherazade_new",
+        "vazirmatn": "vazirmatn",
+        "kfgqpc_uthman_taha": "kfgqpc_uthman_taha",
+        "adwaa_lotfi": "adwaa_lotfi",
     },
     "conversion_backend": {"calibre": "calibre", "pandoc": "pandoc"},
     "pandoc_heading_shift": {"default": 0, "promote": -1, "demote": 1},
@@ -329,6 +338,7 @@ def _append_value_row(
     option_attr = VALUE_OPTION_ATTRS[option_key]
     selected_value = getattr(context.state, option_attr)
     row_buttons: list[KeyboardButtonCallback] = []
+    row_size = VALUE_OPTION_ROW_SIZES.get(option_key, len(value_specs))
     for index, (value_token, label_key) in enumerate(value_specs):
         label = context.labels.get(label_key, label_key)
         prefix = f"{context.labels[prefix_label_key]}: " if index == 0 else ""
@@ -339,7 +349,11 @@ def _append_value_row(
                 data=f"opt|{option_key}|{value_token}|{context.request_id}",
             )
         )
-    context.rows.append(row_buttons)
+        if len(row_buttons) == row_size:
+            context.rows.append(row_buttons)
+            row_buttons = []
+    if row_buttons:
+        context.rows.append(row_buttons)
 
 
 def build_options_keyboard(

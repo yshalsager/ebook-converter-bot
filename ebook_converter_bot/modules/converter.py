@@ -131,6 +131,10 @@ def options_labels(lang: str) -> dict[str, str]:
         "noto_naskh_arabic_label": _("Noto Naskh Arabic", lang),
         "amiri_label": _("Amiri", lang),
         "ibm_plex_sans_arabic_label": _("IBM Plex Sans Arabic", lang),
+        "scheherazade_new_label": _("Scheherazade New", lang),
+        "kfgqpc_uthman_taha_label": _("KFGQPC Uthman Taha", lang),
+        "adwaa_lotfi_label": _("Adwaa Lotfi", lang),
+        "vazirmatn_label": _("Vazirmatn", lang),
         "pdf_page_numbers_label": _("Page numbers", lang),
         "pdf_no_cover_label": _("No cover page", lang),
         "pdf_no_chapter_pagebreak_label": _("Do not start chapters on new pages", lang),
@@ -158,7 +162,19 @@ def options_labels(lang: str) -> dict[str, str]:
     }
 
 
+PDF_FONT_PROFILE_LABEL_KEYS = {
+    "noto_naskh_arabic": "noto_naskh_arabic_label",
+    "amiri": "amiri_label",
+    "scheherazade_new": "scheherazade_new_label",
+    "kfgqpc_uthman_taha": "kfgqpc_uthman_taha_label",
+    "adwaa_lotfi": "adwaa_lotfi_label",
+    "ibm_plex_sans_arabic": "ibm_plex_sans_arabic_label",
+    "vazirmatn": "vazirmatn_label",
+}
+
+
 def render_options_summary(state: ConversionRequestState, lang: str) -> str:
+    labels = options_labels(lang)
     summary_parts = [
         text
         for enabled, text in (
@@ -214,7 +230,12 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
             ),
             (
                 state.pdf_font_profile != "default",
-                _("PDF Arabic font: {}", lang).format(state.pdf_font_profile.replace("_", " ")),
+                _("PDF Arabic font: {}", lang).format(
+                    labels.get(
+                        PDF_FONT_PROFILE_LABEL_KEYS.get(state.pdf_font_profile, ""),
+                        state.pdf_font_profile.replace("_", " "),
+                    )
+                ),
             ),
             (state.pdf_page_numbers, _("PDF: page numbers", lang)),
             (state.pdf_no_cover, _("PDF: no cover page", lang)),

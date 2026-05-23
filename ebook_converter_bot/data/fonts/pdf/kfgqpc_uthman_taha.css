@@ -1,0 +1,32 @@
+@font-face {
+  font-family: "KFGQPC-Uthman Taha Reqular";
+  src: url("kfgqpc_uthman_taha/KFGQPC Uthman Taha Reqular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "KFGQPC Uthman Taha Bold";
+  src: url("kfgqpc_uthman_taha/KFGQPC Uthman Taha Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+body,
+p,
+li,
+div,
+span {
+  font-family: "KFGQPC-Uthman Taha Reqular", serif !important;
+}
+
+b,
+strong,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "KFGQPC Uthman Taha Bold", "KFGQPC-Uthman Taha Reqular", serif !important;
+}
