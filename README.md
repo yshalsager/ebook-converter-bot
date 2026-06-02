@@ -12,7 +12,7 @@
 [![Liberapay](https://img.shields.io/badge/Liberapay-Support-F6C915?style=flat&labelColor=F6C915&logo=Liberapay&logoColor=white&link=https://liberapay.com/yshalsager)](https://liberapay.com/yshalsager)
 
 A bot that converts e-books to various formats, powered by [calibre](https://calibre-ebook.com/), [Pandoc](https://pandoc.org/), and [Antiword](https://www.winfield.demon.nl/)!
-It currently supports 49 input formats and 29 output formats.
+It currently supports 57 input formats and 31 output formats.
 
 You can start using it or adding it to your group [here on Telegram](https://t.me/ebook_converter_bot).
 
@@ -33,18 +33,19 @@ It supports converting from the following formats:
 
 ```python
 ['azw', 'azw3', 'azw4', 'azw8', 'adoc', 'asciidoc', 'bok', 'cb7', 'cbc', 'cbr',
- 'cbz', 'chm', 'djvu', 'doc', 'docx', 'epub', 'fb2', 'fbz', 'html', 'htmlz',
- 'kepub', 'kfx', 'kfx-zip', 'kpf', 'lit', 'lrf', 'md', 'mediawiki', 'mobi', 'odt',
- 'opf', 'org', 'pdb', 'pdf', 'pml', 'prc', 'rb', 'rst', 'rtf', 'snb', 't2t',
- 'tcr', 'tex', 'textile', 'tsv', 'txt', 'txtz', 'typ', 'typst']
+ 'cbz', 'chm', 'csv', 'djv', 'djvu', 'doc', 'docm', 'docx', 'epub', 'fb2', 'fbz',
+ 'htm', 'html', 'htmlz', 'ipynb', 'kepub', 'kfx', 'kfx-zip', 'kpf', 'lit', 'lrf',
+ 'md', 'mediawiki', 'mobi', 'odt', 'opf', 'org', 'pdb', 'pdf', 'pml', 'pptx',
+ 'prc', 'rb', 'rst', 'rtf', 'snb', 't2t', 'tcr', 'tex', 'textile', 'tsv', 'txt',
+ 'txtz', 'typ', 'typst', 'xhtml', 'xlsx']
 ```
 
 To the following formats:
 
 ```python
 ['azw3', 'adoc', 'docx', 'epub', 'fb2', 'html', 'htmlz', 'kepub', 'kfx', 'lit',
- 'lrf', 'md', 'mobi', 'oeb', 'org', 'pdb', 'pdf', 'pmlz', 'rb', 'rst', 'rtf',
- 'snb', 'tcr', 'tex', 'txt', 'txtz', 'typ', 'typst', 'zip']
+ 'lrf', 'md', 'mobi', 'odt', 'oeb', 'org', 'pdb', 'pdf', 'pmlz', 'pptx', 'rb',
+ 'rst', 'rtf', 'snb', 'tcr', 'tex', 'txt', 'txtz', 'typ', 'typst', 'zip']
 ```
 
 Some more features of the bot:

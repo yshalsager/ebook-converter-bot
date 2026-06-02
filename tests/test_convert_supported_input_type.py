@@ -38,3 +38,62 @@ def test_pandoc_capable_inputs_expose_extended_markup_outputs() -> None:
     assert "rst" in output_types
     assert "adoc" not in output_types
     assert "adoc" not in asciidoc_output_types
+
+
+def test_csv_input_is_pandoc_only_like_tsv() -> None:
+    output_types = Converter.get_supported_output_types_for_input("csv")
+
+    assert Converter().is_supported_input_type("table.CSV") is True
+    assert "docx" in output_types
+    assert "epub" in output_types
+    assert "md" in output_types
+    assert "html" in output_types
+    assert "azw3" not in output_types
+
+
+def test_common_document_inputs_are_pandoc_only() -> None:
+    for input_type in ("xlsx", "pptx", "ipynb"):
+        output_types = Converter.get_supported_output_types_for_input(input_type)
+
+        assert Converter().is_supported_input_type(f"book.{input_type.upper()}") is True
+        assert "docx" in output_types
+        assert "epub" in output_types
+        assert "md" in output_types
+        assert "html" in output_types
+        assert "azw3" not in output_types
+
+
+def test_pandoc_output_formats_are_exposed() -> None:
+    output_types = Converter.get_supported_output_types_for_input("docx")
+
+    assert "odt" in output_types
+    assert "pptx" in output_types
+
+
+def test_fb2_input_keeps_calibre_outputs_and_exposes_pandoc_outputs() -> None:
+    output_types = Converter.get_supported_output_types_for_input("fb2")
+
+    assert "azw3" in output_types
+    assert "md" in output_types
+    assert "odt" in output_types
+    assert "pptx" in output_types
+    assert "fb2" not in output_types
+
+
+def test_common_calibre_aliases_are_supported() -> None:
+    for input_type in ("djv", "docm"):
+        assert Converter().is_supported_input_type(f"book.{input_type.upper()}") is True
+        assert (
+            Converter.get_supported_output_types_for_input(input_type)
+            == Converter.calibre_output_types
+        )
+
+
+def test_html_aliases_behave_like_shared_html_input() -> None:
+    for input_type in ("htm", "xhtml"):
+        output_types = Converter.get_supported_output_types_for_input(input_type)
+
+        assert Converter().is_supported_input_type(f"book.{input_type.upper()}") is True
+        assert "azw3" in output_types
+        assert "docx" in output_types
+        assert "md" in output_types

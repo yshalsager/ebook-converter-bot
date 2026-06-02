@@ -8,12 +8,27 @@ from telethon.tl.types import KeyboardButtonCallback
 
 HIGHLIGHTED_FORMATS: set[str] = {"azw3", "docx", "epub", "kfx", "md", "mobi", "pdf"}
 CONTEXT_TYPES: tuple[str, ...] = ("docx", "epub", "pdf", "kfx")
-PANDOC_SHARED_INPUT_TYPES: set[str] = {"doc", "docx", "epub", "html", "md", "odt", "rtf", "txt"}
+PANDOC_SHARED_INPUT_TYPES: set[str] = {
+    "doc",
+    "docx",
+    "epub",
+    "fb2",
+    "htm",
+    "html",
+    "md",
+    "odt",
+    "rtf",
+    "txt",
+    "xhtml",
+}
 PANDOC_ONLY_INPUT_TYPES: set[str] = {
     "adoc",
     "asciidoc",
+    "csv",
+    "ipynb",
     "mediawiki",
     "org",
+    "pptx",
     "rst",
     "t2t",
     "tex",
@@ -21,9 +36,21 @@ PANDOC_ONLY_INPUT_TYPES: set[str] = {
     "tsv",
     "typ",
     "typst",
+    "xlsx",
 }
 SHARED_BACKEND_OUTPUT_TYPES: set[str] = {"docx", "epub", "txt"}
-PANDOC_ONLY_OUTPUT_TYPES: set[str] = {"adoc", "html", "md", "org", "rst", "tex", "typ", "typst"}
+PANDOC_ONLY_OUTPUT_TYPES: set[str] = {
+    "adoc",
+    "html",
+    "md",
+    "odt",
+    "org",
+    "pptx",
+    "rst",
+    "tex",
+    "typ",
+    "typst",
+}
 PANDOC_TOC_OUTPUT_TYPES: set[str] = {"docx", "epub", "html", "md", "rst", "tex", "typ", "typst"}
 PANDOC_NUMBER_SECTION_OUTPUT_TYPES: set[str] = {"docx", "epub", "html", "tex"}
 CALIBRE_COMMON_OUTPUT_TYPES: set[str] = {
