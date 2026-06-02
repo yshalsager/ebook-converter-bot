@@ -397,6 +397,10 @@ end
     @staticmethod
     def _arabic_punctuation_filter_content() -> str:
         return """local function starts_arabic_punctuation(inline)
+  if inline == nil then
+    return false
+  end
+
   if inline.t ~= 'Str' then
     return false
   end

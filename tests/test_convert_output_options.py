@@ -524,6 +524,31 @@ def test_docx_cleanup_filter_handles_pandoc_attribute_lists(tmp_path: Path) -> N
     assert result.stdout == "# Title\n\nwrapped\n\ninside\n"
 
 
+@pytest.mark.skipif(shutil.which("pandoc") is None, reason="pandoc is not installed")
+def test_arabic_punctuation_filter_handles_trailing_space_inline(tmp_path: Path) -> None:
+    pandoc = shutil.which("pandoc")
+    assert pandoc is not None
+    lua_filter = tmp_path / "arabic-punctuation.lua"
+    lua_filter.write_text(Converter().pandoc_backend._arabic_punctuation_filter_content())
+
+    result = subprocess.run(  # noqa: S603
+        [
+            pandoc,
+            "-f",
+            "native",
+            "-t",
+            "html5",
+            f"--lua-filter={lua_filter}",
+        ],
+        input="[Para [Space]]\n",
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout == "<p> </p>\n"
+
+
 def test_docx_to_md_uses_pandoc_only_route(tmp_path: Path) -> None:
     async def run() -> None:
         converter = Converter()
