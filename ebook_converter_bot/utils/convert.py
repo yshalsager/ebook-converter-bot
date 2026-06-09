@@ -27,6 +27,17 @@ logger = logging.getLogger(__name__)
 TASK_TIMEOUT = 600  # 10 min
 MAX_SPLIT_OUTPUT_FILES = 35
 DOCX_ARABIC_REFERENCE_DOC = Path(__file__).resolve().parents[1] / "data" / "reference.docx"
+EBOOK_CONVERT_OUTPUT_ARG_INDEX = 2
+
+
+def _pdf_font_env_for_command(command: list[str]) -> dict[str, str] | None:
+    if (
+        len(command) > EBOOK_CONVERT_OUTPUT_ARG_INDEX
+        and command[0] == "ebook-convert"
+        and Path(command[EBOOK_CONVERT_OUTPUT_ARG_INDEX]).suffix.lower() == ".pdf"
+    ):
+        return os.environ | get_pdf_conversion_env()
+    return None
 
 
 @dataclass
@@ -814,7 +825,7 @@ class Converter:
                 stdout=stdout_handle or PIPE,
                 stderr=PIPE if stdout_file else STDOUT,
                 preexec_fn=setsid,
-                env=os.environ | get_pdf_conversion_env(),
+                env=_pdf_font_env_for_command(command),
             )
         except FileNotFoundError:
             if stdout_handle:

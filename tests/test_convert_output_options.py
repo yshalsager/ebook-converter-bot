@@ -90,6 +90,26 @@ def _contains_flag_pair(command: list[str], flag: str, value: str) -> bool:
     return index + 1 < len(command) and command[index + 1] == value
 
 
+def test_pdf_font_env_is_limited_to_pdf_ebook_convert(monkeypatch) -> None:
+    monkeypatch.setattr(
+        convert_utils, "get_pdf_conversion_env", lambda: {"CALIBRE_CONFIG_DIRECTORY": "pdf-config"}
+    )
+
+    env = convert_utils._pdf_font_env_for_command(["ebook-convert", "book.epub", "book.pdf"])
+
+    assert env is not None
+    assert env["CALIBRE_CONFIG_DIRECTORY"] == "pdf-config"
+    assert (
+        convert_utils._pdf_font_env_for_command(["ebook-convert", "book.epub", "book.epub"]) is None
+    )
+    assert (
+        convert_utils._pdf_font_env_for_command(
+            ["calibre-debug", "-r", "KFX Output", "--", "book.epub"]
+        )
+        is None
+    )
+
+
 def _lua_filter_args(output_file: Path, suffixes: list[str]) -> list[str]:
     return [f"--lua-filter={output_file.with_suffix(suffix)}" for suffix in suffixes]
 
