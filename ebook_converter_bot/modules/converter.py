@@ -39,6 +39,7 @@ from ebook_converter_bot.utils.converter_options import (
     state_to_persisted_options,
 )
 from ebook_converter_bot.utils.i18n import translate as _
+from ebook_converter_bot.utils.pdf_fonts import get_pdf_font_label
 from ebook_converter_bot.utils.telegram import tg_exceptions_handler
 
 MAX_ALLOWED_FILE_SIZE = 26214400  # 25 MB
@@ -163,17 +164,6 @@ def options_labels(lang: str) -> dict[str, str]:
     }
 
 
-PDF_FONT_PROFILE_LABEL_KEYS = {
-    "noto_naskh_arabic": "noto_naskh_arabic_label",
-    "amiri": "amiri_label",
-    "scheherazade_new": "scheherazade_new_label",
-    "kfgqpc_uthman_taha": "kfgqpc_uthman_taha_label",
-    "adwaa_lotfi": "adwaa_lotfi_label",
-    "ibm_plex_sans_arabic": "ibm_plex_sans_arabic_label",
-    "vazirmatn": "vazirmatn_label",
-}
-
-
 def render_options_summary(state: ConversionRequestState, lang: str) -> str:
     labels = options_labels(lang)
     summary_parts = [
@@ -233,10 +223,7 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
             (
                 state.pdf_font_profile != "default",
                 _("PDF Arabic font: {}", lang).format(
-                    labels.get(
-                        PDF_FONT_PROFILE_LABEL_KEYS.get(state.pdf_font_profile, ""),
-                        state.pdf_font_profile.replace("_", " "),
-                    )
+                    get_pdf_font_label(state.pdf_font_profile, labels)
                 ),
             ),
             (state.pdf_page_numbers, _("PDF: page numbers", lang)),

@@ -19,90 +19,13 @@ from ebook_converter_bot.utils.epub import (
 )
 from ebook_converter_bot.utils.epub_split import split_epub_by_volumes
 from ebook_converter_bot.utils.pdf import pdf_to_htmlz
+from ebook_converter_bot.utils.pdf_fonts import get_pdf_font_profile
 
 logger = logging.getLogger(__name__)
 
 TASK_TIMEOUT = 600  # 10 min
 MAX_SPLIT_OUTPUT_FILES = 35
-PDF_FONTS_DIR = Path(__file__).resolve().parents[1] / "data" / "fonts" / "pdf"
 DOCX_ARABIC_REFERENCE_DOC = Path(__file__).resolve().parents[1] / "data" / "reference.docx"
-
-
-@dataclass(frozen=True)
-class PdfFontProfile:
-    serif_family: str
-    sans_family: str
-    embed_family: str
-    css_file: str
-    required_files: tuple[str, ...]
-
-
-PDF_FONT_PROFILES: dict[str, PdfFontProfile] = {
-    "noto_naskh_arabic": PdfFontProfile(
-        serif_family="Noto Naskh Arabic",
-        sans_family="Noto Naskh Arabic",
-        embed_family="Noto Naskh Arabic",
-        css_file="noto_naskh_arabic.css",
-        required_files=(
-            "noto_naskh_arabic/NotoNaskhArabic-Regular.ttf",
-            "noto_naskh_arabic/NotoNaskhArabic-Bold.ttf",
-        ),
-    ),
-    "amiri": PdfFontProfile(
-        serif_family="Amiri",
-        sans_family="Amiri",
-        embed_family="Amiri",
-        css_file="amiri.css",
-        required_files=("amiri/Amiri-Regular.ttf", "amiri/Amiri-Bold.ttf"),
-    ),
-    "ibm_plex_sans_arabic": PdfFontProfile(
-        serif_family="IBM Plex Sans Arabic",
-        sans_family="IBM Plex Sans Arabic",
-        embed_family="IBM Plex Sans Arabic",
-        css_file="ibm_plex_sans_arabic.css",
-        required_files=(
-            "ibm_plex_sans_arabic/IBMPlexSansArabic-Regular.ttf",
-            "ibm_plex_sans_arabic/IBMPlexSansArabic-Bold.ttf",
-        ),
-    ),
-    "scheherazade_new": PdfFontProfile(
-        serif_family="Scheherazade New",
-        sans_family="Scheherazade New",
-        embed_family="Scheherazade New",
-        css_file="scheherazade_new.css",
-        required_files=(
-            "scheherazade_new/ScheherazadeNew-Regular.ttf",
-            "scheherazade_new/ScheherazadeNew-Bold.ttf",
-        ),
-    ),
-    "vazirmatn": PdfFontProfile(
-        serif_family="Vazirmatn",
-        sans_family="Vazirmatn",
-        embed_family="Vazirmatn",
-        css_file="vazirmatn.css",
-        required_files=("vazirmatn/Vazirmatn-Regular.ttf", "vazirmatn/Vazirmatn-Bold.ttf"),
-    ),
-    "kfgqpc_uthman_taha": PdfFontProfile(
-        serif_family="KFGQPC-Uthman Taha Reqular",
-        sans_family="KFGQPC-Uthman Taha Reqular",
-        embed_family="KFGQPC-Uthman Taha Reqular",
-        css_file="kfgqpc_uthman_taha.css",
-        required_files=(
-            "kfgqpc_uthman_taha/KFGQPC Uthman Taha Reqular.ttf",
-            "kfgqpc_uthman_taha/KFGQPC Uthman Taha Bold.ttf",
-        ),
-    ),
-    "adwaa_lotfi": PdfFontProfile(
-        serif_family="_Adwaa Lotfi",
-        sans_family="_Adwaa Lotfi",
-        embed_family="_Adwaa Lotfi",
-        css_file="adwaa_lotfi.css",
-        required_files=(
-            "adwaa_lotfi/_AdwaaLotfi-Regular.ttf",
-            "adwaa_lotfi/_AdwaaLotfi-Bold.ttf",
-        ),
-    ),
-}
 
 
 @dataclass
@@ -978,14 +901,12 @@ class Converter:
         if options.pdf_font_profile == "default":
             return
 
-        profile = PDF_FONT_PROFILES.get(options.pdf_font_profile)
+        profile = get_pdf_font_profile(options.pdf_font_profile)
         if not profile:
             logger.warning("Unknown PDF font profile: %s", options.pdf_font_profile)
             return
 
-        css_path = PDF_FONTS_DIR / profile.css_file
-        required_paths = [PDF_FONTS_DIR / file_path for file_path in profile.required_files]
-        missing_paths = [path for path in [css_path, *required_paths] if not path.exists()]
+        missing_paths = [path for path in profile.required_files if not path.exists()]
         if missing_paths:
             logger.warning(
                 "PDF font profile '%s' has missing assets: %s",
@@ -994,9 +915,10 @@ class Converter:
             )
             return
 
-        command.extend(["--pdf-serif-family", profile.serif_family])
-        command.extend(["--pdf-sans-family", profile.sans_family])
-        command.extend(["--embed-font-family", profile.embed_family])
+        css_path = profile.ensure_css()
+        command.extend(["--pdf-serif-family", profile.family])
+        command.extend(["--pdf-sans-family", profile.family])
+        command.extend(["--embed-font-family", profile.family])
         command.append("--embed-all-fonts")
         command.extend(["--extra-css", str(css_path)])
 

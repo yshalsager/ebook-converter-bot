@@ -144,6 +144,7 @@ config.json
 *.session-journal
 *.pickle
 restart.json
+extra-pdf-fonts/
 /*.sh
 tmp*
 *.exe

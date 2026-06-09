@@ -9,12 +9,11 @@ import pytest
 from ebook_converter_bot.utils.convert import (
     DOCX_ARABIC_REFERENCE_DOC,
     MAX_SPLIT_OUTPUT_FILES,
-    PDF_FONT_PROFILES,
-    PDF_FONTS_DIR,
     TASK_TIMEOUT,
     ConversionOptions,
     Converter,
 )
+from ebook_converter_bot.utils.pdf_fonts import get_pdf_font_profiles
 
 EXPECTED_SPLIT_OUTPUTS = 2
 EXPECTED_RTL_PDF_COMMANDS = 2
@@ -245,19 +244,20 @@ def test_pdf_font_profile_adds_embed_and_css_flags(tmp_path: Path) -> None:
         assert _contains_flag_pair(command, "--pdf-sans-family", "Amiri")
         assert _contains_flag_pair(command, "--embed-font-family", "Amiri")
         assert "--embed-all-fonts" in command
-        assert _contains_flag_pair(command, "--extra-css", str(PDF_FONTS_DIR / "amiri.css"))
+        css_path = Path(command[command.index("--extra-css") + 1])
+        assert css_path.exists()
+        assert 'font-family: "Amiri"' in css_path.read_text()
 
     asyncio.run(run())
 
 
 def test_pdf_font_profiles_have_required_assets() -> None:
-    assert {"scheherazade_new", "vazirmatn", "kfgqpc_uthman_taha", "adwaa_lotfi"} <= set(
-        PDF_FONT_PROFILES
-    )
-    for profile in PDF_FONT_PROFILES.values():
-        assert (PDF_FONTS_DIR / profile.css_file).exists()
+    profiles = get_pdf_font_profiles()
+    assert {"scheherazade_new", "vazirmatn", "kfgqpc_uthman_taha", "adwaa_lotfi"} <= set(profiles)
+    for profile in profiles.values():
         for required_file in profile.required_files:
-            assert (PDF_FONTS_DIR / required_file).exists()
+            assert required_file.exists()
+        assert profile.ensure_css().exists()
 
 
 def test_format_specific_flags_do_not_leak_to_other_outputs(tmp_path: Path) -> None:

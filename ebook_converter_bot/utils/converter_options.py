@@ -6,6 +6,11 @@ from typing import Any
 from telethon import Button
 from telethon.tl.types import KeyboardButtonCallback
 
+from ebook_converter_bot.utils.pdf_fonts import (
+    get_pdf_font_option_specs,
+    get_pdf_font_value_map,
+)
+
 HIGHLIGHTED_FORMATS: set[str] = {"azw3", "docx", "epub", "kfx", "md", "mobi", "pdf"}
 CONTEXT_TYPES: tuple[str, ...] = ("docx", "epub", "pdf", "kfx")
 PANDOC_SHARED_INPUT_TYPES: set[str] = {
@@ -139,16 +144,7 @@ CONTEXT_VALUE_OPTIONS: dict[str, tuple[tuple[str, str, tuple[tuple[str, str], ..
         (
             "pdf_font_profile",
             "pdf_font_profile_label",
-            (
-                ("default", "default_label"),
-                ("noto_naskh_arabic", "noto_naskh_arabic_label"),
-                ("amiri", "amiri_label"),
-                ("scheherazade_new", "scheherazade_new_label"),
-                ("kfgqpc_uthman_taha", "kfgqpc_uthman_taha_label"),
-                ("adwaa_lotfi", "adwaa_lotfi_label"),
-                ("ibm_plex_sans_arabic", "ibm_plex_sans_arabic_label"),
-                ("vazirmatn", "vazirmatn_label"),
-            ),
+            get_pdf_font_option_specs(),
         ),
     ),
     "kfx": (
@@ -225,16 +221,7 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "docx_page_size": {"default": "default", "letter": "letter", "a4": "a4"},
     "epub_version": {"default": "default", "2": "2", "3": "3"},
     "pdf_paper_size": {"default": "default", "letter": "letter", "a4": "a4"},
-    "pdf_font_profile": {
-        "default": "default",
-        "noto_naskh_arabic": "noto_naskh_arabic",
-        "amiri": "amiri",
-        "ibm_plex_sans_arabic": "ibm_plex_sans_arabic",
-        "scheherazade_new": "scheherazade_new",
-        "vazirmatn": "vazirmatn",
-        "kfgqpc_uthman_taha": "kfgqpc_uthman_taha",
-        "adwaa_lotfi": "adwaa_lotfi",
-    },
+    "pdf_font_profile": get_pdf_font_value_map(),
     "conversion_backend": {"calibre": "calibre", "pandoc": "pandoc"},
     "pandoc_heading_shift": {"default": 0, "promote": -1, "demote": 1},
 }

@@ -15,6 +15,7 @@ dependencies = [
     "lxml>=6.1.0",
     "pymupdf>=1.26.0",
     "alembic>=1.18.4",
+    "fonttools>=4.63.0",
 ]
 
 [dependency-groups]

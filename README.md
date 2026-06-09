@@ -63,6 +63,7 @@ Some more features of the bot:
 - DOCX options: page size and generated TOC toggle for Calibre; RTL output, H1/H2 heading page breaks, heading level shifts, and Arabic reference styling for Pandoc.
 - EPUB output options: version selection, inline TOC, and background removal.
 - PDF options: paper size, page numbers, cover-page generation, chapter page breaks, and Arabic font selection.
+- Extra PDF fonts can be mounted locally without committing privately licensed font files.
 - KFX options: PDOC/EBOK type and pages mode.
 - EPUB input preprocessing options: fix EPUB metadata/spine issues, flatten TOC, and standardize footnotes.
 - EPUB-to-EPUB volume splitting with per-volume output processing (up to 35 split files).
@@ -132,6 +133,30 @@ security_opt:
 
 Download that profile on the host before starting the container, or remove this setting if you do not need KFX/Wine
 conversion.
+
+Extra PDF fonts can be added without modifying the image. Put each font in its own directory under `extra-pdf-fonts`
+and restart the bot:
+
+```text
+extra-pdf-fonts/
+  my_font/
+    regular.ttf
+    bold.ttf
+```
+
+The directory name becomes the option value, the display label is inferred from it, and the internal font family is read
+from `regular.ttf`. Add an optional `profile.json` only when you need overrides:
+
+```json
+{
+  "label": "My Licensed Font",
+  "regular": "MyFont-Regular.ttf",
+  "bold": "MyFont-Bold.ttf",
+  "fallback": "serif"
+}
+```
+
+The compose file mounts this directory at `/data/pdf-fonts` and sets `PDF_EXTRA_FONTS_DIR=/data/pdf-fonts`.
 
 ### Without Docker [NOT RECOMMENDED]
 
