@@ -228,6 +228,19 @@ def get_pdf_font_label(profile_id: str, labels: dict[str, str]) -> str:
     )
 
 
+def log_pdf_font_profiles() -> None:
+    profiles = get_pdf_font_profiles()
+    logger.info("Discovered %d PDF font profiles", len(profiles))
+    for profile in profiles.values():
+        logger.info(
+            "PDF font profile: id=%s label=%s family=%s path=%s",
+            profile.id,
+            profile.label,
+            profile.family,
+            profile.regular_path.parent,
+        )
+
+
 def refresh_pdf_font_cache() -> None:
     fc_cache = shutil.which("fc-cache")
     if not fc_cache:

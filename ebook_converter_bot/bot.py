@@ -15,7 +15,7 @@ from ebook_converter_bot.db.session import initialize_database
 from ebook_converter_bot.modules import ALL_MODULES
 from ebook_converter_bot.utils.convert import Converter
 from ebook_converter_bot.utils.loader import load_modules
-from ebook_converter_bot.utils.pdf_fonts import refresh_pdf_font_cache
+from ebook_converter_bot.utils.pdf_fonts import log_pdf_font_profiles, refresh_pdf_font_cache
 
 _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
@@ -31,6 +31,7 @@ BOT_INFO = {}
 def main() -> None:
     """Main."""
     refresh_pdf_font_cache()
+    log_pdf_font_profiles()
     initialize_database()
     generate_analytics_columns(Converter.get_supported_types())
     BOT.loop.run_until_complete(run())

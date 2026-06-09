@@ -2,11 +2,13 @@ import json
 from pathlib import Path
 from shutil import copy2
 
+from ebook_converter_bot.utils import pdf_fonts
 from ebook_converter_bot.utils.pdf_fonts import (
     PDF_FONTS_DIR,
     get_pdf_font_option_specs,
     get_pdf_font_profiles,
     get_pdf_font_value_map,
+    log_pdf_font_profiles,
 )
 
 
@@ -49,5 +51,23 @@ def test_extra_font_profile_manifest_can_override_label_and_fallback(
     assert profile.label == "Dense Scholarly Font"
     assert profile.regular_path == profile_dir / "custom.ttf"
     assert 'font-family: "Amiri", serif !important;' in profile.ensure_css().read_text()
+
+    get_pdf_font_profiles.cache_clear()
+
+
+def test_log_pdf_font_profiles_includes_identity_and_source(monkeypatch) -> None:
+    get_pdf_font_profiles.cache_clear()
+    messages = []
+
+    monkeypatch.setattr(
+        pdf_fonts.logger, "info", lambda message, *args: messages.append(message % args)
+    )
+    log_pdf_font_profiles()
+
+    assert any(message.startswith("Discovered ") for message in messages)
+    assert any(
+        message.startswith("PDF font profile: id=amiri label=Amiri family=Amiri path=")
+        for message in messages
+    )
 
     get_pdf_font_profiles.cache_clear()
