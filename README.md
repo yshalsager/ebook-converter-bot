@@ -135,7 +135,7 @@ Download that profile on the host before starting the container, or remove this 
 conversion.
 
 Extra PDF fonts can be added without modifying the image. Put each font in its own directory under `extra-pdf-fonts`
-and restart the bot:
+and restart the bot. Local runs read `./extra-pdf-fonts` by default:
 
 ```text
 extra-pdf-fonts/
@@ -156,7 +156,8 @@ from `regular.ttf`. Add an optional `profile.json` only when you need overrides:
 }
 ```
 
-The compose file mounts this directory at `/data/pdf-fonts` and sets `PDF_EXTRA_FONTS_DIR=/data/pdf-fonts`.
+The compose file mounts this directory at `/data/pdf-fonts` and sets `PDF_EXTRA_FONTS_DIR=/data/pdf-fonts`. Set
+`PDF_EXTRA_FONTS_DIR` yourself only when the fonts live somewhere else.
 
 ### Without Docker [NOT RECOMMENDED]
 

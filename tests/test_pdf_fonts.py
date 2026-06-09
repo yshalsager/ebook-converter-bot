@@ -55,6 +55,17 @@ def test_extra_font_profile_manifest_can_override_label_and_fallback(
     get_pdf_font_profiles.cache_clear()
 
 
+def test_default_extra_font_dir_is_used_when_env_is_absent(tmp_path: Path, monkeypatch) -> None:
+    _copy_font(tmp_path / "local_font")
+    monkeypatch.delenv("PDF_EXTRA_FONTS_DIR", raising=False)
+    monkeypatch.setattr(pdf_fonts, "DEFAULT_PDF_EXTRA_FONTS_DIR", tmp_path)
+    get_pdf_font_profiles.cache_clear()
+
+    assert "local_font" in get_pdf_font_profiles()
+
+    get_pdf_font_profiles.cache_clear()
+
+
 def test_log_pdf_font_profiles_includes_identity_and_source(monkeypatch) -> None:
     get_pdf_font_profiles.cache_clear()
     messages = []

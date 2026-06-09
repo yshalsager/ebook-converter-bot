@@ -13,6 +13,7 @@ from fontTools.ttLib import TTFont
 logger = logging.getLogger(__name__)
 
 PDF_FONTS_DIR = Path(__file__).resolve().parents[1] / "data" / "fonts" / "pdf"
+DEFAULT_PDF_EXTRA_FONTS_DIR = Path(__file__).resolve().parents[2] / "extra-pdf-fonts"
 PDF_EXTRA_FONTS_DIR_ENV = "PDF_EXTRA_FONTS_DIR"
 PDF_FONT_CSS_CACHE_DIR = Path("/tmp/ebook_converter_bot/pdf-font-css")  # noqa: S108
 PDF_FONT_ID_RE = re.compile(r"^[a-z0-9_]+$")
@@ -170,10 +171,7 @@ def _profile_dirs(root: Path) -> list[Path]:
 
 
 def _font_roots() -> list[Path]:
-    return [
-        PDF_FONTS_DIR,
-        *([Path(extra_root)] if (extra_root := os.getenv(PDF_EXTRA_FONTS_DIR_ENV)) else []),
-    ]
+    return [PDF_FONTS_DIR, Path(os.getenv(PDF_EXTRA_FONTS_DIR_ENV, DEFAULT_PDF_EXTRA_FONTS_DIR))]
 
 
 @lru_cache(maxsize=1)
