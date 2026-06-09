@@ -5,6 +5,7 @@ from shutil import copy2
 from ebook_converter_bot.utils import pdf_fonts
 from ebook_converter_bot.utils.pdf_fonts import (
     PDF_FONTS_DIR,
+    get_pdf_conversion_env,
     get_pdf_font_option_specs,
     get_pdf_font_profiles,
     get_pdf_font_value_map,
@@ -62,6 +63,28 @@ def test_default_extra_font_dir_is_used_when_env_is_absent(tmp_path: Path, monke
     get_pdf_font_profiles.cache_clear()
 
     assert "local_font" in get_pdf_font_profiles()
+
+    get_pdf_font_profiles.cache_clear()
+
+
+def test_conversion_env_uses_scoped_calibre_config_and_links_fonts(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _copy_font(tmp_path / "local_font")
+    calibre_config_dir = tmp_path / "calibre-config"
+    monkeypatch.setenv("PDF_EXTRA_FONTS_DIR", str(tmp_path))
+    monkeypatch.setattr(pdf_fonts, "PDF_CALIBRE_CONFIG_DIR", calibre_config_dir)
+    monkeypatch.setattr(
+        pdf_fonts, "PDF_CALIBRE_FONT_DIR", calibre_config_dir / "fonts" / "ebook-converter-bot"
+    )
+    get_pdf_font_profiles.cache_clear()
+
+    env = get_pdf_conversion_env()
+    link_path = calibre_config_dir / "fonts" / "ebook-converter-bot" / "local_font-0.ttf"
+
+    assert env == {"CALIBRE_CONFIG_DIRECTORY": str(calibre_config_dir)}
+    assert link_path.is_symlink()
+    assert link_path.resolve() == tmp_path / "local_font" / "regular.ttf"
 
     get_pdf_font_profiles.cache_clear()
 

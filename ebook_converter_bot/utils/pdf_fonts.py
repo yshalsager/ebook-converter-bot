@@ -2,8 +2,6 @@ import json
 import logging
 import os
 import re
-import shutil
-import subprocess
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -16,6 +14,8 @@ PDF_FONTS_DIR = Path(__file__).resolve().parents[1] / "data" / "fonts" / "pdf"
 DEFAULT_PDF_EXTRA_FONTS_DIR = Path(__file__).resolve().parents[2] / "extra-pdf-fonts"
 PDF_EXTRA_FONTS_DIR_ENV = "PDF_EXTRA_FONTS_DIR"
 PDF_FONT_CSS_CACHE_DIR = Path("/tmp/ebook_converter_bot/pdf-font-css")  # noqa: S108
+PDF_CALIBRE_CONFIG_DIR = Path("/tmp/ebook_converter_bot/calibre-config")  # noqa: S108
+PDF_CALIBRE_FONT_DIR = PDF_CALIBRE_CONFIG_DIR / "fonts" / "ebook-converter-bot"
 PDF_FONT_ID_RE = re.compile(r"^[a-z0-9_]+$")
 FONT_EXTENSIONS = {".otf", ".ttf"}
 BUILTIN_FONT_ORDER = (
@@ -239,13 +239,31 @@ def log_pdf_font_profiles() -> None:
         )
 
 
-def refresh_pdf_font_cache() -> None:
-    fc_cache = shutil.which("fc-cache")
-    if not fc_cache:
-        return
-    for font_dir in _font_roots():
-        if font_dir.exists():
-            subprocess.run([fc_cache, "-f", str(font_dir)], check=False)  # noqa: S603
+def _sync_calibre_font_links() -> None:
+    PDF_CALIBRE_FONT_DIR.mkdir(parents=True, exist_ok=True)
+    wanted = {
+        f"{profile.id}-{index}{font_path.suffix.lower()}": font_path
+        for profile in get_pdf_font_profiles().values()
+        for index, font_path in enumerate(profile.required_files)
+    }
+    for name, font_path in wanted.items():
+        link_path = PDF_CALIBRE_FONT_DIR / name
+        if link_path.is_symlink() and link_path.resolve() == font_path.resolve():
+            continue
+        link_path.unlink(missing_ok=True)
+        link_path.symlink_to(font_path)
+    for link_path in PDF_CALIBRE_FONT_DIR.iterdir():
+        if link_path.name not in wanted and link_path.is_symlink():
+            link_path.unlink()
+
+
+def get_pdf_conversion_env() -> dict[str, str]:
+    _sync_calibre_font_links()
+    return {"CALIBRE_CONFIG_DIRECTORY": str(PDF_CALIBRE_CONFIG_DIR)}
+
+
+def prepare_pdf_fonts() -> None:
+    _sync_calibre_font_links()
     for cache_file in (Path.home() / ".cache" / "calibre").glob("*font*"):
         if cache_file.is_file():
             cache_file.unlink(missing_ok=True)

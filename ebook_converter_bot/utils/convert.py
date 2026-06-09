@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 from asyncio.subprocess import PIPE, STDOUT, Process
 from dataclasses import dataclass, replace
@@ -19,7 +20,7 @@ from ebook_converter_bot.utils.epub import (
 )
 from ebook_converter_bot.utils.epub_split import split_epub_by_volumes
 from ebook_converter_bot.utils.pdf import pdf_to_htmlz
-from ebook_converter_bot.utils.pdf_fonts import get_pdf_font_profile
+from ebook_converter_bot.utils.pdf_fonts import get_pdf_conversion_env, get_pdf_font_profile
 
 logger = logging.getLogger(__name__)
 
@@ -813,6 +814,7 @@ class Converter:
                 stdout=stdout_handle or PIPE,
                 stderr=PIPE if stdout_file else STDOUT,
                 preexec_fn=setsid,
+                env=os.environ | get_pdf_conversion_env(),
             )
         except FileNotFoundError:
             if stdout_handle:
