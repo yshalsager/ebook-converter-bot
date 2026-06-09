@@ -14,7 +14,6 @@ WORKDIR /code
 COPY pyproject.toml uv.lock /code/
 RUN uv sync --frozen --no-install-project
 
-COPY ebook_converter_bot/data/fonts/pdf /tmp/vendor-pdf-fonts
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends antiword ca-certificates curl; \
@@ -22,11 +21,7 @@ RUN set -eux; \
     curl -fsSL -o /tmp/pandoc.tar.gz "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz"; \
     tar -xzf /tmp/pandoc.tar.gz --strip-components=1 -C /usr/local; \
     rm /tmp/pandoc.tar.gz; \
-    pandoc --version; \
-    mkdir -p /usr/local/share/fonts/ebook-converter-bot; \
-    find /tmp/vendor-pdf-fonts -type f -name '*.ttf' -exec cp '{}' /usr/local/share/fonts/ebook-converter-bot/ ';'; \
-    fc-cache -f -v; \
-    rm -rf /tmp/vendor-pdf-fonts /root/.cache/fontconfig/* /root/.cache/calibre/*font*
+    pandoc --version
 USER calibre
 # Override the entrypoint of the parent image
 ENTRYPOINT [""]
