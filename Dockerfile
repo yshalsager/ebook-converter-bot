@@ -2,7 +2,7 @@ FROM ghcr.io/yshalsager/calibre-with-kfx:20260531-0100@sha256:1a5eee11129fde123a
 
 ARG PANDOC_VERSION=3.9.0.2
 
-COPY --from=ghcr.io/astral-sh/uv:latest@sha256:3d868e555f8f1dbc324afa005066cd11e1053fc4743b9808ca8025283e65efa5 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:eb2843a1e56fd9e30c7276ce1a52cba86e64c7b385f5e3279a0e08e02dd058fc /uv /uvx /bin/
 USER root
 ENV PATH="/opt/venv/bin:$PATH" \
     UV_COMPILE_BYTECODE=1 \
