@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 from lxml import etree
 
 REFERENCE_MARKER_PATTERN = re.compile(r"(\(\^?[\u0660-\u0669\d]+\)|\[\^?[\u0660-\u0669\d]+\])")
+LEGACY_GUILLEMET_MARKER_PATTERN = re.compile(r"«[\u0660-\u0669\d]+»")
+LEGACY_QUOTED_MARKER_PATTERN = re.compile(r'"[\u0660-\u0669\d]+"?')
+LEGACY_PLAIN_MARKER_PATTERN = re.compile(
+    r"(?<![\u0660-\u0669\d])[\u0660-\u0669\d]+(?![\u0660-\u0669\d])"
+)
 MARKER_DIGITS_PATTERN = re.compile(r"[\u0660-\u0669\d]+")
 ARABIC_DIGIT_TRANSLATION = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
 
@@ -16,7 +21,7 @@ HAMESH_LINE_NUMBER_PLAIN_PATTERN = re.compile(
 )
 EXPLICIT_HAMESH_LINE_PATTERNS = (HAMESH_LINE_NUMBER_PATTERN, HAMESH_LINE_NUMBER_SQUARE_PATTERN)
 
-BR_TAG_PATTERN = re.compile(r"(?i)</?(?:\w+:)?br\s*/?>")
+BR_TAG_PATTERN = re.compile(r"(?i)</?(?:\w+:)?br\b[^>]*>")
 LAST_FOOTNOTE_SPAN_PATTERN = re.compile(
     r'(?s)(<aside id="fn\d+" epub:type="footnote">.*?<span>)(.*?)(</span></aside>)'
     r'(?![\s\S]*<aside id="fn\d+" epub:type="footnote">)'
@@ -178,10 +183,17 @@ def _collect_body_paragraphs(parent: etree._Element, out: list[etree._Element]) 
         _collect_body_paragraphs(child, out)
 
 
-def _collect_reference_candidates(paragraph_html: str) -> list[_ReferenceCandidate]:
+def _collect_reference_candidates(
+    paragraph_html: str,
+    marker_pattern: re.Pattern[str] = REFERENCE_MARKER_PATTERN,
+) -> list[_ReferenceCandidate]:
     candidates: list[_ReferenceCandidate] = []
-    for match in REFERENCE_MARKER_PATTERN.finditer(paragraph_html):
-        marker = match.group(1)
+    for match in marker_pattern.finditer(paragraph_html):
+        if paragraph_html.rfind("<", 0, match.start()) > paragraph_html.rfind(
+            ">", 0, match.start()
+        ):
+            continue
+        marker = match.group(0)
         number, has_caret, bracket = _marker_meta(marker)
         if not number:
             continue
@@ -270,6 +282,7 @@ def _build_paragraph_contexts(root: etree._Element) -> list[_ParagraphContext]:
 
 def _build_paragraph_contexts_from_paragraphs(
     paragraphs: list[etree._Element],
+    marker_pattern: re.Pattern[str] = REFERENCE_MARKER_PATTERN,
 ) -> list[_ParagraphContext]:
     contexts: list[_ParagraphContext] = []
     for paragraph in paragraphs:
@@ -278,7 +291,7 @@ def _build_paragraph_contexts_from_paragraphs(
             _ParagraphContext(
                 paragraph=paragraph,
                 html=paragraph_html,
-                candidates=_collect_reference_candidates(paragraph_html),
+                candidates=_collect_reference_candidates(paragraph_html, marker_pattern),
             )
         )
     return contexts
@@ -315,8 +328,10 @@ def _assign_note_replacements(
             (
                 candidate.start,
                 candidate.end,
-                f'<a href="#fn{note.note_id}" epub:type="noteref" role="doc-noteref" '
-                f'id="fnref{note.note_id}" class="fn nu">{candidate.marker}</a>',
+                (
+                    f'<a href="#fn{note.note_id}" epub:type="noteref" role="doc-noteref" '
+                    f'id="fnref{note.note_id}" class="fn nu">{candidate.marker}</a>'
+                ),
             )
         )
 
@@ -594,6 +609,159 @@ def _update_calibre_footnote_html(root: etree._Element) -> bool:
     return changed
 
 
+def _legacy_note_items(notes: list[tuple[str, str]]) -> dict[int, str]:
+    return {
+        note_id: (
+            f'<aside id="fn{note_id}" epub:type="footnote">'
+            f'<a href="#fnref{note_id}" class="nu">{marker}</a>'
+            f"<span>{' ' if content else ''}{content}</span></aside>"
+        )
+        for note_id, (marker, content) in enumerate(notes, 1)
+    }
+
+
+def _legacy_sup_note(line: str) -> tuple[str, str] | None:
+    wrapper = _parse_fragment_root(line)
+    if wrapper is None or (wrapper.text or "").strip():
+        return None
+    marker_sup = next(iter(wrapper), None)
+    if marker_sup is None or _tag_name(marker_sup) != "sup":
+        return None
+    marker_anchor = next((elem for elem in marker_sup.iter() if _tag_name(elem) == "a"), None)
+    marker = "".join(marker_anchor.itertext()).strip() if marker_anchor is not None else ""
+    if not REFERENCE_MARKER_PATTERN.fullmatch(marker):
+        return None
+
+    wrapper.text = (wrapper.text or "") + (marker_sup.tail or "")
+    wrapper.remove(marker_sup)
+    for anchor in wrapper.iter():
+        if _tag_name(anchor) == "a" and REFERENCE_MARKER_PATTERN.fullmatch(
+            "".join(anchor.itertext()).strip()
+        ):
+            anchor.attrib.clear()
+    return marker, _inner_html(wrapper).strip().removeprefix(".").lstrip()
+
+
+def _legacy_div_notes(
+    footnote: etree._Element,
+) -> tuple[list[tuple[str, str]], re.Pattern[str], str | None] | None:
+    lines = [line.strip() for line in BR_TAG_PATTERN.split(_inner_html(footnote)) if line.strip()]
+    sup_lines = [_legacy_sup_note(line) for line in lines]
+    if any(sup_lines):
+        notes: list[tuple[str, str]] = []
+        continuation: list[str] = []
+        for line, note in zip(lines, sup_lines, strict=True):
+            if note:
+                notes.append(note)
+            elif notes:
+                marker, content = notes[-1]
+                notes[-1] = (marker, f"{content}<br />{line}")
+            else:
+                continuation.append(line)
+        continuation_text = "<br />".join(continuation) or None
+        if continuation_text and not continuation_text.lstrip().startswith("="):
+            continuation_text = f"= {continuation_text}"
+        return notes, LEGACY_GUILLEMET_MARKER_PATTERN, continuation_text
+
+    notes: list[tuple[str, str]] = []
+    for line in lines:
+        match = re.match(r'^\s*("?[\u0660-\u0669\d]+"?)\s+(.*)$', line, flags=re.S)
+        if not match:
+            return None
+        notes.append((match.group(1), match.group(2).strip()))
+    return (notes, LEGACY_QUOTED_MARKER_PATTERN, None) if notes else None
+
+
+def _legacy_contexts_before(
+    root: etree._Element,
+    stop: etree._Element,
+    marker_pattern: re.Pattern[str],
+) -> list[_ParagraphContext]:
+    paragraphs: list[etree._Element] = []
+    for elem in root.iter():
+        if elem is stop:
+            break
+        if _tag_name(elem) in {"p", "h1", "h2", "h3", "h4", "h5", "h6"}:
+            paragraphs.append(elem)
+    return _build_paragraph_contexts_from_paragraphs(paragraphs, marker_pattern)
+
+
+def _standardize_legacy_group(  # noqa: PLR0913, PLR0917
+    root: etree._Element,
+    stop: etree._Element,
+    old_nodes: list[etree._Element],
+    notes: list[tuple[str, str]],
+    marker_pattern: re.Pattern[str],
+    continuation: str | None = None,
+) -> bool:
+    hamesh_items = _legacy_note_items(notes)
+    contexts = _legacy_contexts_before(root, stop, marker_pattern)
+    note_meta = _collect_note_meta(hamesh_items)
+    candidates = [candidate for context in contexts for candidate in context.candidates]
+    positions = [
+        [index for index, candidate in enumerate(candidates) if candidate.number == note.number]
+        for note in note_meta
+    ]
+    if (
+        len(note_meta) != len(notes)
+        or len({note.number for note in note_meta}) != len(note_meta)
+        or any(len(matches) != 1 for matches in positions)
+        or [matches[0] for matches in positions] != sorted(matches[0] for matches in positions)
+    ):
+        return False
+
+    new_asides: list[etree._Element] = []
+    if _rewrite_context_footnote_links(contexts, hamesh_items, new_asides) != len(notes):
+        return False
+    if continuation:
+        continuation_elem = _parse_fragment_element(
+            f'<aside id="fn0" epub:type="footnote"><span>{continuation}</span></aside>'
+        )
+        if continuation_elem is not None:
+            new_asides.insert(0, continuation_elem)
+    nodes = [(parent, node) for node in old_nodes if (parent := node.getparent()) is not None]
+    return len(nodes) == len(old_nodes) and _replace_hamesh_nodes(nodes, new_asides)
+
+
+def _update_legacy_footnote_html(root: etree._Element) -> bool:  # noqa: C901
+    for elem in root.iter():
+        if _tag_name(elem) != "div" or "footnote" not in str(elem.get("class") or "").split():
+            continue
+        if parsed := _legacy_div_notes(elem):
+            notes, marker_pattern, continuation = parsed
+            if _standardize_legacy_group(root, elem, [elem], notes, marker_pattern, continuation):
+                return True
+
+    for separator in root.iter():
+        if _tag_name(separator) != "p" or not re.fullmatch(
+            r"\s*-{5,}\s*", "".join(separator.itertext())
+        ):
+            continue
+        notes: list[tuple[str, str]] = []
+        note_nodes: list[etree._Element] = []
+        for sibling in separator.itersiblings():
+            if _tag_name(sibling) != "p":
+                break
+            match = re.match(
+                r"^\s*([\u0660-\u0669\d]+\))\s*(.*)$", _inner_html(sibling), flags=re.S
+            )
+            if not match:
+                if notes:
+                    break
+                continue
+            notes.append((match.group(1), match.group(2).strip()))
+            note_nodes.append(sibling)
+        if notes and _standardize_legacy_group(
+            root,
+            note_nodes[0],
+            [*note_nodes, separator],
+            notes,
+            LEGACY_PLAIN_MARKER_PATTERN,
+        ):
+            return True
+    return False
+
+
 def _footnote_aside_html_to_line(aside_html: str) -> str | None:
     aside_elem = _parse_fragment_element(aside_html)
     if aside_elem is None or _tag_name(aside_elem) != "aside":
@@ -730,7 +898,9 @@ def update_hamesh_html(html_fragment: str) -> str:
     hamesh_nodes: list[tuple[etree._Element, etree._Element]] = []
     _collect_hamesh_nodes(root, hamesh_nodes)
     if not hamesh_nodes:
-        return _inner_html(root) if _update_calibre_footnote_html(root) else html_fragment
+        changed = _update_calibre_footnote_html(root)
+        changed = _update_legacy_footnote_html(root) or changed
+        return _inner_html(root) if changed else html_fragment
 
     hamesh_items = get_hamesh_items(
         [etree.tostring(node, encoding="unicode", method="xml") for _parent, node in hamesh_nodes]

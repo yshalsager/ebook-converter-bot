@@ -248,6 +248,86 @@ def test_standardize_epub_footnotes_keeps_plain_number_style_when_no_explicit_ma
     assert '<aside id="fn2"' in page_1
 
 
+def test_standardize_epub_footnotes_supports_guillemet_footnote_div(tmp_path: Path) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<p>متن «1» ثم «2»</p><hr class="fns"/><div class="footnote">'
+            '<sup><a href="#fnb1" id="fn1">(1)</a></sup>. هامش أول '
+            '<sup><a href="#fnb17" id="fn17">(17)</a></sup> داخل الهامش<br/>تكملة أول<br/>'
+            '<sup><a href="#fnb2" id="fn2">(2)</a></sup>. هامش ثان =</div>'
+        ),
+        page_2_body=(
+            '<p>متن تال «1»</p><hr class="fns"/><div class="footnote">تكملة هامش سابق<br/>'
+            '<sup><a href="#fnb1" id="fn1">(1)</a></sup>. هامش الصفحة التالية</div>'
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+        page_2 = z.read("OEBPS/Text/page_2.xhtml").decode()
+
+    assert 'id="fnref1"' in page_1
+    assert 'id="fnref2"' in page_1
+    assert '<aside id="fn17"' not in page_1
+    assert 'id="fn17"' not in page_1
+    assert "(17)" in page_1
+    assert "تكملة أول" in page_1
+    assert "تكملة هامش سابق" in page_1
+    assert "هامش ثان" in page_1
+    assert "تكملة هامش سابق" not in page_2
+    assert "هامش الصفحة التالية" in page_2
+
+
+def test_standardize_epub_footnotes_supports_quoted_footnote_div(tmp_path: Path) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<p>أخرجه برقم "1952"، وهذا تعليق"1" على النص.</p><hr class="fns"/>'
+            '<div class="footnote">"1 نص الهامش.</div>'
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    assert 'id="fnref1"' in page_1
+    assert '>"1"</a>' in page_1
+    assert '>"1952"</a>' not in page_1
+    assert "نص الهامش" in page_1
+
+
+def test_standardize_epub_footnotes_supports_page_local_bare_numbers(tmp_path: Path) -> None:
+    epub_path = tmp_path / "book.epub"
+    _create_epub(
+        epub_path,
+        page_1_body=(
+            '<h2 id="t_168">قول أول 1</h2><p class="calibre317">مرجع 317 ثم قول ثان 2</p>'
+            "<p>-----------</p><p>تكملة المتن بعد الفاصل</p><p>1) هامش أول</p><p>2) هامش ثان</p>"
+            '<p class="center">الصفحة: 220</p>'
+        ),
+    )
+
+    assert standardize_epub_footnotes(epub_path) is True
+
+    with ZipFile(epub_path, "r") as z:
+        page_1 = z.read("OEBPS/Text/page_1.xhtml").decode()
+
+    assert 'id="fnref1"' in page_1
+    assert 'id="fnref2"' in page_1
+    assert ">317</a>" not in page_1
+    assert "-----------" not in page_1
+    assert "تكملة المتن بعد الفاصل" in page_1
+    assert '<aside id="fn1" epub:type="footnote">' in page_1
+    assert '<aside id="fn2" epub:type="footnote">' in page_1
+
+
 def test_standardize_epub_footnotes_supports_section_local_calibre_footnotes(
     tmp_path: Path,
 ) -> None:
