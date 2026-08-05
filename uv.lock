@@ -110,6 +110,7 @@ dependencies = [
     { name = "access-parser" },
     { name = "alembic" },
     { name = "cryptg" },
+    { name = "firecrawl-anydoc" },
     { name = "fonttools" },
     { name = "hachoir" },
     { name = "lxml" },
@@ -132,6 +133,7 @@ requires-dist = [
     { name = "access-parser", specifier = "==0.0.6" },
     { name = "alembic", specifier = ">=1.18.4" },
     { name = "cryptg", specifier = ">=0.5.2" },
+    { name = "firecrawl-anydoc", specifier = "==0.1.3" },
     { name = "fonttools", specifier = ">=4.63.0" },
     { name = "hachoir", specifier = ">=3.2.0" },
     { name = "lxml", specifier = ">=6.1.0" },
@@ -156,6 +158,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cc/28/c14e053b6762b1044f34a13aab6859bbf40456d37d23aa286ac24cfd9a5d/executing-2.2.1.tar.gz", hash = "sha256:3632cc370565f6648cc328b32435bd120a1e4ebb20c77e3fdde9a13cd1e533c4", size = 1129488, upload-time = "2025-09-01T09:48:10.866Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/ea/53f2148663b321f21b5a606bd5f191517cf40b7072c0497d3c92c4a13b1e/executing-2.2.1-py2.py3-none-any.whl", hash = "sha256:760643d3452b4d777d295bb167ccc74c64a81df23fb5e08eff250c425a4b2017", size = 28317, upload-time = "2025-09-01T09:48:08.5Z" },
+]
+
+[[package]]
+name = "firecrawl-anydoc"
+version = "0.1.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/32/b3541611e080d42a3de26158e31165c61ad72e8dd0f53e68855b3220b91b/firecrawl_anydoc-0.1.3.tar.gz", hash = "sha256:e474b1fa1af5cc27549d81a27072cc5b6b7dbfe5aa262777e345a9817b181f44", size = 183093, upload-time = "2026-08-04T19:58:47.232Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/13/21c9a74e4880c2f1fc279cb2162ff99cbf517956a3d8bbfc3967a4bbbadc/firecrawl_anydoc-0.1.3-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:21230921d27d7e37d2ffd4a8b936c13420e097aa342fd69faeb5600260153535", size = 3510117, upload-time = "2026-08-04T19:58:37.396Z" },
+    { url = "https://files.pythonhosted.org/packages/97/c7/c1c8bb05659030340bd98f9a180b1dce23c8a3f98a7a8f7920246cea0223/firecrawl_anydoc-0.1.3-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:fd05f1eba6152667f94511802d89d2259c0b2d02990717bced917b7b2c2f6eb6", size = 3299887, upload-time = "2026-08-04T19:58:38.807Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/00/6851b21cefbdcf62401f0c926eda45f3374bb12c172f39b4ca5956822433/firecrawl_anydoc-0.1.3-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:60001691c55dd9fb5a4a75118749324a4996ce07349046c50b97d8dbcad5935a", size = 3373411, upload-time = "2026-08-04T19:58:40.154Z" },
+    { url = "https://files.pythonhosted.org/packages/84/0c/95e80e7c47c30a98a5563ac956a84908a6a65e0723a76da7fd6ecaef6406/firecrawl_anydoc-0.1.3-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aeac246432a6bb0d7c2137f0d4d7b73d4cce903398426001e29cc8db8c4c718d", size = 3604935, upload-time = "2026-08-04T19:58:41.828Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/ae/af8e6b82120526312f23206445d0afbd76e8637064ed45d823e10ae48024/firecrawl_anydoc-0.1.3-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:64fe9313d9a0495545a9794b2cc988b4dc1b281753e1c23017aa7f0e6c12f0f3", size = 3555227, upload-time = "2026-08-04T19:58:43.281Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/6d/53244a665ef13d3c03b45d891ff61e8e320fa4edae0d837301d7323ee893/firecrawl_anydoc-0.1.3-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:9bb09167b9500159124f8ba4c780be4d349e9e842a4683e88c2aaf39bd8096ca", size = 3845456, upload-time = "2026-08-04T19:58:44.603Z" },
+    { url = "https://files.pythonhosted.org/packages/05/18/556c5aeac352e125f9b4d766f5732fb6d4c16f9dc5b88e67eaa2cdc6640e/firecrawl_anydoc-0.1.3-cp310-abi3-win_amd64.whl", hash = "sha256:bf008a2fdfda84fcd625328ad71701b464e0ed222372913d36746e9a7b92e7e7", size = 3631477, upload-time = "2026-08-04T19:58:45.909Z" },
 ]
 
 [[package]]

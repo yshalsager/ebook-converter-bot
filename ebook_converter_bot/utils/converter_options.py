@@ -15,15 +15,21 @@ HIGHLIGHTED_FORMATS: set[str] = {"azw3", "docx", "epub", "kfx", "md", "mobi", "p
 CONTEXT_TYPES: tuple[str, ...] = ("docx", "epub", "pdf", "kfx")
 PANDOC_SHARED_INPUT_TYPES: set[str] = {
     "doc",
+    "docm",
     "docx",
     "epub",
     "fb2",
     "htm",
     "html",
     "md",
+    "odp",
+    "ods",
     "odt",
+    "ppt",
     "rtf",
     "txt",
+    "xls",
+    "xlsm",
     "xhtml",
 }
 PANDOC_ONLY_INPUT_TYPES: set[str] = {

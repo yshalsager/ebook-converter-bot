@@ -81,12 +81,17 @@ def test_fb2_input_keeps_calibre_outputs_and_exposes_pandoc_outputs() -> None:
 
 
 def test_common_calibre_aliases_are_supported() -> None:
-    for input_type in ("djv", "docm"):
+    assert Converter().is_supported_input_type("book.DJV") is True
+    assert Converter.get_supported_output_types_for_input("djv") == Converter.calibre_output_types
+
+
+def test_anydoc_inputs_expose_calibre_and_pandoc_outputs() -> None:
+    for input_type in Converter.anydoc_input_types:
+        output_types = Converter.get_supported_output_types_for_input(input_type)
+
         assert Converter().is_supported_input_type(f"book.{input_type.upper()}") is True
-        assert (
-            Converter.get_supported_output_types_for_input(input_type)
-            == Converter.calibre_output_types
-        )
+        assert "azw3" in output_types
+        assert "md" in output_types
 
 
 def test_html_aliases_behave_like_shared_html_input() -> None:

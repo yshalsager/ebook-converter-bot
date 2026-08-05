@@ -12,6 +12,8 @@ from signal import SIGKILL
 from tempfile import NamedTemporaryFile
 from typing import ClassVar
 
+import anydoc
+
 from ebook_converter_bot.utils.bok_to_epub import bok_to_epub
 from ebook_converter_bot.utils.epub import (
     fix_content_opf_problems,
@@ -634,6 +636,15 @@ end
 
 class Converter:
     polish_supported_types: ClassVar[set[str]] = {"azw3", "epub", "kepub"}
+    anydoc_input_types: ClassVar[set[str]] = {
+        "doc",
+        "docm",
+        "odp",
+        "ods",
+        "ppt",
+        "xls",
+        "xlsm",
+    }
     pandoc_only_input_types: ClassVar[set[str]] = {
         "adoc",
         "asciidoc",
@@ -717,10 +728,13 @@ class Converter:
         "mobi",
         "mediawiki",
         "odt",
+        "odp",
+        "ods",
         "opf",
         "org",
         "pdb",
         "pml",
+        "ppt",
         "pptx",
         "prc",
         "rb",
@@ -736,6 +750,8 @@ class Converter:
         "t2t",
         "typ",
         "typst",
+        "xls",
+        "xlsm",
         "xlsx",
         "xhtml",
         "bok",
@@ -789,7 +805,7 @@ class Converter:
 
     @classmethod
     def get_supported_output_types_for_input(cls, input_type: str) -> list[str]:
-        if input_type == "doc":
+        if input_type in cls.anydoc_input_types:
             return [*cls.calibre_output_types, *cls.pandoc_only_output_types]
         if input_type not in cls.pandoc_input_types:
             return cls.calibre_output_types
@@ -1045,39 +1061,32 @@ class Converter:
         epub_file.unlink(missing_ok=True)
         return output_file, set_to_rtl, conversion_error
 
-    async def _prepare_doc_input(
+    async def _prepare_anydoc_input(
         self,
         input_file: Path,
         timeout: int | None = TASK_TIMEOUT,
     ) -> tuple[Path, str]:
+        try:
+            conversion = asyncio.to_thread(anydoc.to_markdown, str(input_file))
+            markdown = (
+                await conversion if timeout is None else await asyncio.wait_for(conversion, timeout)
+            )
+        except Exception as e:  # noqa: BLE001
+            return input_file, str(e) or "Anydoc failed to extract the input file."
+        if not markdown.strip():
+            return input_file, "Anydoc did not extract any content from the input file."
+
         with NamedTemporaryFile(
+            mode="w",
             dir=input_file.parent,
-            prefix=f"{input_file.stem}.antiword-",
-            suffix=".txt",
+            prefix=f"{input_file.stem}.anydoc-",
+            suffix=".md",
             delete=False,
         ) as temp_file:
-            prepared_file = Path(temp_file.name)
+            temp_file.write(markdown)
+            return Path(temp_file.name), ""
 
-        return_code, conversion_error = await self._run_command(
-            ["antiword", "-m", "UTF-8.txt", "-w", "0", str(input_file)],
-            timeout=timeout,
-            stdout_file=prepared_file,
-        )
-        if return_code != 0:
-            prepared_file.unlink(missing_ok=True)
-            return (
-                prepared_file,
-                conversion_error or "antiword failed to extract text from the .doc file.",
-            )
-        if not prepared_file.read_bytes().strip():
-            prepared_file.unlink(missing_ok=True)
-            return prepared_file, "antiword did not extract any text from the .doc file."
-
-        text = prepared_file.read_text(errors="replace")
-        prepared_file.write_text("\n".join(line.lstrip() for line in text.splitlines()) + "\n")
-        return prepared_file, ""
-
-    async def _convert_from_doc(
+    async def _convert_from_anydoc(
         self,
         input_file: Path,
         output_type: str,
@@ -1087,7 +1096,7 @@ class Converter:
         output_file = input_file.with_suffix(
             ".kepub" if output_type == "kepub" else f".{output_type}"
         )
-        prepared_file, conversion_error = await self._prepare_doc_input(
+        prepared_file, conversion_error = await self._prepare_anydoc_input(
             input_file,
             timeout=timeout,
         )
@@ -1095,9 +1104,11 @@ class Converter:
             return output_file, None, conversion_error
 
         try:
-            if output_type == "txt":
-                copy2(prepared_file, output_file)
-                return output_file, None, ""
+            if output_type == "md":
+                conversion_error = await self.pandoc_backend.convert(
+                    prepared_file, output_file, output_type, options, timeout=timeout
+                )
+                return output_file, True if options.force_rtl else None, conversion_error
 
             temp_output_file, converted_to_rtl, conversion_error = await self._convert_non_bok(
                 prepared_file,
@@ -1452,10 +1463,13 @@ class Converter:
 
         if input_type == "epub" and output_type == "epub" and options.epub_split_volumes:
             return await self._convert_epub_split_volumes(input_file, options, timeout=timeout)
-        if input_type in {"bok", "doc", "pdf"}:
+        if input_type in self.anydoc_input_types:
+            output_file, converted_to_rtl, conversion_error = await self._convert_from_anydoc(
+                input_file, output_type, options, timeout=timeout
+            )
+        elif input_type in {"bok", "pdf"}:
             convert_fn = {
                 "bok": self._convert_from_bok,
-                "doc": self._convert_from_doc,
                 "pdf": self._convert_from_pdf,
             }[input_type]
             output_file, converted_to_rtl, conversion_error = await convert_fn(

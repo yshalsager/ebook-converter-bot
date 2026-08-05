@@ -16,7 +16,7 @@ RUN uv sync --frozen --no-install-project
 
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends antiword ca-certificates curl; \
+    apt-get install -y --no-install-recommends ca-certificates curl; \
     rm -rf /var/lib/apt/lists/*; \
     curl -fsSL -o /tmp/pandoc.tar.gz "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz"; \
     tar -xzf /tmp/pandoc.tar.gz --strip-components=1 -C /usr/local; \
