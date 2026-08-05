@@ -32,7 +32,7 @@
       ],
       depNameTemplate: 'jgm/pandoc',
       datasourceTemplate: 'github-releases',
-      versioningTemplate: 'semver',
+      versioningTemplate: 'regex:^(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?(?:\\.(?<build>\\d+))?$',
     },
   ],
   packageRules: [
