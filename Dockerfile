@@ -1,6 +1,6 @@
 FROM ghcr.io/yshalsager/calibre-with-kfx:20260802-0254@sha256:8705cd0c05aeb16534837ac02754ecba3e2a171aa4a61861611de903158ddd43
 
-ARG PANDOC_VERSION=3.9.0.2
+ARG PANDOC_VERSION=3.10.1
 
 COPY --from=ghcr.io/astral-sh/uv:latest@sha256:df4cae8f3a96d175e2e5f992e597550000edbe78fdc2594d5cd8de1a217f504c /uv /uvx /bin/
 USER root
