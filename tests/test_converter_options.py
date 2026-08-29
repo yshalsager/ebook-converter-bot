@@ -40,6 +40,10 @@ LABELS = {
     "epub_remove_background_label": "Remove background",
     "epub_split_volumes_label": "Split volumes",
     "epub_standardize_footnotes_label": "Standardize footnotes",
+    "footnotes_label": "Footnotes",
+    "keep_label": "Keep",
+    "markers_only_label": "Markers only",
+    "remove_all_label": "Remove all",
     "pdf_paper_size_label": "Paper size",
     "pdf_font_profile_label": "Arabic font",
     "noto_naskh_arabic_label": "Noto Naskh Arabic",
@@ -126,7 +130,10 @@ def test_options_keyboard_context_tabs_and_docx_controls() -> None:
     assert b"opt|kfx_doc_type|doc|12345678" not in data
     assert b"opt|fix_epub|1|12345678" in data
     assert b"opt|flat_toc|1|12345678" in data
-    assert b"opt|epub_standardize_footnotes|1|12345678" in data
+    assert b"opt|footnote_mode|keep|12345678" in data
+    assert b"opt|footnote_mode|standardize|12345678" in data
+    assert b"opt|footnote_mode|markers|12345678" in data
+    assert b"opt|footnote_mode|remove|12345678" in data
     assert [button.data for button in rows[-2]] == [b"opt|reset|1|12345678"]
     assert [button.data for button in rows[-1]] == [
         b"view|formats|12345678",
@@ -271,6 +278,8 @@ def test_route_options_for_docx_to_md_show_only_pandoc_relevant_controls() -> No
     assert b"opt|pandoc_heading_shift|default|12345678" in data
     assert b"opt|pandoc_heading_shift|promote|12345678" in data
     assert b"opt|pandoc_heading_shift|demote|12345678" in data
+    assert b"opt|footnote_mode|remove|12345678" in data
+    assert b"opt|footnote_mode|standardize|12345678" not in data
     assert b"opt|conversion_backend|calibre|12345678" not in data
     assert b"opt|compress_cover|1|12345678" not in data
     assert b"opt|docx_page_size|default|12345678" not in data
@@ -293,6 +302,7 @@ def test_route_options_for_shared_epub_output_show_backend_and_calibre_controls(
     assert b"opt|smarten|1|12345678" in data
     assert b"opt|epub_version|default|12345678" in data
     assert b"opt|epub_inline_toc|1|12345678" in data
+    assert b"opt|footnote_mode|remove|12345678" not in data
     assert b"opt|docx_page_size|default|12345678" not in data
     assert b"run|epub|12345678" in data
 
@@ -313,6 +323,7 @@ def test_route_options_for_shared_docx_output_show_pandoc_docx_controls() -> Non
     assert b"opt|rtl|1|12345678" in data
     assert b"opt|docx_header_pagebreaks|1|12345678" in data
     assert b"opt|docx_arabic_reference|1|12345678" in data
+    assert b"opt|footnote_mode|remove|12345678" in data
     assert b"opt|pandoc_heading_shift|default|12345678" in data
     assert b"opt|pandoc_heading_shift|promote|12345678" in data
     assert b"opt|pandoc_heading_shift|demote|12345678" in data
@@ -372,7 +383,8 @@ def test_route_options_for_epub_to_md_show_safe_preprocess_only() -> None:
     assert b"opt|pandoc_number_sections|1|12345678" not in data
     assert b"opt|fix_epub|1|12345678" in data
     assert b"opt|flat_toc|1|12345678" in data
-    assert b"opt|epub_standardize_footnotes|1|12345678" in data
+    assert b"opt|footnote_mode|standardize|12345678" in data
+    assert b"opt|footnote_mode|remove|12345678" in data
     assert b"opt|epub_split_volumes|1|12345678" not in data
     assert b"opt|conversion_backend|calibre|12345678" not in data
     assert b"opt|smarten|1|12345678" not in data
@@ -394,6 +406,7 @@ def test_route_options_for_pandoc_only_input_to_epub_show_only_pandoc_relevant_o
     assert b"opt|rtl|1|12345678" in data
     assert b"opt|pandoc_toc|1|12345678" in data
     assert b"opt|pandoc_number_sections|1|12345678" in data
+    assert b"opt|footnote_mode|remove|12345678" in data
     assert b"opt|epub_version|default|12345678" not in data
 
 
@@ -431,6 +444,7 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
         compress_cover=True,
         pdf_no_cover=True,
         pdf_no_chapter_pagebreak=True,
+        footnote_mode="remove",
     )
 
     values = route_option_values(state, "epub")
@@ -448,6 +462,7 @@ def test_route_option_values_strip_hidden_options_for_pandoc_routes() -> None:
     assert values["compress_cover"] is False
     assert values["pdf_no_cover"] is False
     assert values["pdf_no_chapter_pagebreak"] is False
+    assert values["footnote_mode"] == "remove"
 
 
 def test_route_option_values_keep_pandoc_docx_options_for_docx_output() -> None:
@@ -492,6 +507,7 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
         pdf_no_cover=True,
         pdf_no_chapter_pagebreak=True,
         kfx_pages=0,
+        footnote_mode="markers",
     )
 
     values = route_option_values(state, "docx")
@@ -513,6 +529,20 @@ def test_route_option_values_keep_only_route_specific_calibre_options() -> None:
     assert values["pdf_no_cover"] is False
     assert values["pdf_no_chapter_pagebreak"] is False
     assert values["kfx_pages"] is None
+    assert values["footnote_mode"] == "markers"
+
+
+def test_route_option_values_ignore_footnotes_on_non_epub_calibre_routes() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.md",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="md",
+        footnote_mode="remove",
+    )
+
+    assert route_option_values(state, "epub")["footnote_mode"] == "keep"
+    state.conversion_backend = "pandoc"
+    assert route_option_values(state, "epub")["footnote_mode"] == "remove"
 
 
 def test_set_request_option_mutates_only_selected_flag() -> None:
@@ -550,8 +580,8 @@ def test_set_request_option_mutates_only_selected_flag() -> None:
     assert state.epub_remove_background is True
     assert set_request_option(state, "epub_split_volumes", "1") is True
     assert state.epub_split_volumes is True
-    assert set_request_option(state, "epub_standardize_footnotes", "1") is True
-    assert state.epub_standardize_footnotes is True
+    assert set_request_option(state, "footnote_mode", "standardize") is True
+    assert state.footnote_mode == "standardize"
     assert state.pdf_paper_size == "default"
 
     assert set_request_option(state, "pdf_paper_size", "letter") is True
@@ -596,6 +626,28 @@ def test_set_request_option_is_idempotent_and_validates_values() -> None:
     assert set_request_option(state, "pandoc_heading_shift", "sideways") is False
 
 
+def test_footnote_mode_is_validated_and_persisted() -> None:
+    state = ConversionRequestState(
+        input_file_path="/tmp/book.epub",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="epub",
+    )
+
+    assert set_request_option(state, "footnote_mode", "standardize") is True
+    assert state.footnote_mode == "standardize"
+    apply_persisted_options(state, {"footnote_mode": "remove"})
+    assert state.footnote_mode == "remove"
+
+    unsupported = ConversionRequestState(
+        input_file_path="/tmp/book.pdf",  # noqa: S108
+        queued_at=monotonic(),
+        input_ext="pdf",
+    )
+    assert set_request_option(unsupported, "footnote_mode", "remove") is False
+    apply_persisted_options(unsupported, {"footnote_mode": "standardize"})
+    assert unsupported.footnote_mode == "keep"
+
+
 def test_set_request_option_reset_clears_all_options() -> None:
     state = ConversionRequestState(
         input_file_path="/tmp/book.epub",  # noqa: S108
@@ -619,7 +671,6 @@ def test_set_request_option_reset_clears_all_options() -> None:
         epub_inline_toc=True,
         epub_remove_background=True,
         epub_split_volumes=True,
-        epub_standardize_footnotes=True,
         pdf_paper_size="letter",
         pdf_font_profile="amiri",
         pdf_page_numbers=True,
@@ -629,6 +680,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
         pandoc_toc=True,
         pandoc_number_sections=True,
         pandoc_heading_shift=1,
+        footnote_mode="remove",
     )
 
     assert set_request_option(state, "reset", "1") is True
@@ -650,7 +702,6 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.epub_inline_toc is False
     assert state.epub_remove_background is False
     assert state.epub_split_volumes is False
-    assert state.epub_standardize_footnotes is False
     assert state.pdf_paper_size == "default"
     assert state.pdf_font_profile == "default"
     assert state.pdf_page_numbers is False
@@ -660,6 +711,7 @@ def test_set_request_option_reset_clears_all_options() -> None:
     assert state.pandoc_toc is False
     assert state.pandoc_number_sections is False
     assert state.pandoc_heading_shift == 0
+    assert state.footnote_mode == "keep"
 
 
 def test_set_request_option_rejects_epub_only_flags_for_non_epub() -> None:
@@ -671,7 +723,7 @@ def test_set_request_option_rejects_epub_only_flags_for_non_epub() -> None:
     assert set_request_option(state, "fix_epub", "1") is False
     assert set_request_option(state, "flat_toc", "1") is False
     assert set_request_option(state, "epub_split_volumes", "1") is False
-    assert set_request_option(state, "epub_standardize_footnotes", "1") is False
+    assert set_request_option(state, "footnote_mode", "standardize") is False
 
 
 def test_cleanup_expired_requests_removes_stale_state_and_file(tmp_path: Path) -> None:
@@ -717,6 +769,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
         pandoc_toc=True,
         pandoc_number_sections=True,
         pandoc_heading_shift=-1,
+        footnote_mode="markers",
     )
 
     persisted = state_to_persisted_options(state)
@@ -736,6 +789,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     assert persisted["pandoc_toc"] is True
     assert persisted["pandoc_number_sections"] is True
     assert persisted["pandoc_heading_shift"] == -1
+    assert persisted["footnote_mode"] == "markers"
 
 
 def test_apply_persisted_options_applies_valid_values() -> None:
@@ -757,7 +811,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
             "docx_arabic_reference": True,
             "options_context": "kfx",
             "kfx_pages": 0,
-            "epub_standardize_footnotes": True,
+            "footnote_mode": "standardize",
             "pdf_no_cover": True,
             "pdf_no_chapter_pagebreak": True,
             "pdf_font_profile": "ibm_plex_sans_arabic",
@@ -777,7 +831,7 @@ def test_apply_persisted_options_applies_valid_values() -> None:
     assert state.docx_arabic_reference is True
     assert state.options_context == "kfx"
     assert state.kfx_pages == 0
-    assert state.epub_standardize_footnotes is True
+    assert state.footnote_mode == "standardize"
     assert state.pdf_no_cover is True
     assert state.pdf_no_chapter_pagebreak is True
     assert state.pdf_font_profile == "ibm_plex_sans_arabic"
@@ -801,7 +855,7 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
             "change_justification": "wide",
             "line_height": 250,
             "options_context": "invalid",
-            "epub_standardize_footnotes": True,
+            "footnote_mode": "standardize",
             "epub_split_volumes": True,
             "pdf_paper_size": "a4",
             "pdf_font_profile": "unknown",
@@ -816,7 +870,7 @@ def test_apply_persisted_options_ignores_invalid_values_and_non_epub_only_flags(
     assert state.change_justification == "original"
     assert state.line_height is None
     assert state.options_context == "docx"
-    assert state.epub_standardize_footnotes is False
+    assert state.footnote_mode == "keep"
     assert state.epub_split_volumes is False
     assert state.pdf_paper_size == "a4"
     assert state.pdf_font_profile == "default"
@@ -837,6 +891,6 @@ def test_persisted_snapshot_changes_only_after_valid_option_change() -> None:
     after_valid = state_to_persisted_options(state)
     assert after_valid["smarten_punctuation"] is True
 
-    assert set_request_option(state, "epub_standardize_footnotes", "1") is False
+    assert set_request_option(state, "footnote_mode", "standardize") is False
     assert state_to_persisted_options(state) == after_valid
     assert initial != after_valid

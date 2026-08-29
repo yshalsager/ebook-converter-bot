@@ -665,11 +665,22 @@ def _legacy_div_notes(
 
     notes: list[tuple[str, str]] = []
     for line in lines:
-        match = re.match(r'^\s*("?[\u0660-\u0669\d]+"?)\s+(.*)$', line, flags=re.S)
+        match = re.match(
+            r'^\s*(\(\^?[\u0660-\u0669\d]+\)|\[\^?[\u0660-\u0669\d]+\]|"?[\u0660-\u0669\d]+"?)\s+(.*)$',
+            line,
+            flags=re.S,
+        )
         if not match:
             return None
         notes.append((match.group(1), match.group(2).strip()))
-    return (notes, LEGACY_QUOTED_MARKER_PATTERN, None) if notes else None
+    if not notes:
+        return None
+    marker_pattern = (
+        REFERENCE_MARKER_PATTERN
+        if any(marker.startswith(("(", "[")) for marker, _content in notes)
+        else LEGACY_QUOTED_MARKER_PATTERN
+    )
+    return notes, marker_pattern, None
 
 
 def _legacy_contexts_before(
@@ -725,7 +736,7 @@ def _standardize_legacy_group(  # noqa: PLR0913, PLR0917
 
 def _update_legacy_footnote_html(root: etree._Element) -> bool:  # noqa: C901
     for elem in root.iter():
-        if _tag_name(elem) != "div" or "footnote" not in str(elem.get("class") or "").split():
+        if "footnote" not in str(elem.get("class") or "").split():
             continue
         if parsed := _legacy_div_notes(elem):
             notes, marker_pattern, continuation = parsed

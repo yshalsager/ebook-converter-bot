@@ -548,6 +548,44 @@ def test_docx_heading_pagebreak_filter_accounts_for_heading_shift() -> None:
     assert "block.level + heading_shift" in content
 
 
+def test_pandoc_footnote_filter_is_ordered_before_empty_block_cleanup(tmp_path: Path) -> None:
+    output_file = tmp_path / "book.md"
+    filters = Converter().pandoc_backend._write_lua_filters(
+        output_file,
+        "docx",
+        "md",
+        ConversionOptions(footnote_mode="markers"),
+    )
+    assert [path.suffixes[-2:] for path in filters[:3]] == [
+        [".docx-cleanup", ".lua"],
+        [".footnotes", ".lua"],
+        [".empty-blocks", ".lua"],
+    ]
+    assert "pandoc.Superscript" in filters[1].read_text()
+
+
+@pytest.mark.skipif(shutil.which("pandoc") is None, reason="pandoc is not installed")
+@pytest.mark.parametrize("mode", ["markers", "remove"])
+def test_pandoc_footnote_filter_modes(tmp_path: Path, mode: str) -> None:
+    pandoc = shutil.which("pandoc")
+    assert pandoc is not None
+    lua_filter = tmp_path / "footnotes.lua"
+    lua_filter.write_text(Converter().pandoc_backend._footnote_filter_content(mode))
+
+    result = subprocess.run(  # noqa: S603
+        [pandoc, "-f", "native", "-t", "html5", f"--lua-filter={lua_filter}"],
+        input='[Para [Str "A", Space, Note [Para [Str "note text"]], Space, Str "B"]]\n',
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "note text" not in result.stdout
+    assert ("<sup>1</sup>" in result.stdout) is (mode == "markers")
+    assert "A" in result.stdout
+    assert "B" in result.stdout
+
+
 def test_pandoc_backend_rejects_same_format_alias_routes() -> None:
     converter = Converter()
 
@@ -794,9 +832,10 @@ def test_epub_to_md_uses_temporary_preprocessed_copy_and_keeps_source(tmp_path: 
 
         def fake_preprocess(path: Path, options: ConversionOptions) -> None:
             preprocess_calls.append(path)
+            assert options.force_rtl is False
             assert options.fix_epub is True
             assert options.flat_toc is True
-            assert options.epub_standardize_footnotes is True
+            assert options.footnote_mode == "standardize"
             path.write_text("prepared")
 
         async def fake_run(
@@ -817,7 +856,7 @@ def test_epub_to_md_uses_temporary_preprocessed_copy_and_keeps_source(tmp_path: 
             output_file.write_text("مرحبا")
             return 0, ""
 
-        converter._preprocess_pandoc_epub = fake_preprocess  # type: ignore[method-assign]
+        converter._preprocess_input_epub = fake_preprocess  # type: ignore[method-assign]
         converter._run_command = fake_run  # type: ignore[method-assign]
 
         result = await converter.convert_ebook_many(
@@ -827,7 +866,7 @@ def test_epub_to_md_uses_temporary_preprocessed_copy_and_keeps_source(tmp_path: 
                 force_rtl=True,
                 fix_epub=True,
                 flat_toc=True,
-                epub_standardize_footnotes=True,
+                footnote_mode="standardize",
             ),
         )
 
@@ -1319,12 +1358,32 @@ def test_preprocess_input_epub_runs_footnote_standardization(tmp_path: Path) -> 
     try:
         Converter._preprocess_input_epub(
             input_file,
-            ConversionOptions(epub_standardize_footnotes=True),
+            ConversionOptions(footnote_mode="standardize"),
         )
     finally:
         convert_utils.standardize_epub_footnotes = original
 
     assert called == [input_file]
+
+
+def test_preprocess_input_epub_removes_footnotes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_file = tmp_path / "book.epub"
+    input_file.write_text("hello")
+    removed: list[tuple[Path, bool]] = []
+
+    monkeypatch.setattr(
+        convert_utils,
+        "remove_epub_footnotes",
+        lambda path, *, keep_markers: removed.append((path, keep_markers)) or True,
+    )
+    Converter._preprocess_input_epub(
+        input_file,
+        ConversionOptions(footnote_mode="markers"),
+    )
+
+    assert removed == [(input_file, True)]
 
 
 def test_convert_ebook_many_split_capped_cleans_outputs(tmp_path: Path) -> None:
@@ -1415,7 +1474,7 @@ def test_convert_ebook_many_split_applies_volume_output_flags(tmp_path: Path) ->
                     force_rtl=True,
                     fix_epub=True,
                     flat_toc=True,
-                    epub_standardize_footnotes=True,
+                    footnote_mode="remove",
                 ),
             )
         finally:
@@ -1432,7 +1491,7 @@ def test_convert_ebook_many_split_applies_volume_output_flags(tmp_path: Path) ->
         assert all(option.epub_split_volumes is False for option in converted_options)
         assert all(option.fix_epub is False for option in converted_options)
         assert all(option.flat_toc is False for option in converted_options)
-        assert all(option.epub_standardize_footnotes is False for option in converted_options)
+        assert all(option.footnote_mode == "keep" for option in converted_options)
         assert all(option.epub_version == "3" for option in converted_options)
 
         for path in result.output_files:

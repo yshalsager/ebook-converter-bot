@@ -49,6 +49,7 @@ PANDOC_ONLY_INPUT_TYPES: set[str] = {
     "typst",
     "xlsx",
 }
+PANDOC_INPUT_TYPES = PANDOC_SHARED_INPUT_TYPES | PANDOC_ONLY_INPUT_TYPES
 SHARED_BACKEND_OUTPUT_TYPES: set[str] = {"docx", "epub", "txt"}
 PANDOC_ONLY_OUTPUT_TYPES: set[str] = {
     "adoc",
@@ -114,6 +115,16 @@ BACKEND_VALUE_OPTION: tuple[str, str, tuple[tuple[str, str], ...]] = (
     "conversion_backend",
     "conversion_backend_label",
     (("calibre", "calibre_label"), ("pandoc", "pandoc_label")),
+)
+FOOTNOTE_VALUE_OPTION: tuple[str, str, tuple[tuple[str, str], ...]] = (
+    "footnote_mode",
+    "footnotes_label",
+    (
+        ("keep", "keep_label"),
+        ("standardize", "epub_standardize_footnotes_label"),
+        ("markers", "markers_only_label"),
+        ("remove", "remove_all_label"),
+    ),
 )
 PANDOC_VALUE_OPTIONS: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] = (
     (
@@ -193,7 +204,6 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
     "epub_inline_toc": "epub_inline_toc",
     "epub_remove_background": "epub_remove_background",
     "epub_split_volumes": "epub_split_volumes",
-    "epub_standardize_footnotes": "epub_standardize_footnotes",
     "pdf_page_numbers": "pdf_page_numbers",
     "pdf_no_cover": "pdf_no_cover",
     "pdf_no_chapter_pagebreak": "pdf_no_chapter_pagebreak",
@@ -203,7 +213,6 @@ BOOL_OPTION_ATTRS: dict[str, str] = {
 EPUB_ONLY_BOOL_OPTIONS: set[str] = {
     "fix_epub",
     "flat_toc",
-    "epub_standardize_footnotes",
     "epub_split_volumes",
 }
 VALUE_OPTION_ATTRS: dict[str, str] = {
@@ -217,6 +226,7 @@ VALUE_OPTION_ATTRS: dict[str, str] = {
     "pdf_font_profile": "pdf_font_profile",
     "conversion_backend": "conversion_backend",
     "pandoc_heading_shift": "pandoc_heading_shift",
+    "footnote_mode": "footnote_mode",
 }
 VALUE_OPTION_ROW_SIZES: dict[str, int] = {"pdf_font_profile": 2}
 VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
@@ -230,11 +240,11 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "pdf_font_profile": get_pdf_font_value_map(),
     "conversion_backend": {"calibre": "calibre", "pandoc": "pandoc"},
     "pandoc_heading_shift": {"default": 0, "promote": -1, "demote": 1},
+    "footnote_mode": {value: value for value, _label in FOOTNOTE_VALUE_OPTION[2]},
 }
 EPUB_EXTRA_BOOL_OPTIONS: tuple[tuple[str, str], ...] = (
     ("fix_epub", "fix_epub_label"),
     ("flat_toc", "flat_toc_label"),
-    ("epub_standardize_footnotes", "epub_standardize_footnotes_label"),
 )
 PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "force_rtl",
@@ -255,7 +265,6 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "epub_inline_toc",
     "epub_remove_background",
     "epub_split_volumes",
-    "epub_standardize_footnotes",
     "pdf_paper_size",
     "pdf_font_profile",
     "pdf_page_numbers",
@@ -266,6 +275,7 @@ PERSISTED_OPTION_ATTRS: tuple[str, ...] = (
     "pandoc_number_sections",
     "pandoc_heading_shift",
     "docx_arabic_reference",
+    "footnote_mode",
 )
 PERSISTED_OPTION_ATTRS_SET = set(PERSISTED_OPTION_ATTRS)
 PERSISTED_BOOL_ATTRS = set(BOOL_OPTION_ATTRS.values())
@@ -299,7 +309,6 @@ class ConversionRequestState:
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
     epub_split_volumes: bool = False
-    epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
     pdf_font_profile: str = "default"
     pdf_page_numbers: bool = False
@@ -310,6 +319,7 @@ class ConversionRequestState:
     pandoc_number_sections: bool = False
     pandoc_heading_shift: int = 0
     docx_arabic_reference: bool = False
+    footnote_mode: str = "keep"
 
 
 @dataclass
@@ -412,6 +422,7 @@ def build_options_keyboard(
     if state.input_ext == "epub":
         for option_key, label_key in EPUB_EXTRA_BOOL_OPTIONS:
             _append_bool_row(keyboard_context, option_key, label_key)
+        _append_value_row(keyboard_context, *FOOTNOTE_VALUE_OPTION)
 
     rows.append([Button.inline(labels["reset_options_label"], data=f"opt|reset|1|{request_id}")])
     rows.append(
@@ -441,6 +452,14 @@ def route_supports_rtl(state: ConversionRequestState, output_type: str) -> bool:
     return output_type in {"epub", "pdf"}
 
 
+def _supports_footnote_mode(input_ext: str, mode: object) -> bool:
+    return (
+        mode == "keep"
+        or input_ext == "epub"
+        or (mode in {"markers", "remove"} and input_ext in PANDOC_INPUT_TYPES)
+    )
+
+
 def route_option_values(
     state: ConversionRequestState,
     output_type: str,
@@ -467,7 +486,6 @@ def route_option_values(
         "epub_inline_toc": False,
         "epub_remove_background": False,
         "epub_split_volumes": False,
-        "epub_standardize_footnotes": state.epub_standardize_footnotes if is_epub_input else False,
         "pdf_paper_size": "default",
         "pdf_font_profile": "default",
         "pdf_page_numbers": False,
@@ -486,6 +504,7 @@ def route_option_values(
         "docx_arabic_reference": (
             state.docx_arabic_reference if uses_pandoc and output_type == "docx" else False
         ),
+        "footnote_mode": (state.footnote_mode if is_epub_input or uses_pandoc else "keep"),
     }
     if uses_pandoc:
         return values
@@ -584,9 +603,18 @@ def _append_route_epub_input_options(
     output_type: str,
 ) -> None:
     if context.state.input_ext != "epub":
+        if route_uses_pandoc(context.state, output_type):
+            option_key, label_key, values = FOOTNOTE_VALUE_OPTION
+            _append_value_row(
+                context,
+                option_key,
+                label_key,
+                tuple(value for value in values if value[0] != "standardize"),
+            )
         return
     for option_key, label_key in EPUB_EXTRA_BOOL_OPTIONS:
         _append_bool_row(context, option_key, label_key)
+    _append_value_row(context, *FOOTNOTE_VALUE_OPTION)
     if output_type == "epub" and not route_uses_pandoc(context.state, output_type):
         _append_bool_row(context, "epub_split_volumes", "epub_split_volumes_label")
 
@@ -639,7 +667,6 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.epub_inline_toc = False
         state.epub_remove_background = False
         state.epub_split_volumes = False
-        state.epub_standardize_footnotes = False
         state.pdf_paper_size = "default"
         state.pdf_font_profile = "default"
         state.pdf_page_numbers = False
@@ -650,6 +677,7 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         state.pandoc_number_sections = False
         state.pandoc_heading_shift = 0
         state.docx_arabic_reference = False
+        state.footnote_mode = "keep"
         return True
     bool_value = {"1": True, "0": False}.get(option_value)
     if option_key in BOOL_OPTION_ATTRS:
@@ -660,7 +688,10 @@ def set_request_option(state: ConversionRequestState, option_key: str, option_va
         setattr(state, BOOL_OPTION_ATTRS[option_key], bool_value)
         return True
     if option_key in VALUE_OPTION_ATTRS and option_value in VALUE_OPTION_MAP[option_key]:
-        setattr(state, VALUE_OPTION_ATTRS[option_key], VALUE_OPTION_MAP[option_key][option_value])
+        value = VALUE_OPTION_MAP[option_key][option_value]
+        if option_key == "footnote_mode" and not _supports_footnote_mode(state.input_ext, value):
+            return False
+        setattr(state, VALUE_OPTION_ATTRS[option_key], value)
         return True
     return False
 
@@ -692,7 +723,11 @@ def apply_persisted_options(
             setattr(state, option_attr, value)
             continue
         allowed_values = PERSISTED_VALUE_ALLOWED_BY_ATTR.get(option_attr)
-        if allowed_values is not None and value in allowed_values:
+        if (
+            allowed_values is not None
+            and value in allowed_values
+            and (option_attr != "footnote_mode" or _supports_footnote_mode(state.input_ext, value))
+        ):
             setattr(state, option_attr, value)
 
 

@@ -8,6 +8,8 @@ from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 from lxml import etree, html
 
 from ebook_converter_bot.utils.epub_footnotes import (
+    EPUB_NS,
+    REFERENCE_MARKER_PATTERN,
     append_to_last_footnote,
     pop_leading_continuation,
     update_hamesh_html,
@@ -15,10 +17,43 @@ from ebook_converter_bot.utils.epub_footnotes import (
 
 xml_parser = etree.XMLParser(resolve_entities=False)
 page_id_re = re.compile(r"page_(\d+)")
+NOTE_EPUB_TYPES = {"footnote", "footnotes", "endnote", "endnotes", "note", "rearnote", "rearnotes"}
+NOTE_ROLES = {"doc-footnote", "doc-endnote", "doc-endnotes"}
 
 
 def _ns(root: etree._Element) -> str:
     return root.tag.split("}")[0] + "}" if "}" in root.tag else ""
+
+
+def _local_name(element: etree._Element) -> str:
+    return element.tag.rsplit("}", 1)[-1].lower() if isinstance(element.tag, str) else ""
+
+
+def _attribute_tokens(element: etree._Element, attribute: str) -> set[str]:
+    return set((element.get(attribute) or "").split())
+
+
+def _remove_element(element: etree._Element) -> etree._Element | None:
+    parent = element.getparent()
+    if parent is None:
+        return None
+    previous = element.getprevious()
+    target, attribute = (parent, "text") if previous is None else (previous, "tail")
+    setattr(target, attribute, (getattr(target, attribute) or "") + (element.tail or ""))
+    parent.remove(element)
+    return parent
+
+
+def _is_empty_element(element: etree._Element) -> bool:
+    return not "".join(element.itertext()).strip() and len(element) == 0
+
+
+def _remove_attribute_token(element: etree._Element, attribute: str, token: str) -> None:
+    value = " ".join(value for value in (element.get(attribute) or "").split() if value != token)
+    if value:
+        element.set(attribute, value)
+    else:
+        element.attrib.pop(attribute, None)
 
 
 def _pick_valid_opf(epub_book: ZipFile) -> tuple[ZipInfo, bytes, etree._Element] | None:
@@ -210,6 +245,15 @@ def _body_inner_html(body: etree._Element) -> str:
         parts.append(etree.tostring(child, encoding="unicode", with_tail=False))
         parts.append(child.tail or "")
     return "".join(parts)
+
+
+def _serialize_xml(root: etree._Element, original: bytes) -> bytes:
+    return etree.tostring(
+        root,
+        encoding="utf-8",
+        xml_declaration=original.lstrip().startswith(b"<?xml"),
+        doctype=root.getroottree().docinfo.doctype or None,
+    )
 
 
 def _set_body_inner_html(body: etree._Element, fragment: str) -> bool:
@@ -431,15 +475,10 @@ def standardize_epub_footnotes(input_file: Path) -> bool:  # noqa: C901,PLR0912,
             old_bytes = state["old"]
             if not isinstance(old_bytes, bytes):
                 continue
-            xml_declaration = old_bytes.lstrip().startswith(b"<?xml")
             root_elem = state["root"]
             if not isinstance(root_elem, etree._Element):
                 continue
-            new_content = etree.tostring(
-                root_elem,
-                encoding="utf-8",
-                xml_declaration=xml_declaration,
-            )
+            new_content = _serialize_xml(root_elem, old_bytes)
             name = state["name"]
             if isinstance(name, str) and new_content != old_bytes:
                 replacements[name] = new_content
@@ -449,6 +488,115 @@ def standardize_epub_footnotes(input_file: Path) -> bool:  # noqa: C901,PLR0912,
 
         _rewrite_epub_dedup(input_file, epub_book, unique_infos, replacements)
         return True
+
+
+def remove_epub_footnotes(  # noqa: C901,PLR0912
+    input_file: Path, *, keep_markers: bool
+) -> bool:
+    changed = standardize_epub_footnotes(input_file)
+    with ZipFile(input_file, "r") as epub_book:
+        picked = _pick_valid_opf(epub_book)
+        if not picked:
+            return changed
+
+        content_opf, _opf_bytes, opf_root = picked
+        unique_infos = _unique_infos(epub_book.infolist())
+        replacements: dict[str, bytes] = {}
+        epub_type_attr = f"{{{EPUB_NS}}}type"
+
+        for name in _ordered_xhtml_paths(epub_book, content_opf, opf_root, unique_infos):
+            old = epub_book.read(name)
+            try:
+                root = etree.fromstring(old, xml_parser)
+            except etree.ParseError:
+                continue
+
+            elements = list(root.iter())
+            note_elements = [
+                element
+                for element in elements
+                if _attribute_tokens(element, epub_type_attr) & NOTE_EPUB_TYPES
+                or _attribute_tokens(element, "role") & NOTE_ROLES
+                or "footnote" in _attribute_tokens(element, "class")
+            ]
+            note_set = set(note_elements)
+            top_level_notes = [
+                element
+                for element in note_elements
+                if not note_set.intersection(element.iterancestors())
+            ]
+            note_content = {element for note in top_level_notes for element in note.iter()}
+            note_ids = {element.get("id") for element in note_content if element.get("id")}
+            references = [
+                element
+                for element in elements
+                if element not in note_content
+                and (
+                    "noteref" in _attribute_tokens(element, epub_type_attr)
+                    or "doc-noteref" in _attribute_tokens(element, "role")
+                    or "footn" in _attribute_tokens(element, "class")
+                    or (
+                        _local_name(element) == "a"
+                        and (element.get("href") or "").removeprefix("#") in note_ids
+                    )
+                )
+            ]
+            if not references and not top_level_notes:
+                continue
+
+            if not keep_markers:
+                markers = {
+                    match.group(1)
+                    for note in top_level_notes
+                    for text in note.itertext()
+                    if (match := REFERENCE_MARKER_PATTERN.match(text.lstrip()))
+                }
+                for marker in markers:
+                    text_nodes = [
+                        (element, attribute, text)
+                        for element in elements
+                        if element not in note_content
+                        for attribute in ("text", "tail")
+                        if marker in (text := getattr(element, attribute) or "")
+                    ]
+                    if sum(text.count(marker) for _element, _attribute, text in text_nodes) == 1:
+                        element, attribute, text = text_nodes[0]
+                        setattr(element, attribute, text.replace(marker, "", 1))
+
+            for reference in references:
+                if keep_markers:
+                    reference.attrib.pop("href", None)
+                    _remove_attribute_token(reference, epub_type_attr, "noteref")
+                    _remove_attribute_token(reference, "role", "doc-noteref")
+                    continue
+                parent = _remove_element(reference)
+                while (
+                    parent is not None
+                    and _local_name(parent) in {"span", "sup"}
+                    and _is_empty_element(parent)
+                ):
+                    parent = _remove_element(parent)
+
+            for note in top_level_notes:
+                _remove_element(note)
+
+            for wrapper in elements:
+                if "hamesh" not in _attribute_tokens(wrapper, "class") or not _is_empty_element(
+                    wrapper
+                ):
+                    continue
+                separator = wrapper.getprevious()
+                _remove_element(wrapper)
+                if separator is not None and _local_name(separator) == "hr":
+                    _remove_element(separator)
+
+            new = _serialize_xml(root, old)
+            if new != old:
+                replacements[name] = new
+
+        if replacements:
+            _rewrite_epub_dedup(input_file, epub_book, unique_infos, replacements)
+        return changed or bool(replacements)
 
 
 def fix_content_opf_problems(input_file: Path) -> None:

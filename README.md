@@ -66,7 +66,7 @@ Some more features of the bot:
 - PDF options: paper size, page numbers, cover-page generation, chapter page breaks, and Arabic font selection.
 - Extra PDF fonts can be mounted locally without committing privately licensed font files.
 - KFX options: PDOC/EBOK type and pages mode.
-- EPUB input preprocessing options: fix EPUB metadata/spine issues, flatten TOC, and standardize footnotes.
+- Footnote options: standardize EPUB notes, keep only their markers, or remove notes and markers from EPUB and Pandoc routes.
 - EPUB-to-EPUB volume splitting with per-volume output processing (up to 35 split files).
 - Admin stats track users, recent attempts, success/failure rates, active users, and top conversion pairs.
 - Admin broadcasts retry flood waits per recipient, remove permanently unreachable chats, and support `active_within` and

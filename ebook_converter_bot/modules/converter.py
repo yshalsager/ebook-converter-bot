@@ -128,6 +128,10 @@ def options_labels(lang: str) -> dict[str, str]:
         "epub_remove_background_label": _("Remove background", lang),
         "epub_split_volumes_label": _("Split volumes", lang),
         "epub_standardize_footnotes_label": _("Standardize footnotes", lang),
+        "footnotes_label": _("Footnotes", lang),
+        "keep_label": _("Keep", lang),
+        "markers_only_label": _("Markers only", lang),
+        "remove_all_label": _("Remove all", lang),
         "pdf_paper_size_label": _("Paper size", lang),
         "pdf_font_profile_label": _("Arabic font", lang),
         "noto_naskh_arabic_label": _("Noto Naskh Arabic", lang),
@@ -213,9 +217,11 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 _("Split EPUB volumes", lang),
             ),
             (
-                state.input_ext == "epub" and getattr(state, "epub_standardize_footnotes", False),
+                state.footnote_mode == "standardize",
                 _("Standardize EPUB footnotes", lang),
             ),
+            (state.footnote_mode == "markers", _("Footnotes: markers only", lang)),
+            (state.footnote_mode == "remove", _("Footnotes: removed", lang)),
             (
                 state.pdf_paper_size != "default",
                 _("PDF paper size: {}", lang).format(state.pdf_paper_size.upper()),
@@ -281,9 +287,6 @@ def build_conversion_options(
         "epub_split_volumes": getattr(state, "epub_split_volumes", False)
         if is_epub_input
         else False,
-        "epub_standardize_footnotes": (
-            getattr(state, "epub_standardize_footnotes", False) if is_epub_input else False
-        ),
         "pdf_paper_size": state.pdf_paper_size,
         "pdf_font_profile": state.pdf_font_profile,
         "pdf_page_numbers": state.pdf_page_numbers,
@@ -294,6 +297,7 @@ def build_conversion_options(
         "pandoc_number_sections": state.pandoc_number_sections,
         "pandoc_heading_shift": state.pandoc_heading_shift,
         "docx_arabic_reference": state.docx_arabic_reference,
+        "footnote_mode": state.footnote_mode,
     }
     for key, value in option_values.items():
         if hasattr(options, key):

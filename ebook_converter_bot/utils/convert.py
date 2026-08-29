@@ -18,6 +18,7 @@ from ebook_converter_bot.utils.bok_to_epub import bok_to_epub
 from ebook_converter_bot.utils.epub import (
     fix_content_opf_problems,
     flatten_toc,
+    remove_epub_footnotes,
     set_epub_to_rtl,
     standardize_epub_footnotes,
 )
@@ -62,7 +63,6 @@ class ConversionOptions:
     epub_inline_toc: bool = False
     epub_remove_background: bool = False
     epub_split_volumes: bool = False
-    epub_standardize_footnotes: bool = False
     pdf_paper_size: str = "default"
     pdf_font_profile: str = "default"
     pdf_page_numbers: bool = False
@@ -73,6 +73,7 @@ class ConversionOptions:
     pandoc_number_sections: bool = False
     pandoc_heading_shift: int = 0
     docx_arabic_reference: bool = False
+    footnote_mode: str = "keep"
 
 
 @dataclass
@@ -232,7 +233,8 @@ class PandocBackend(ConversionBackend):
                 options.epub_inline_toc,
                 options.epub_remove_background,
                 options.epub_split_volumes,
-                options.epub_standardize_footnotes and not epub_preprocess_supported,
+                options.footnote_mode not in {"keep", "standardize", "markers", "remove"},
+                options.footnote_mode == "standardize" and not epub_preprocess_supported,
                 options.pdf_paper_size != "default",
                 options.pdf_font_profile != "default",
                 options.pdf_page_numbers,
@@ -456,6 +458,18 @@ end
 """
 
     @staticmethod
+    def _footnote_filter_content(mode: str) -> str:
+        return f"""local markers = {str(mode == "markers").lower()}
+local note_number = 0
+
+function Note()
+  if not markers then return {{}} end
+  note_number = note_number + 1
+  return pandoc.Superscript({{ pandoc.Str(tostring(note_number)) }})
+end
+"""
+
+    @staticmethod
     def _write_lua_filter(output_file: Path, suffix: str, content: str) -> Path:
         lua_filter = output_file.with_suffix(suffix)
         lua_filter.write_text(content)
@@ -475,6 +489,14 @@ end
                     output_file,
                     ".docx-cleanup.lua",
                     self._docx_cleanup_filter_content(),
+                )
+            )
+        if input_type != "epub" and options.footnote_mode in {"markers", "remove"}:
+            filters.append(
+                self._write_lua_filter(
+                    output_file,
+                    ".footnotes.lua",
+                    self._footnote_filter_content(options.footnote_mode),
                 )
             )
         filters.append(
@@ -557,7 +579,7 @@ end
         ) as temp_file:
             prepared_file = Path(temp_file.name)
         copy2(input_file, prepared_file)
-        self.converter._preprocess_pandoc_epub(prepared_file, options)
+        self.converter._preprocess_input_epub(prepared_file, replace(options, force_rtl=False))
         return prepared_file
 
     async def _convert_to_markdown(
@@ -1138,18 +1160,11 @@ class Converter:
             fix_content_opf_problems(input_file)
         if options.flat_toc:
             flatten_toc(input_file)
-        if options.epub_standardize_footnotes:
+        if options.footnote_mode == "standardize":
             standardize_epub_footnotes(input_file)
+        elif options.footnote_mode != "keep":
+            remove_epub_footnotes(input_file, keep_markers=options.footnote_mode == "markers")
         return set_to_rtl
-
-    @staticmethod
-    def _preprocess_pandoc_epub(input_file: Path, options: ConversionOptions) -> None:
-        if options.fix_epub:
-            fix_content_opf_problems(input_file)
-        if options.flat_toc:
-            flatten_toc(input_file)
-        if options.epub_standardize_footnotes:
-            standardize_epub_footnotes(input_file)
 
     async def _convert_from_kfx_input(
         self,
@@ -1196,7 +1211,7 @@ class Converter:
             epub_inline_toc=False,
             epub_remove_background=False,
             epub_split_volumes=False,
-            epub_standardize_footnotes=False,
+            footnote_mode="keep",
             pdf_paper_size="default",
             pdf_font_profile="default",
             pdf_page_numbers=False,
@@ -1222,7 +1237,7 @@ class Converter:
                 force_rtl=False,
                 fix_epub=False,
                 flat_toc=False,
-                epub_standardize_footnotes=False,
+                footnote_mode="keep",
                 epub_split_volumes=False,
                 epub_version="default",
                 epub_inline_toc=False,
@@ -1406,7 +1421,7 @@ class Converter:
             force_rtl=False,
             fix_epub=False,
             flat_toc=False,
-            epub_standardize_footnotes=False,
+            footnote_mode="keep",
             epub_split_volumes=False,
             compress_cover=False,
         )
