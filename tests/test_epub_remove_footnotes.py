@@ -102,6 +102,35 @@ def test_remove_epub_footnotes_normalizes_and_removes_multi_page_legacy_notes(
     assert path.read_bytes() == first_result
 
 
+@pytest.mark.parametrize("keep_markers", [True, False])
+def test_remove_epub_footnotes_handles_guillemet_references(
+    tmp_path: Path, *, keep_markers: bool
+) -> None:
+    path = tmp_path / "book.epub"
+    _create_epub(
+        path,
+        '<p>متن «١» ثم «٢» ثم «٣» ثم «٤»</p><hr/><p class="hamesh">'
+        "(١) هامش<br/>. (٢- ٣) هامش مشترك<br/>[.....] (٤) هامش</p>",
+    )
+
+    assert remove_epub_footnotes(path, keep_markers=keep_markers) is True
+    page = _pages(path)[0]
+
+    assert 'class="hamesh"' not in page
+    assert all((marker in page) is keep_markers for marker in ("«١»", "«٢»", "«٣»", "«٤»"))
+
+
+def test_remove_epub_footnotes_removes_unlinked_hamesh(tmp_path: Path) -> None:
+    path = tmp_path / "book.epub"
+    _create_epub(path, '<p>متن</p><hr/><p class="hamesh">تكملة بلا علامة</p>')
+
+    assert remove_epub_footnotes(path, keep_markers=True) is True
+    page = _pages(path)[0]
+
+    assert "تكملة بلا علامة" not in page
+    assert "<hr" not in page
+
+
 @pytest.mark.parametrize(
     ("body", "keep_markers"),
     [

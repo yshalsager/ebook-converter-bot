@@ -9,6 +9,7 @@ from lxml import etree, html
 
 from ebook_converter_bot.utils.epub_footnotes import (
     EPUB_NS,
+    MARKER_DIGITS_PATTERN,
     REFERENCE_MARKER_PATTERN,
     append_to_last_footnote,
     pop_leading_continuation,
@@ -517,7 +518,7 @@ def remove_epub_footnotes(  # noqa: C901,PLR0912
                 for element in elements
                 if _attribute_tokens(element, epub_type_attr) & NOTE_EPUB_TYPES
                 or _attribute_tokens(element, "role") & NOTE_ROLES
-                or "footnote" in _attribute_tokens(element, "class")
+                or _attribute_tokens(element, "class") & {"footnote", "hamesh"}
             ]
             note_set = set(note_elements)
             top_level_notes = [
@@ -551,6 +552,19 @@ def remove_epub_footnotes(  # noqa: C901,PLR0912
                     for text in note.itertext()
                     if (match := REFERENCE_MARKER_PATTERN.match(text.lstrip()))
                 }
+                marker_numbers = {
+                    number
+                    for note in top_level_notes
+                    for text in note.itertext()
+                    if (
+                        prefix := re.match(
+                            r"^\W*[\u0660-\u0669\d][\s\u0660-\u0669\d()^,،\[\]\u2013\u2014-]*",
+                            text,
+                        )
+                    )
+                    for number in MARKER_DIGITS_PATTERN.findall(prefix.group())
+                }
+                markers.update(f"«{number}»" for number in marker_numbers)
                 for marker in markers:
                     text_nodes = [
                         (element, attribute, text)
@@ -578,16 +592,13 @@ def remove_epub_footnotes(  # noqa: C901,PLR0912
                     parent = _remove_element(parent)
 
             for note in top_level_notes:
+                separator = note.getprevious()
                 _remove_element(note)
-
-            for wrapper in elements:
-                if "hamesh" not in _attribute_tokens(wrapper, "class") or not _is_empty_element(
-                    wrapper
+                if (
+                    "hamesh" in _attribute_tokens(note, "class")
+                    and separator is not None
+                    and _local_name(separator) == "hr"
                 ):
-                    continue
-                separator = wrapper.getprevious()
-                _remove_element(wrapper)
-                if separator is not None and _local_name(separator) == "hr":
                     _remove_element(separator)
 
             new = _serialize_xml(root, old)
