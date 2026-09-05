@@ -1,6 +1,6 @@
 [tools]
 python = '3.14'
-"aqua:astral-sh/uv" = "0.12.6"
+"aqua:astral-sh/uv" = "0.12.9"
 "aqua:evilmartians/lefthook" = "2"
 
 [tasks.default]
