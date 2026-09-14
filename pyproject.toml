@@ -7,7 +7,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "Telethon>=1.41.1",
+    "Telethon>=1.45.0",
     "cryptg>=0.5.2",
     "access-parser==0.0.6",
     "hachoir>=3.2.0",

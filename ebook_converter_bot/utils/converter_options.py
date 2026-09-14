@@ -4,7 +4,7 @@ from time import monotonic
 from typing import Any
 
 from telethon import Button
-from telethon.tl.types import KeyboardButtonCallback
+from telethon.tl.types import KeyboardInlineButton
 
 from ebook_converter_bot.utils.pdf_fonts import (
     get_pdf_font_option_specs,
@@ -324,7 +324,7 @@ class ConversionRequestState:
 
 @dataclass
 class OptionsKeyboardContext:
-    rows: list[list[KeyboardButtonCallback]]
+    rows: list[list[KeyboardInlineButton]]
     request_id: str
     state: ConversionRequestState
     labels: dict[str, str]
@@ -335,7 +335,7 @@ def format_button_rows(
     output_types: list[str],
     *,
     per_row: int = 3,
-) -> list[list[KeyboardButtonCallback]]:
+) -> list[list[KeyboardInlineButton]]:
     buttons = [
         Button.inline(
             f"🔸 {output_type}" if output_type in HIGHLIGHTED_FORMATS else output_type,
@@ -370,7 +370,7 @@ def _append_value_row(
 ) -> None:
     option_attr = VALUE_OPTION_ATTRS[option_key]
     selected_value = getattr(context.state, option_attr)
-    row_buttons: list[KeyboardButtonCallback] = []
+    row_buttons: list[KeyboardInlineButton] = []
     row_size = VALUE_OPTION_ROW_SIZES.get(option_key, len(value_specs))
     for index, (value_token, label_key) in enumerate(value_specs):
         label = context.labels.get(label_key, label_key)
@@ -393,8 +393,8 @@ def build_options_keyboard(
     request_id: str,
     state: ConversionRequestState,
     labels: dict[str, str],
-) -> list[list[KeyboardButtonCallback]]:
-    rows: list[list[KeyboardButtonCallback]] = [
+) -> list[list[KeyboardInlineButton]]:
+    rows: list[list[KeyboardInlineButton]] = [
         [
             Button.inline(
                 f"{'▸ ' if context == state.options_context else ''}{context.upper()}",
@@ -624,8 +624,8 @@ def build_route_options_keyboard(
     state: ConversionRequestState,
     output_type: str,
     labels: dict[str, str],
-) -> list[list[KeyboardButtonCallback]]:
-    rows: list[list[KeyboardButtonCallback]] = []
+) -> list[list[KeyboardInlineButton]]:
+    rows: list[list[KeyboardInlineButton]] = []
     keyboard_context = OptionsKeyboardContext(rows, request_id, state, labels)
 
     if state.input_ext in PANDOC_SHARED_INPUT_TYPES and output_type in SHARED_BACKEND_OUTPUT_TYPES:

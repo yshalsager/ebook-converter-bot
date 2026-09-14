@@ -13,7 +13,7 @@ from ebook_converter_bot.utils.converter_options import (
     set_request_option,
     state_to_persisted_options,
 )
-from telethon.tl.types import KeyboardButtonCallback
+from telethon.tl.types import InlineButtonTypeCallback, KeyboardInlineButton
 
 LINE_HEIGHT_150 = 150
 LINE_HEIGHT_175 = 175
@@ -80,18 +80,23 @@ LABELS = {
 }
 
 
-def _flatten_data(rows: list[list[KeyboardButtonCallback]]) -> list[bytes]:
-    return [button.data for row in rows for button in row]
+def _button_data(button: KeyboardInlineButton) -> bytes:
+    assert isinstance(button.type, InlineButtonTypeCallback)
+    return button.type.data
+
+
+def _flatten_data(rows: list[list[KeyboardInlineButton]]) -> list[bytes]:
+    return [_button_data(button) for row in rows for button in row]
 
 
 def test_format_button_rows_are_chunked_to_three() -> None:
-    rows: list[list[KeyboardButtonCallback]] = format_button_rows(
+    rows: list[list[KeyboardInlineButton]] = format_button_rows(
         "12345678",
         ["azw3", "docx", "epub", "fb2", "htmlz", "md", "kfx"],
     )
     assert [len(row) for row in rows] == [3, 3, 1]
     assert rows[0][0].text == "🔸 azw3"
-    assert rows[0][0].data == b"fmt|azw3|12345678"
+    assert _button_data(rows[0][0]) == b"fmt|azw3|12345678"
     assert rows[1][2].text == "🔸 md"
 
 
@@ -104,7 +109,7 @@ def test_options_keyboard_context_tabs_and_docx_controls() -> None:
     )
     rows = build_options_keyboard("12345678", state, LABELS)
 
-    assert [button.data for button in rows[0]] == [
+    assert [_button_data(button) for button in rows[0]] == [
         b"ctx|docx|12345678",
         b"ctx|epub|12345678",
         b"ctx|pdf|12345678",
@@ -134,8 +139,8 @@ def test_options_keyboard_context_tabs_and_docx_controls() -> None:
     assert b"opt|footnote_mode|standardize|12345678" in data
     assert b"opt|footnote_mode|markers|12345678" in data
     assert b"opt|footnote_mode|remove|12345678" in data
-    assert [button.data for button in rows[-2]] == [b"opt|reset|1|12345678"]
-    assert [button.data for button in rows[-1]] == [
+    assert [_button_data(button) for button in rows[-2]] == [b"opt|reset|1|12345678"]
+    assert [_button_data(button) for button in rows[-1]] == [
         b"view|formats|12345678",
         b"cancel|12345678",
     ]
@@ -162,7 +167,7 @@ def test_options_keyboard_shows_selected_context_controls_only() -> None:
     assert b"opt|pdf_font_profile|kfgqpc_uthman_taha|12345678" in data
     assert b"opt|pdf_font_profile|adwaa_lotfi|12345678" in data
     assert all(
-        len([button for button in row if button.data.startswith(b"opt|pdf_font_profile|")])
+        len([button for button in row if _button_data(button).startswith(b"opt|pdf_font_profile|")])
         <= MAX_FONT_BUTTONS_PER_ROW
         for row in rows
     )
