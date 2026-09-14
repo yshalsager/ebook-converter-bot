@@ -407,8 +407,7 @@ async def file_converter(event: events.NewMessage.Event) -> None:
     if not downloaded:
         await reply.edit(_("Failed to download the file. Please send it again.", lang))
         return
-    if input_ext == "fbz" and Path(downloaded).suffix.lower() == ".zip":
-        downloaded = str(Path(downloaded).rename(Path(downloaded).with_suffix(".fbz")))
+    downloaded = str(converter.normalize_input_file(Path(downloaded), input_ext))
     cleanup_expired_requests(queue, ttl_seconds=QUEUE_TTL_SECONDS)
     random_id = "".join(sample(digits, 8))
     while random_id in queue:

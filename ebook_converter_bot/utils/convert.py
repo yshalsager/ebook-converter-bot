@@ -851,6 +851,20 @@ class Converter:
         input_file = input_file.lower()
         return "fbz" if input_file.endswith(".fb2.zip") else input_file.rsplit(".", 1)[-1]
 
+    @staticmethod
+    def normalize_input_file(input_file: Path, input_type: str) -> Path:
+        if input_type != "fbz" or input_file.suffix.lower() != ".zip":
+            return input_file
+        with NamedTemporaryFile(
+            dir=input_file.parent,
+            prefix=f"{input_file.stem}-",
+            suffix=".fbz",
+            delete=False,
+        ) as temp_file:
+            normalized_file = Path(temp_file.name)
+        input_file.replace(normalized_file)
+        return normalized_file
+
     def is_supported_input_type(self, input_file: str | None) -> bool:
         return self.get_input_type(input_file) in self.supported_input_types
 

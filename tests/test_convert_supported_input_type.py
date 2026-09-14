@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from ebook_converter_bot.utils.convert import Converter
 
 
@@ -15,6 +17,19 @@ def test_fb2_zip_is_treated_as_compressed_fb2_without_accepting_generic_zip() ->
     assert converter.get_input_type("Book.FB2.ZIP") == "fbz"
     assert converter.is_supported_input_type("Book.FB2.ZIP") is True
     assert converter.is_supported_input_type("Book.ZIP") is False
+
+
+def test_fb2_zip_normalization_uses_unique_paths(tmp_path: Path) -> None:
+    input_file = tmp_path / "book.fb2.zip"
+    input_file.write_bytes(b"first")
+    first = Converter.normalize_input_file(input_file, "fbz")
+
+    input_file.write_bytes(b"second")
+    second = Converter.normalize_input_file(input_file, "fbz")
+
+    assert first != second
+    assert first.read_bytes() == b"first"
+    assert second.read_bytes() == b"second"
 
 
 def test_shared_pandoc_inputs_expose_markdown_output_but_non_pandoc_inputs_do_not() -> None:
