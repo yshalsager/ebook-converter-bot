@@ -844,10 +844,15 @@ class Converter:
             or not PandocBackend.is_same_format_route(input_type, output_type)
         ]
 
-    def is_supported_input_type(self, input_file: str | None) -> bool:
+    @staticmethod
+    def get_input_type(input_file: str | None) -> str:
         if not input_file:
-            return False
-        return input_file.lower().split(".")[-1] in self.supported_input_types
+            return ""
+        input_file = input_file.lower()
+        return "fbz" if input_file.endswith(".fb2.zip") else input_file.rsplit(".", 1)[-1]
+
+    def is_supported_input_type(self, input_file: str | None) -> bool:
+        return self.get_input_type(input_file) in self.supported_input_types
 
     @staticmethod
     async def _run_command(

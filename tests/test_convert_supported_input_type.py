@@ -9,6 +9,14 @@ def test_is_supported_input_type_is_case_insensitive() -> None:
     assert Converter().is_supported_input_type("Book.EPUB") is True
 
 
+def test_fb2_zip_is_treated_as_compressed_fb2_without_accepting_generic_zip() -> None:
+    converter = Converter()
+
+    assert converter.get_input_type("Book.FB2.ZIP") == "fbz"
+    assert converter.is_supported_input_type("Book.FB2.ZIP") is True
+    assert converter.is_supported_input_type("Book.ZIP") is False
+
+
 def test_shared_pandoc_inputs_expose_markdown_output_but_non_pandoc_inputs_do_not() -> None:
     assert "md" in Converter.get_supported_output_types_for_input("doc")
     assert "md" in Converter.get_supported_output_types_for_input("docx")

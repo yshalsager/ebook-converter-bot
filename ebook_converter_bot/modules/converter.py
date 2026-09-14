@@ -392,7 +392,8 @@ async def file_converter(event: events.NewMessage.Event) -> None:
     if not file:
         return
     file_name = file.name or ""
-    if not converter.is_supported_input_type(file_name):
+    input_ext = converter.get_input_type(file_name)
+    if input_ext not in converter.supported_input_types:
         # Unsupported file
         await event.reply(_("The file you sent is not a supported type!", lang))
         return
@@ -406,6 +407,8 @@ async def file_converter(event: events.NewMessage.Event) -> None:
     if not downloaded:
         await reply.edit(_("Failed to download the file. Please send it again.", lang))
         return
+    if input_ext == "fbz" and Path(downloaded).suffix.lower() == ".zip":
+        downloaded = str(Path(downloaded).rename(Path(downloaded).with_suffix(".fbz")))
     cleanup_expired_requests(queue, ttl_seconds=QUEUE_TTL_SECONDS)
     random_id = "".join(sample(digits, 8))
     while random_id in queue:
@@ -413,7 +416,7 @@ async def file_converter(event: events.NewMessage.Event) -> None:
     queue[random_id] = build_request_state_for_user(
         event.chat_id,
         input_file_path=downloaded,
-        input_ext=file_name.lower().split(".")[-1],
+        input_ext=input_ext,
     )
     message_text, buttons = render_screen(random_id, queue[random_id], lang)
     await reply.edit(message_text, buttons=buttons)
