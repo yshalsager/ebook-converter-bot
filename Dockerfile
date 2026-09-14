@@ -1,4 +1,4 @@
-FROM ghcr.io/yshalsager/calibre-with-kfx:20260802-0254@sha256:8705cd0c05aeb16534837ac02754ecba3e2a171aa4a61861611de903158ddd43
+FROM ghcr.io/yshalsager/calibre-with-kfx:20260913-0346@sha256:ba8270dad666820f52dd83bd0f311b96fbd5aab5403e984c8f6cbc0a2bcf05ec
 
 ARG PANDOC_VERSION=3.11
 
