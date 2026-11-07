@@ -32,11 +32,13 @@ def test_fb2_zip_normalization_uses_unique_paths(tmp_path: Path) -> None:
     assert second.read_bytes() == b"second"
 
 
-def test_shared_pandoc_inputs_expose_markdown_output_but_non_pandoc_inputs_do_not() -> None:
+def test_pandoc_and_boko_inputs_expose_markdown_output() -> None:
     assert "md" in Converter.get_supported_output_types_for_input("doc")
     assert "md" in Converter.get_supported_output_types_for_input("docx")
     assert "md" in Converter.get_supported_output_types_for_input("epub")
-    assert "md" not in Converter.get_supported_output_types_for_input("mobi")
+    for input_type in ("mobi", "azw", "azw3", "kfx"):
+        assert "md" in Converter.get_supported_output_types_for_input(input_type)
+    assert "md" not in Converter.get_supported_output_types_for_input("pdf")
 
 
 def test_shared_pandoc_inputs_do_not_expose_same_format_output() -> None:

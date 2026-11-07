@@ -805,11 +805,11 @@ def test_html_to_md_uses_pandoc_markdown_route(tmp_path: Path) -> None:
     asyncio.run(run())
 
 
-def test_md_output_is_not_converted_for_non_pandoc_inputs(tmp_path: Path) -> None:
+def test_md_output_is_not_converted_for_unsupported_ebook_inputs(tmp_path: Path) -> None:
     async def run() -> None:
         converter = Converter()
         commands = _capture_commands(converter)
-        input_file = tmp_path / "book.mobi"
+        input_file = tmp_path / "book.azw4"
         input_file.write_text("hello")
         output_file = input_file.with_suffix(".md")
 

@@ -59,6 +59,8 @@ LABELS = {
     "conversion_backend_label": "Conversion backend",
     "calibre_label": "Calibre",
     "pandoc_label": "Pandoc",
+    "boko_label": "Boko",
+    "kfxgen_label": "kfxgen",
     "pandoc_toc_label": "Table of contents",
     "pandoc_number_sections_label": "Number sections",
     "pandoc_heading_shift_label": "Heading levels",
@@ -780,6 +782,7 @@ def test_state_to_persisted_options_omits_runtime_fields() -> None:
     persisted = state_to_persisted_options(state)
 
     assert "input_file_path" not in persisted
+    assert "work_dir" not in persisted
     assert "queued_at" not in persisted
     assert "input_ext" not in persisted
     assert persisted["force_rtl"] is True

@@ -353,8 +353,15 @@ msgid "PDF: no chapter page breaks"
 msgstr "PDF: bölüm sayfa sonları yok"
 
 #: ebook_converter_bot/modules/converter.py:240
-msgid "Conversion backend: Pandoc"
-msgstr "Dönüştürme arka ucu: Pandoc"
+#, python-brace-format
+msgid "Conversion backend: {}"
+msgstr "Dönüştürme arka ucu: {}"
+
+msgid "Boko: EBOK with automatic page estimates."
+msgstr "Boko: otomatik sayfa tahminleriyle EBOK."
+
+msgid "kfxgen: PDOC documents only."
+msgstr "kfxgen: yalnızca PDOC belgeleri."
 
 #: ebook_converter_bot/modules/converter.py:246
 #, python-brace-format

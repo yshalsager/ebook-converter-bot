@@ -9,11 +9,22 @@ from os import killpg, setsid
 from pathlib import Path
 from shutil import copy2
 from signal import SIGKILL
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import ClassVar
 
 import anydoc
 
+from ebook_converter_bot.utils.backend_routes import (
+    ANYDOC_INPUT_TYPES,
+    BOKO_INPUT_TYPES,
+    BOKO_OUTPUT_TYPES,
+    CALIBRE_OUTPUT_TYPES,
+    KFX_INPUT_TYPES,
+    PANDOC_ONLY_OUTPUT_TYPES,
+    backend_choices,
+    prepared_input_type,
+    resolve_backend,
+)
 from ebook_converter_bot.utils.bok_to_epub import bok_to_epub
 from ebook_converter_bot.utils.epub import (
     fix_content_opf_problems,
@@ -32,6 +43,7 @@ TASK_TIMEOUT = 600  # 10 min
 MAX_SPLIT_OUTPUT_FILES = 35
 DOCX_ARABIC_REFERENCE_DOC = Path(__file__).resolve().parents[1] / "data" / "reference.docx"
 EBOOK_CONVERT_OUTPUT_ARG_INDEX = 2
+MAX_BOKO_WORKERS = 2
 
 
 def _pdf_font_env_for_command(command: list[str]) -> dict[str, str] | None:
@@ -83,6 +95,7 @@ class ConversionBatchResult:
     conversion_error: str = ""
     split_capped: bool = False
     split_count: int = 0
+    backend: str | None = None
 
 
 class ConversionBackend:
@@ -119,9 +132,39 @@ class CalibreBackend(ConversionBackend):
         output_type: str,
         options: ConversionOptions,
     ) -> bool:
+        return "calibre" in backend_choices(input_type, output_type)
+
+    async def convert(
+        self,
+        input_file: Path,
+        output_file: Path,
+        output_type: str,
+        options: ConversionOptions,
+        timeout: int | None = TASK_TIMEOUT,
+    ) -> str:
+        if output_type == "kfx":
+            _, conversion_error = await self.converter._convert_to_kfx(
+                input_file, options, timeout=timeout, output_file=output_file
+            )
+            return conversion_error
+        command = ["ebook-convert", str(input_file), str(output_file)]
+        self.converter._append_ebook_convert_options(command, output_type, options)
+        _, conversion_error = await self.converter._run_command(command, timeout=timeout)
+        return conversion_error
+
+
+class BokoBackend(ConversionBackend):
+    name: ClassVar[str] = "boko"
+
+    def __init__(self, converter: Converter) -> None:
+        self.converter = converter
+        self.workers = asyncio.Semaphore(MAX_BOKO_WORKERS)
+
+    def supports(self, input_type: str, output_type: str, options: ConversionOptions) -> bool:
         return (
-            input_type not in self.converter.pandoc_only_input_types
-            and output_type in self.converter.calibre_output_types
+            input_type in BOKO_INPUT_TYPES
+            and output_type in BOKO_OUTPUT_TYPES
+            and input_type != output_type
         )
 
     async def convert(
@@ -132,10 +175,95 @@ class CalibreBackend(ConversionBackend):
         options: ConversionOptions,
         timeout: int | None = TASK_TIMEOUT,
     ) -> str:
-        command = ["ebook-convert", str(input_file), str(output_file)]
-        self.converter._append_ebook_convert_options(command, output_type, options)
-        _, conversion_error = await self.converter._run_command(command, timeout=timeout)
-        return conversion_error
+        if any(
+            (
+                options.smarten_punctuation,
+                options.change_justification != "original",
+                options.line_height is not None,
+                options.remove_paragraph_spacing,
+                options.epub_version != "default",
+                options.epub_inline_toc,
+                options.epub_remove_background,
+                options.pandoc_toc,
+                options.pandoc_number_sections,
+                options.pandoc_heading_shift,
+            )
+        ):
+            return "Boko does not support the selected formatting options."
+        if output_type == "kfx" and (options.kfx_doc_type != "book" or options.kfx_pages != 0):
+            return "Boko produces EBOK books with automatic page estimates."
+        if options.force_rtl and input_file.suffix.lower() != ".epub" and output_type != "epub":
+            return "Boko can force RTL only through an EPUB input or output."
+        async with self.workers:
+            with TemporaryDirectory(dir=output_file.parent, prefix=".boko-") as directory:
+                staged_output = Path(directory) / output_file.name
+                command = [
+                    "env",
+                    "RAYON_NUM_THREADS=2",
+                    "boko",
+                    "convert",
+                    "--quiet",
+                    str(input_file),
+                    str(staged_output),
+                ]
+                _, error = await self.converter._run_command(
+                    command, timeout=TASK_TIMEOUT if timeout is None else min(timeout, TASK_TIMEOUT)
+                )
+                if error:
+                    return error
+                if not staged_output.is_file() or not staged_output.stat().st_size:
+                    return "Boko did not produce an output file."
+                staged_output.replace(output_file)
+        return ""
+
+
+class KfxgenBackend(ConversionBackend):
+    name: ClassVar[str] = "kfxgen"
+
+    def __init__(self, converter: Converter) -> None:
+        self.converter = converter
+
+    def supports(self, input_type: str, output_type: str, options: ConversionOptions) -> bool:
+        return "kfxgen" in backend_choices(input_type, output_type)
+
+    async def convert(
+        self,
+        input_file: Path,
+        output_file: Path,
+        output_type: str,
+        options: ConversionOptions,
+        timeout: int | None = TASK_TIMEOUT,
+    ) -> str:
+        if options.kfx_doc_type != "doc" or options.kfx_pages not in (None, 0):
+            return "kfxgen produces PDOC documents with optional automatic page estimates."
+        _, error = await self.converter._run_command(
+            [
+                "calibre-debug",
+                "-c",
+                (
+                    "import sys; from calibre.customize.ui import plugin_for_output_format; "
+                    "p = plugin_for_output_format('kfx'); "
+                    "sys.exit(0 if p is not None and p.name == 'kfxgen' else "
+                    "'Install kfxgen and disable KFX Output for ebook-convert; its named CLI remains available.')"
+                ),
+            ],
+            timeout=timeout,
+        )
+        if error:
+            return error
+        with TemporaryDirectory(dir=output_file.parent, prefix=".kfxgen-") as directory:
+            staged_output = Path(directory) / output_file.name
+            command = ["ebook-convert", str(input_file), str(staged_output)]
+            if options.kfx_pages is None:
+                command.append("--kfxgen-disable-approximate-pages")
+            self.converter._append_ebook_convert_options(command, output_type, options)
+            _, error = await self.converter._run_command(command, timeout=timeout)
+            if error:
+                return error
+            if not staged_output.is_file() or not staged_output.stat().st_size:
+                return "kfxgen did not produce an output file."
+            staged_output.replace(output_file)
+        return ""
 
 
 class PandocBackend(ConversionBackend):
@@ -658,63 +786,7 @@ end
 
 class Converter:
     polish_supported_types: ClassVar[set[str]] = {"azw3", "epub", "kepub"}
-    anydoc_input_types: ClassVar[set[str]] = {
-        "doc",
-        "docm",
-        "odp",
-        "ods",
-        "ppt",
-        "xls",
-        "xlsm",
-    }
-    pandoc_only_input_types: ClassVar[set[str]] = {
-        "adoc",
-        "asciidoc",
-        "csv",
-        "ipynb",
-        "mediawiki",
-        "org",
-        "pptx",
-        "rst",
-        "t2t",
-        "tex",
-        "textile",
-        "tsv",
-        "typ",
-        "typst",
-        "xlsx",
-    }
-    pandoc_only_output_types: ClassVar[list[str]] = [
-        "adoc",
-        "html",
-        "md",
-        "odt",
-        "org",
-        "pptx",
-        "rst",
-        "tex",
-        "typ",
-        "typst",
-    ]
-    pandoc_output_types: ClassVar[list[str]] = [
-        "docx",
-        "epub",
-        *pandoc_only_output_types,
-        "txt",
-    ]
-    pandoc_input_types: ClassVar[set[str]] = set(PandocBackend.supported_input_types)
-    shared_backend_input_types: ClassVar[set[str]] = {
-        "docx",
-        "epub",
-        "fb2",
-        "htm",
-        "html",
-        "md",
-        "odt",
-        "rtf",
-        "txt",
-        "xhtml",
-    }
+    anydoc_input_types: ClassVar[set[str]] = ANYDOC_INPUT_TYPES
     supported_input_types: ClassVar[list[str]] = [
         "azw",
         "azw3",
@@ -779,47 +851,26 @@ class Converter:
         "bok",
         "pdf",
     ]
-    calibre_output_types: ClassVar[list[str]] = [
-        "azw3",
-        "docx",
-        "epub",
-        "fb2",
-        "htmlz",
-        "kepub",
-        "kfx",
-        "lit",
-        "lrf",
-        "mobi",
-        "oeb",
-        "pdb",
-        "pdf",
-        "pmlz",
-        "rb",
-        "rtf",
-        "snb",
-        "tcr",
-        "txt",
-        "txtz",
-        "zip",
-    ]
+    calibre_output_types: ClassVar[list[str]] = CALIBRE_OUTPUT_TYPES
     supported_output_types: ClassVar[list[str]] = [
         *calibre_output_types,
-        *pandoc_only_output_types,
+        *sorted(PANDOC_ONLY_OUTPUT_TYPES),
     ]
-    kfx_output_allowed_types: ClassVar[list[str]] = [
-        "epub",
-        "opf",
-        "mobi",
-        "doc",
-        "docx",
-        "kpf",
-        "kfx-zip",
-    ]
-    kfx_input_allowed_types: ClassVar[list[str]] = ["azw8", "kfx", "kfx-zip"]
 
     def __init__(self) -> None:
         self.calibre_backend = CalibreBackend(self)
         self.pandoc_backend = PandocBackend(self)
+        self.boko_backend = BokoBackend(self)
+        self.kfxgen_backend = KfxgenBackend(self)
+        self.backends = {
+            backend.name: backend
+            for backend in (
+                self.calibre_backend,
+                self.pandoc_backend,
+                self.boko_backend,
+                self.kfxgen_backend,
+            )
+        }
 
     @classmethod
     def get_supported_types(cls) -> list[str]:
@@ -827,21 +878,12 @@ class Converter:
 
     @classmethod
     def get_supported_output_types_for_input(cls, input_type: str) -> list[str]:
-        if input_type in cls.anydoc_input_types:
-            return [*cls.calibre_output_types, *cls.pandoc_only_output_types]
-        if input_type not in cls.pandoc_input_types:
-            return cls.calibre_output_types
-        if input_type in cls.pandoc_only_input_types:
-            return [
-                output_type
-                for output_type in cls.pandoc_output_types
-                if not PandocBackend.is_same_format_route(input_type, output_type)
-            ]
+        if input_type not in cls.supported_input_types:
+            return []
         return [
             output_type
-            for output_type in [*cls.calibre_output_types, *cls.pandoc_only_output_types]
-            if (input_type == "epub" and output_type == "epub")
-            or not PandocBackend.is_same_format_route(input_type, output_type)
+            for output_type in cls.supported_output_types
+            if backend_choices(input_type, output_type)
         ]
 
     @staticmethod
@@ -913,8 +955,10 @@ class Converter:
                 conversion_error = "\n".join(
                     [error[0].strip() or error[1].strip() for error in errors_list]
                 ).replace("*", "")
-            elif process.returncode not in (0, None) and output:
-                conversion_error = output
+            elif process.returncode not in (0, None):
+                conversion_error = (
+                    output or f"{command[0]} exited with status {process.returncode}."
+                )
         except asyncio.exceptions.TimeoutError:
             logger.info(f"Timeout while running command: {command}")
             timeout_error = f"Timeout while running command: {command[0]}"
@@ -1017,14 +1061,19 @@ class Converter:
         output_type: str,
         options: ConversionOptions,
     ) -> ConversionBackend:
-        calibre_supported = self.calibre_backend.supports(input_type, output_type, options)
-        pandoc_supported = self.pandoc_backend.supports(input_type, output_type, options)
-        if options.conversion_backend == "pandoc" and pandoc_supported:
+        if input_type in self.anydoc_input_types and output_type == "md":
             return self.pandoc_backend
-        if calibre_supported:
-            return self.calibre_backend
-        if pandoc_supported:
-            return self.pandoc_backend
+        choices = backend_choices(input_type, output_type)
+        preferred = resolve_backend(input_type, output_type, options.conversion_backend)
+        for name in dict.fromkeys([preferred, *choices]):
+            backend = self.backends[name]
+            source_type = (
+                input_type
+                if name == "boko" and input_type in BOKO_INPUT_TYPES
+                else prepared_input_type(input_type, output_type)
+            )
+            if backend.supports(source_type, output_type, options):
+                return backend
         return self.calibre_backend
 
     async def _convert_to_kfx(
@@ -1032,13 +1081,31 @@ class Converter:
         input_file: Path,
         options: ConversionOptions,
         timeout: int | None = TASK_TIMEOUT,
+        output_file: Path | None = None,
     ) -> tuple[int | None, str]:
+        output_file = output_file or input_file.with_suffix(".kfx")
+        if options.conversion_backend in {"boko", "kfxgen"}:
+            error = await self.backends[options.conversion_backend].convert(
+                input_file, output_file, "kfx", options, timeout=timeout
+            )
+            return (1 if error else 0), error
+        if input_file.suffix.lower() == ".md":
+            with TemporaryDirectory(dir=input_file.parent, prefix=".kfx-") as directory:
+                epub_file = Path(directory) / "book.epub"
+                error = await self.calibre_backend.convert(
+                    input_file, epub_file, "epub", ConversionOptions(), timeout=timeout
+                )
+                if error:
+                    return 1, error
+                return await self._convert_to_kfx(
+                    epub_file, options, timeout=timeout, output_file=output_file
+                )
         command = ["calibre-debug", "-r", "KFX Output", "--"]
         if options.kfx_doc_type == "book":
             command.append("--book")
         if options.kfx_pages is not None:
             command.extend(["--pages", str(options.kfx_pages)])
-        command.append(str(input_file))
+        command.extend([str(input_file), str(output_file)])
         return await self._run_command(command, timeout=timeout)
 
     async def _convert_from_kfx_to_epub(
@@ -1093,14 +1160,13 @@ class Converter:
             epub_file.unlink(missing_ok=True)
             return input_file.with_suffix(".kfx"), set_to_rtl, conversion_error
 
-        if output_type == "kepub":
-            output_file = input_file.with_suffix(".kepub")
-
-        conversion_error = await self.calibre_backend.convert(
-            epub_file, output_file, output_type, options, timeout=timeout
-        )
-        epub_file.unlink(missing_ok=True)
-        return output_file, set_to_rtl, conversion_error
+        try:
+            output_file, processed_rtl, conversion_error = await self._convert_non_bok(
+                epub_file, output_type, options, timeout=timeout
+            )
+            return output_file, processed_rtl or set_to_rtl, conversion_error
+        finally:
+            epub_file.unlink(missing_ok=True)
 
     async def _prepare_anydoc_input(
         self,
@@ -1196,18 +1262,16 @@ class Converter:
             ".kepub" if output_type == "kepub" else f".{output_type}"
         )
         _, conversion_error = await self._convert_from_kfx_to_epub(input_file, timeout=timeout)
-        if output_type == "epub":
-            set_to_rtl = set_epub_to_rtl(output_file) if options.force_rtl else None
-            return output_file, set_to_rtl, conversion_error
-
         epub_file = input_file.with_suffix(".epub")
-        set_to_rtl = set_epub_to_rtl(epub_file) if options.force_rtl else None
-        output_conversion_error = await self.calibre_backend.convert(
-            epub_file, output_file, output_type, options, timeout=timeout
-        )
-        epub_file.unlink(missing_ok=True)
-        conversion_error = self._merge_errors(conversion_error, output_conversion_error)
-        return output_file, set_to_rtl, conversion_error
+        if conversion_error:
+            epub_file.unlink(missing_ok=True)
+            return output_file, None, conversion_error
+        if output_type == "epub":
+            return epub_file, self._preprocess_input_epub(epub_file, options), ""
+        try:
+            return await self._convert_non_bok(epub_file, output_type, options, timeout=timeout)
+        finally:
+            epub_file.unlink(missing_ok=True)
 
     async def _convert_to_pdf_with_rtl_intermediate(
         self,
@@ -1293,7 +1357,7 @@ class Converter:
         )
         set_to_rtl = (
             self._preprocess_input_epub(input_file, options)
-            if input_type == "epub" and backend is self.calibre_backend
+            if input_type == "epub" and backend is not self.pandoc_backend
             else None
         )
         rebuild_epub = (
@@ -1309,14 +1373,18 @@ class Converter:
             )
         )
 
-        if input_type in self.kfx_input_allowed_types:
+        if input_type in KFX_INPUT_TYPES and backend is not self.boko_backend:
             return await self._convert_from_kfx_input(
                 input_file, output_type, options, timeout=timeout
             )
 
         if output_type == "kfx":
-            if input_type not in self.kfx_output_allowed_types:
-                return output_file, set_to_rtl, conversion_error
+            if not backend.supports(input_type, output_type, options):
+                return (
+                    output_file,
+                    set_to_rtl,
+                    "This backend does not support the requested conversion.",
+                )
             _, conversion_error = await self._convert_to_kfx(input_file, options, timeout=timeout)
             return output_file, set_to_rtl, conversion_error
 
@@ -1336,6 +1404,8 @@ class Converter:
         conversion_error = await backend.convert(
             input_file, output_file, output_type, options, timeout=timeout
         )
+        if conversion_error:
+            return output_file, set_to_rtl, conversion_error
 
         if (
             options.force_rtl
@@ -1493,10 +1563,14 @@ class Converter:
     ) -> ConversionBatchResult:
         options = options or ConversionOptions()
         input_type = input_file.suffix.lower()[1:]
+        backend = self._select_backend(input_type, output_type, options)
+        options = replace(options, conversion_backend=backend.name)
         converted_to_rtl: bool | None = None
 
         if input_type == "epub" and output_type == "epub" and options.epub_split_volumes:
-            return await self._convert_epub_split_volumes(input_file, options, timeout=timeout)
+            result = await self._convert_epub_split_volumes(input_file, options, timeout=timeout)
+            result.backend = backend.name
+            return result
         if input_type in self.anydoc_input_types:
             output_file, converted_to_rtl, conversion_error = await self._convert_from_anydoc(
                 input_file, output_type, options, timeout=timeout
@@ -1518,9 +1592,18 @@ class Converter:
             )
 
         output_files = [output_file]
-        if options.compress_cover:
+        if options.compress_cover and not conversion_error:
             compression_error = await self._compress_cover(
                 output_file, output_type, timeout=timeout
             )
             conversion_error = self._merge_errors(conversion_error, compression_error)
-        return ConversionBatchResult(output_files, converted_to_rtl, conversion_error)
+        if backend.name in {"boko", "kfxgen"}:
+            if not conversion_error and (
+                not output_file.is_file() or not output_file.stat().st_size
+            ):
+                conversion_error = f"{backend.name} did not produce an output file."
+            if conversion_error:
+                output_files = []
+        return ConversionBatchResult(
+            output_files, converted_to_rtl, conversion_error, backend=backend.name
+        )

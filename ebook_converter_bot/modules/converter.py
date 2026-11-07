@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 from random import sample
 from string import digits
+from tempfile import TemporaryDirectory
 from time import monotonic
 from typing import cast
 
@@ -20,6 +21,7 @@ from ebook_converter_bot.db.curd import (
     upsert_user_option_defaults,
 )
 from ebook_converter_bot.db.models.conversion_event import ConversionEvent
+from ebook_converter_bot.utils.backend_routes import resolve_backend
 from ebook_converter_bot.utils.convert import (
     MAX_SPLIT_OUTPUT_FILES,
     TASK_TIMEOUT,
@@ -33,6 +35,7 @@ from ebook_converter_bot.utils.converter_options import (
     build_options_keyboard,
     build_route_options_keyboard,
     cleanup_expired_requests,
+    cleanup_request_files,
     format_button_rows,
     route_option_values,
     set_request_option,
@@ -43,6 +46,7 @@ from ebook_converter_bot.utils.pdf_fonts import get_pdf_font_label
 from ebook_converter_bot.utils.telegram import tg_exceptions_handler
 
 MAX_ALLOWED_FILE_SIZE = 26214400  # 25 MB
+DOWNLOAD_ROOT = Path("/tmp/ebook_converter_bot")  # noqa: S108
 QUEUE_TTL_SECONDS = 1800  # 30 minutes
 CB_VIEW = "view"
 CB_OPT = "opt"
@@ -147,6 +151,8 @@ def options_labels(lang: str) -> dict[str, str]:
         "conversion_backend_label": _("Conversion backend", lang),
         "calibre_label": _("Calibre", lang),
         "pandoc_label": _("Pandoc", lang),
+        "boko_label": "Boko",
+        "kfxgen_label": "kfxgen",
         "pandoc_toc_label": _("Table of contents", lang),
         "pandoc_number_sections_label": _("Number sections", lang),
         "pandoc_heading_shift_label": _("Heading levels", lang),
@@ -236,8 +242,10 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
             (state.pdf_no_cover, _("PDF: no cover page", lang)),
             (state.pdf_no_chapter_pagebreak, _("PDF: no chapter page breaks", lang)),
             (
-                state.conversion_backend == "pandoc",
-                _("Conversion backend: Pandoc", lang),
+                state.conversion_backend != "calibre",
+                _("Conversion backend: {}", lang).format(
+                    labels[f"{state.conversion_backend}_label"]
+                ),
             ),
             (state.pandoc_toc, _("Table of contents", lang)),
             (state.pandoc_number_sections, _("Number sections", lang)),
@@ -247,7 +255,10 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                     _("Promote", lang) if state.pandoc_heading_shift < 0 else _("Demote", lang)
                 ),
             ),
-            (state.kfx_doc_type == "book", _("KFX doc type: EBOK", lang)),
+            (
+                state.kfx_doc_type == "book" and state.conversion_backend not in {"boko", "kfxgen"},
+                _("KFX doc type: EBOK", lang),
+            ),
             (state.kfx_pages == 0, _("KFX pages: Auto", lang)),
         )
         if enabled
@@ -340,6 +351,12 @@ def render_route_options_screen(
 ) -> tuple[str, list[list]]:
     labels = options_labels(lang)
     message_text = f"{_('Conversion options:', lang)} {output_type}"
+    backend = resolve_backend(state.input_ext, output_type, state.conversion_backend)
+    message_text += "\n" + _("Conversion backend: {}", lang).format(labels[f"{backend}_label"])
+    if output_type == "kfx" and backend == "boko":
+        message_text += "\n\n" + _("Boko: EBOK with automatic page estimates.", lang)
+    elif output_type == "kfx" and backend == "kfxgen":
+        message_text += "\n\n" + _("kfxgen: PDOC documents only.", lang)
     buttons = build_route_options_keyboard(request_id, state, output_type, labels)
     return message_text, buttons
 
@@ -362,6 +379,7 @@ async def get_request_state(
     input_file = Path(state.input_file_path)
     if not input_file.exists():
         queue.pop(request_id, None)
+        cleanup_request_files(state)
         await event.answer(
             _("The source file is no longer available. Please send it again.", lang),
             alert=True,
@@ -377,7 +395,7 @@ async def get_request_state(
 @BOT.on(events.NewMessage(func=lambda x: x.message.file and x.is_private))
 @BOT.on(events.NewMessage(pattern="/convert", func=lambda x: x.message.is_reply))
 @tg_exceptions_handler
-async def file_converter(event: events.NewMessage.Event) -> None:
+async def file_converter(event: events.NewMessage.Event) -> None:  # noqa: C901
     """Convert ebook to another format."""
     lang = get_lang(event.chat_id)
     if event.pattern_match:
@@ -401,24 +419,34 @@ async def file_converter(event: events.NewMessage.Event) -> None:
         await event.reply(_("Files larger than 25 MB are not supported!", lang))
         return
     reply = await event.reply(_("Downloading the file...", lang))
-    download_dir = Path("/tmp/ebook_converter_bot")  # noqa: S108
-    download_dir.mkdir(parents=True, exist_ok=True)
-    downloaded = await message.download_media(download_dir)
-    if not downloaded:
-        await reply.edit(_("Failed to download the file. Please send it again.", lang))
-        return
-    downloaded = str(converter.normalize_input_file(Path(downloaded), input_ext))
-    cleanup_expired_requests(queue, ttl_seconds=QUEUE_TTL_SECONDS)
-    random_id = "".join(sample(digits, 8))
-    while random_id in queue:
+    DOWNLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+    work_dir = TemporaryDirectory(dir=DOWNLOAD_ROOT, prefix="request-")
+    state = None
+    random_id = ""
+    try:
+        downloaded = await message.download_media(Path(work_dir.name))
+        if not downloaded:
+            await reply.edit(_("Failed to download the file. Please send it again.", lang))
+            return
+        downloaded = str(converter.normalize_input_file(Path(downloaded), input_ext))
+        cleanup_expired_requests(queue, ttl_seconds=QUEUE_TTL_SECONDS)
         random_id = "".join(sample(digits, 8))
-    queue[random_id] = build_request_state_for_user(
-        event.chat_id,
-        input_file_path=downloaded,
-        input_ext=input_ext,
-    )
-    message_text, buttons = render_screen(random_id, queue[random_id], lang)
-    await reply.edit(message_text, buttons=buttons)
+        while random_id in queue:
+            random_id = "".join(sample(digits, 8))
+        state = build_request_state_for_user(
+            event.chat_id, input_file_path=downloaded, input_ext=input_ext
+        )
+        state.work_dir = work_dir
+        queue[random_id] = state
+        message_text, buttons = render_screen(random_id, state, lang)
+        await reply.edit(message_text, buttons=buttons)
+    except BaseException:
+        if state is not None and queue.get(random_id) is state:
+            cleanup_request_files(queue.pop(random_id))
+        raise
+    finally:
+        if state is None:
+            work_dir.cleanup()
 
 
 @BOT.on(events.CallbackQuery(pattern=rf"{CB_VIEW}\|(opts|formats)\|\d+"))
@@ -488,7 +516,7 @@ async def cancel_conversion_callback(event: events.CallbackQuery.Event) -> None:
     if not state:
         return
     lang = get_lang(event.chat_id)
-    Path(state.input_file_path).unlink(missing_ok=True)
+    cleanup_request_files(state)
     await event.edit(_("Conversion request canceled.", lang))
 
 
@@ -507,7 +535,7 @@ async def format_selected_callback(event: events.CallbackQuery.Event) -> None:
 
 @BOT.on(events.CallbackQuery(pattern=rf"{CB_RUN}\|[\w-]+\|\d+"))
 @tg_exceptions_handler
-async def converter_callback(event: events.CallbackQuery.Event) -> None:
+async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa: C901,PLR0915
     """Converter callback handler."""
     lang = get_lang(event.chat_id)
     converted = False
@@ -515,12 +543,17 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:
     state = await get_request_state(event, request_id, pop=True)
     if not state:
         return
-    reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
+    try:
+        reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
+    except BaseException:
+        cleanup_request_files(state)
+        raise
     input_file = Path(state.input_file_path)
     options = build_conversion_options(state, output_type)
     output_files = []
     batch_output_files = []
     conversion_error = None
+    executed_backend = None
     started_at = monotonic()
     input_size_bytes = input_file.stat().st_size if input_file.exists() else None
     try:
@@ -530,6 +563,7 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:
             options=options,
             timeout=None if event.sender_id in BOT_ADMIN_IDS else TASK_TIMEOUT,
         )
+        executed_backend = batch_result.backend
         batch_output_files = batch_result.output_files
         output_files = [file_path for file_path in batch_output_files if file_path.exists()]
         if batch_result.split_capped:
@@ -538,7 +572,7 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:
             )
             conversion_error = message_text
             await reply.edit(message_text)
-        elif output_files:
+        elif output_files and not batch_result.conversion_error:
             message_text = ""
             if state.force_rtl and batch_result.converted_to_rtl:
                 message_text += _("Converted to RTL successfully!\n", lang)
@@ -566,9 +600,10 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:
     finally:
         duration_ms = int((monotonic() - started_at) * 1000)
         output_size_bytes = sum(file_path.stat().st_size for file_path in output_files) or None
-        input_file.unlink(missing_ok=True)
-        for output_file in batch_output_files:
-            output_file.unlink(missing_ok=True)
+        if getattr(state, "work_dir", None) is None:
+            for output_file in batch_output_files:
+                output_file.unlink(missing_ok=True)
+        cleanup_request_files(state)
         record_conversion_event(
             ConversionEvent(
                 user_id=event.chat_id,
@@ -579,7 +614,7 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:
                 duration_ms=duration_ms,
                 input_size_bytes=input_size_bytes,
                 output_size_bytes=output_size_bytes,
-                backend=options.conversion_backend,
+                backend=executed_backend,
             )
         )
     if converted:

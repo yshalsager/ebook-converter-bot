@@ -11,7 +11,7 @@
 [![Patreon](https://img.shields.io/badge/Patreon-Support-F96854?style=flat&labelColor=F96854&logo=Patreon&logoColor=white&link=https://www.patreon.com/XiaomiFirmwareUpdater)](https://www.patreon.com/XiaomiFirmwareUpdater)
 [![Liberapay](https://img.shields.io/badge/Liberapay-Support-F6C915?style=flat&labelColor=F6C915&logo=Liberapay&logoColor=white&link=https://liberapay.com/yshalsager)](https://liberapay.com/yshalsager)
 
-A bot that converts e-books to various formats, powered by [calibre](https://calibre-ebook.com/), [Pandoc](https://pandoc.org/), and [Anydoc](https://github.com/firecrawl/anydoc)!
+A bot that converts e-books to various formats, powered by [calibre](https://calibre-ebook.com/), [Pandoc](https://pandoc.org/), [Anydoc](https://github.com/firecrawl/anydoc), [Boko](https://github.com/zacharydenton/boko), and [kfxgen](https://github.com/jloutsch/kfxgen)!
 It currently supports 62 input formats and 31 output formats.
 
 You can start using it or adding it to your group [here on Telegram](https://t.me/ebook_converter_bot).
@@ -56,16 +56,16 @@ Some more features of the bot:
 - Flatten book's table of contents.
 - Convert Shamela old `.bok` files by first generating an EPUB in Python then using the existing calibre pipeline for other outputs.
 - Convert `.doc`, `.docm`, `.odp`, `.ods`, `.ppt`, `.xls`, and `.xlsm` files to Markdown with Anydoc, then use the existing Calibre or Pandoc pipeline.
-- Interactive conversion options before selecting output format.
+- Interactive conversion options after selecting the output format.
 - Per-user conversion option defaults are remembered automatically.
-- Optional Pandoc backend for supported document routes, with Calibre as the default when both can convert the same route.
+- Optional Pandoc, Boko, and kfxgen backends on supported routes, preserving existing defaults.
 - Markdown-family, HTML, reStructuredText, AsciiDoc, Org, LaTeX, Typst, and plain-text document routes through Pandoc.
 - Global output options: image compression, smart punctuation, text justification, line height, and paragraph spacing cleanup.
 - DOCX options: page size and generated TOC toggle for Calibre; RTL output, H1/H2 heading page breaks, heading level shifts, and Arabic reference styling for Pandoc.
 - EPUB output options: version selection, inline TOC, and background removal.
 - PDF options: paper size, page numbers, cover-page generation, chapter page breaks, and Arabic font selection.
 - Extra PDF fonts can be mounted locally without committing privately licensed font files.
-- KFX options: PDOC/EBOK type and pages mode.
+- KFX options: PDOC/EBOK and pages mode. Boko uses fixed EBOK/automatic pages; kfxgen uses fixed PDOC with optional automatic pages.
 - Footnote options: standardize EPUB notes, keep only their markers, or remove notes and markers from EPUB and Pandoc routes.
 - EPUB-to-EPUB volume splitting with per-volume output processing (up to 35 split files).
 - Admin stats track users, recent attempts, success/failure rates, active users, and top conversion pairs.
@@ -198,6 +198,10 @@ You can go through the Dockerfile to see how the bot requirements are being inst
   ```
 - Also, KFX Output plugin requires [Kindle Previewer 3](https://kdp.amazon.com/en_US/help/topic/G202131170), which can
   run on linux under [Wine](https://appdb.winehq.org/objectManager.php?sClass=application&iId=18012).
+- Install [kfxgen with RTL fixes](https://github.com/jloutsch/kfxgen/blob/c50f414197a4a236ebe4a654a3b2b3b7067a25ee/INSTALLATION.md)
+  in the same Calibre profile, then run `calibre-customize --disable-plugin "KFX Output"`.
+  KFX Output 2.20.0+ remains available through its explicit CLI.
+- Install the [Boko CLI](https://github.com/zacharydenton/boko) and ensure `boko` is on `PATH`.
 
 #### Running the bot
 
@@ -224,7 +228,7 @@ mise run i18n_init_lang -- ar
 
 ## `.bok` Notes
 
-Shamela old `.bok` files are first converted to an intermediate EPUB in pure Python (using `access-parser`), then (if the requested output isn't EPUB) calibre is used to convert that EPUB to the requested format.
+Shamela old `.bok` files are first converted to an intermediate EPUB in pure Python (using `access-parser`), then the selected backend converts that EPUB to the requested format when needed.
 
 For local debugging, there's also a small CLI wrapper:
 

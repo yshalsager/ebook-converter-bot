@@ -353,8 +353,15 @@ msgid "PDF: no chapter page breaks"
 msgstr "PDF: بدون فواصل صفحات للفصول"
 
 #: ebook_converter_bot/modules/converter.py:240
-msgid "Conversion backend: Pandoc"
-msgstr "محرك التحويل: Pandoc"
+#, python-brace-format
+msgid "Conversion backend: {}"
+msgstr "محرك التحويل: {}"
+
+msgid "Boko: EBOK with automatic page estimates."
+msgstr "Boko: كتاب EBOK مع تقدير تلقائي للصفحات."
+
+msgid "kfxgen: PDOC documents only."
+msgstr "kfxgen: مستندات PDOC فقط."
 
 #: ebook_converter_bot/modules/converter.py:246
 #, python-brace-format

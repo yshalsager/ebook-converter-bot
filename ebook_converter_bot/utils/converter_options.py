@@ -1,11 +1,19 @@
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from time import monotonic
 from typing import Any
 
 from telethon import Button
 from telethon.tl.types import KeyboardInlineButton
 
+from ebook_converter_bot.utils.backend_routes import (
+    PANDOC_ONLY_INPUT_TYPES,
+    PANDOC_SHARED_INPUT_TYPES,
+    backend_choices,
+    prepared_input_type,
+    resolve_backend,
+)
 from ebook_converter_bot.utils.pdf_fonts import (
     get_pdf_font_option_specs,
     get_pdf_font_value_map,
@@ -13,56 +21,7 @@ from ebook_converter_bot.utils.pdf_fonts import (
 
 HIGHLIGHTED_FORMATS: set[str] = {"azw3", "docx", "epub", "kfx", "md", "mobi", "pdf"}
 CONTEXT_TYPES: tuple[str, ...] = ("docx", "epub", "pdf", "kfx")
-PANDOC_SHARED_INPUT_TYPES: set[str] = {
-    "doc",
-    "docm",
-    "docx",
-    "epub",
-    "fb2",
-    "htm",
-    "html",
-    "md",
-    "odp",
-    "ods",
-    "odt",
-    "ppt",
-    "rtf",
-    "txt",
-    "xls",
-    "xlsm",
-    "xhtml",
-}
-PANDOC_ONLY_INPUT_TYPES: set[str] = {
-    "adoc",
-    "asciidoc",
-    "csv",
-    "ipynb",
-    "mediawiki",
-    "org",
-    "pptx",
-    "rst",
-    "t2t",
-    "tex",
-    "textile",
-    "tsv",
-    "typ",
-    "typst",
-    "xlsx",
-}
 PANDOC_INPUT_TYPES = PANDOC_SHARED_INPUT_TYPES | PANDOC_ONLY_INPUT_TYPES
-SHARED_BACKEND_OUTPUT_TYPES: set[str] = {"docx", "epub", "txt"}
-PANDOC_ONLY_OUTPUT_TYPES: set[str] = {
-    "adoc",
-    "html",
-    "md",
-    "odt",
-    "org",
-    "pptx",
-    "rst",
-    "tex",
-    "typ",
-    "typst",
-}
 PANDOC_TOC_OUTPUT_TYPES: set[str] = {"docx", "epub", "html", "md", "rst", "tex", "typ", "typst"}
 PANDOC_NUMBER_SECTION_OUTPUT_TYPES: set[str] = {"docx", "epub", "html", "tex"}
 CALIBRE_COMMON_OUTPUT_TYPES: set[str] = {
@@ -110,11 +69,6 @@ GLOBAL_VALUE_OPTIONS: tuple[tuple[str, str, tuple[tuple[str, str], ...]], ...] =
             ("200", "200%"),
         ),
     ),
-)
-BACKEND_VALUE_OPTION: tuple[str, str, tuple[tuple[str, str], ...]] = (
-    "conversion_backend",
-    "conversion_backend_label",
-    (("calibre", "calibre_label"), ("pandoc", "pandoc_label")),
 )
 FOOTNOTE_VALUE_OPTION: tuple[str, str, tuple[tuple[str, str], ...]] = (
     "footnote_mode",
@@ -238,7 +192,7 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "epub_version": {"default": "default", "2": "2", "3": "3"},
     "pdf_paper_size": {"default": "default", "letter": "letter", "a4": "a4"},
     "pdf_font_profile": get_pdf_font_value_map(),
-    "conversion_backend": {"calibre": "calibre", "pandoc": "pandoc"},
+    "conversion_backend": {name: name for name in ("calibre", "pandoc", "boko", "kfxgen")},
     "pandoc_heading_shift": {"default": 0, "promote": -1, "demote": 1},
     "footnote_mode": {value: value for value, _label in FOOTNOTE_VALUE_OPTION[2]},
 }
@@ -320,6 +274,7 @@ class ConversionRequestState:
     pandoc_heading_shift: int = 0
     docx_arabic_reference: bool = False
     footnote_mode: str = "keep"
+    work_dir: TemporaryDirectory[str] | None = None
 
 
 @dataclass
@@ -367,14 +322,16 @@ def _append_value_row(
     option_key: str,
     prefix_label_key: str,
     value_specs: tuple[tuple[str, str], ...],
+    selected_value: object = ...,
 ) -> None:
     option_attr = VALUE_OPTION_ATTRS[option_key]
-    selected_value = getattr(context.state, option_attr)
+    if selected_value is ...:
+        selected_value = getattr(context.state, option_attr)
     row_buttons: list[KeyboardInlineButton] = []
     row_size = VALUE_OPTION_ROW_SIZES.get(option_key, len(value_specs))
     for index, (value_token, label_key) in enumerate(value_specs):
         label = context.labels.get(label_key, label_key)
-        prefix = f"{context.labels[prefix_label_key]}: " if index == 0 else ""
+        prefix = f"{context.labels[prefix_label_key]}: " if index == 0 and prefix_label_key else ""
         target_value = VALUE_OPTION_MAP[option_key][value_token]
         row_buttons.append(
             Button.inline(
@@ -387,6 +344,20 @@ def _append_value_row(
             row_buttons = []
     if row_buttons:
         context.rows.append(row_buttons)
+
+
+def _append_backend_row(context: OptionsKeyboardContext, output_type: str) -> None:
+    choices = backend_choices(context.state.input_ext, output_type)
+    if len(choices) > 1:
+        _append_value_row(
+            context,
+            "conversion_backend",
+            "",
+            tuple((name, f"{name}_label") for name in choices),
+            selected_value=resolve_backend(
+                context.state.input_ext, output_type, context.state.conversion_backend
+            ),
+        )
 
 
 def build_options_keyboard(
@@ -409,13 +380,17 @@ def build_options_keyboard(
         _append_bool_row(keyboard_context, option_key, label_key)
     for option_key, prefix_label_key, value_specs in GLOBAL_VALUE_OPTIONS:
         _append_value_row(keyboard_context, option_key, prefix_label_key, value_specs)
-    if state.input_ext in PANDOC_SHARED_INPUT_TYPES:
-        _append_value_row(keyboard_context, *BACKEND_VALUE_OPTION)
+    _append_backend_row(keyboard_context, state.options_context)
 
+    backend = resolve_backend(state.input_ext, state.options_context, state.conversion_backend)
     for option_key, prefix_label_key, value_specs in CONTEXT_VALUE_OPTIONS[state.options_context]:
+        if backend == "boko" or (backend == "kfxgen" and option_key == "kfx_doc_type"):
+            continue
         _append_value_row(keyboard_context, option_key, prefix_label_key, value_specs)
     for option_key, label_key in CONTEXT_BOOL_OPTIONS[state.options_context]:
-        if option_key in EPUB_ONLY_BOOL_OPTIONS and state.input_ext != "epub":
+        if backend == "boko" or (
+            option_key in EPUB_ONLY_BOOL_OPTIONS and state.input_ext != "epub"
+        ):
             continue
         _append_bool_row(keyboard_context, option_key, label_key)
 
@@ -435,28 +410,28 @@ def build_options_keyboard(
 
 
 def route_uses_pandoc(state: ConversionRequestState, output_type: str) -> bool:
-    return (
-        output_type in PANDOC_ONLY_OUTPUT_TYPES
-        or state.input_ext in PANDOC_ONLY_INPUT_TYPES
-        or (
-            state.conversion_backend == "pandoc"
-            and state.input_ext in PANDOC_SHARED_INPUT_TYPES
-            and output_type in SHARED_BACKEND_OUTPUT_TYPES
-        )
-    )
+    return resolve_backend(state.input_ext, output_type, state.conversion_backend) == "pandoc"
 
 
 def route_supports_rtl(state: ConversionRequestState, output_type: str) -> bool:
     if route_uses_pandoc(state, output_type):
         return output_type in {"docx", "epub", "html", "md"}
-    return output_type in {"epub", "pdf"}
+    backend = resolve_backend(state.input_ext, output_type, state.conversion_backend)
+    return output_type in {"epub", "pdf"} or (
+        backend in {"boko", "kfxgen"}
+        and output_type in {"azw3", "kfx"}
+        and state.input_ext in {"epub", "bok", "pdf"}
+    )
 
 
 def _supports_footnote_mode(input_ext: str, mode: object) -> bool:
     return (
         mode == "keep"
         or input_ext == "epub"
-        or (mode in {"markers", "remove"} and input_ext in PANDOC_INPUT_TYPES)
+        or (
+            mode in {"markers", "remove"}
+            and prepared_input_type(input_ext, "md") in PANDOC_INPUT_TYPES
+        )
     )
 
 
@@ -464,7 +439,8 @@ def route_option_values(
     state: ConversionRequestState,
     output_type: str,
 ) -> dict[str, bool | str | int | None]:
-    uses_pandoc = route_uses_pandoc(state, output_type)
+    backend = resolve_backend(state.input_ext, output_type, state.conversion_backend)
+    uses_pandoc = backend == "pandoc"
     is_epub_input = state.input_ext == "epub"
     values: dict[str, bool | str | int | None] = {
         "force_rtl": state.force_rtl if route_supports_rtl(state, output_type) else False,
@@ -491,7 +467,7 @@ def route_option_values(
         "pdf_page_numbers": False,
         "pdf_no_cover": False,
         "pdf_no_chapter_pagebreak": False,
-        "conversion_backend": "pandoc" if uses_pandoc else "calibre",
+        "conversion_backend": backend,
         "pandoc_toc": state.pandoc_toc
         if uses_pandoc and output_type in PANDOC_TOC_OUTPUT_TYPES
         else False,
@@ -507,6 +483,15 @@ def route_option_values(
         "footnote_mode": (state.footnote_mode if is_epub_input or uses_pandoc else "keep"),
     }
     if uses_pandoc:
+        return values
+    if backend in {"boko", "kfxgen"}:
+        if output_type == "kfx":
+            values.update(
+                {
+                    "kfx_doc_type": "book" if backend == "boko" else "doc",
+                    "kfx_pages": 0 if backend == "boko" else state.kfx_pages,
+                }
+            )
         return values
 
     if output_type in POLISH_OUTPUT_TYPES:
@@ -565,14 +550,17 @@ def _append_route_global_options(
     context: OptionsKeyboardContext,
     output_type: str,
 ) -> None:
-    uses_pandoc = route_uses_pandoc(context.state, output_type)
+    backend = resolve_backend(
+        context.state.input_ext, output_type, context.state.conversion_backend
+    )
+    uses_pandoc = backend == "pandoc"
     if route_supports_rtl(context.state, output_type):
         _append_bool_row(context, "rtl", "force_rtl_label")
     if uses_pandoc:
         _append_route_pandoc_options(context, output_type)
-    if not uses_pandoc and output_type in POLISH_OUTPUT_TYPES:
+    if backend == "calibre" and output_type in POLISH_OUTPUT_TYPES:
         _append_bool_row(context, "compress_cover", "compress_cover_label")
-    if not uses_pandoc and output_type in CALIBRE_COMMON_OUTPUT_TYPES:
+    if backend == "calibre" and output_type in CALIBRE_COMMON_OUTPUT_TYPES:
         for option_key, label_key in (
             ("smarten", "smarten_punctuation_label"),
             ("remove_paragraph_spacing", "remove_paragraph_spacing_label"),
@@ -586,11 +574,14 @@ def _append_route_context_options(
     context: OptionsKeyboardContext,
     output_type: str,
 ) -> None:
-    if route_uses_pandoc(context.state, output_type):
-        return
-    if output_type not in CONTEXT_TYPES:
+    backend = resolve_backend(
+        context.state.input_ext, output_type, context.state.conversion_backend
+    )
+    if backend in {"pandoc", "boko"} or output_type not in CONTEXT_TYPES:
         return
     for option_key, prefix_label_key, value_specs in CONTEXT_VALUE_OPTIONS[output_type]:
+        if backend == "kfxgen" and option_key == "kfx_doc_type":
+            continue
         _append_value_row(context, option_key, prefix_label_key, value_specs)
     for option_key, label_key in CONTEXT_BOOL_OPTIONS[output_type]:
         if option_key == "epub_split_volumes":
@@ -628,8 +619,7 @@ def build_route_options_keyboard(
     rows: list[list[KeyboardInlineButton]] = []
     keyboard_context = OptionsKeyboardContext(rows, request_id, state, labels)
 
-    if state.input_ext in PANDOC_SHARED_INPUT_TYPES and output_type in SHARED_BACKEND_OUTPUT_TYPES:
-        _append_value_row(keyboard_context, *BACKEND_VALUE_OPTION)
+    _append_backend_row(keyboard_context, output_type)
     _append_route_global_options(keyboard_context, output_type)
     _append_route_context_options(keyboard_context, output_type)
     _append_route_epub_input_options(keyboard_context, output_type)
@@ -731,6 +721,14 @@ def apply_persisted_options(
             setattr(state, option_attr, value)
 
 
+def cleanup_request_files(state: ConversionRequestState) -> None:
+    work_dir = getattr(state, "work_dir", None)
+    if work_dir is not None:
+        work_dir.cleanup()
+    else:
+        Path(state.input_file_path).unlink(missing_ok=True)
+
+
 def cleanup_expired_requests(
     queue: dict[str, ConversionRequestState],
     *,
@@ -741,4 +739,4 @@ def cleanup_expired_requests(
         if now - state.queued_at <= ttl_seconds:
             continue
         queue.pop(random_id, None)
-        Path(state.input_file_path).unlink(missing_ok=True)
+        cleanup_request_files(state)
