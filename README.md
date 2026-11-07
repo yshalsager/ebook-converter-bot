@@ -164,7 +164,7 @@ The compose file mounts this directory at `/data/pdf-fonts` and sets `PDF_EXTRA_
 
 #### Python dependencies
 
-It requires Python 3.14 and uv.
+It requires Python 3.15 and uv.
 
 Clone the repository and run:
 

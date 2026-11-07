@@ -5,7 +5,7 @@ description = "A Telegram bot for converting E-books."
 authors = [
     { name = "yshalsager", email = "contact@yshalsager.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.15"
 dependencies = [
     "Telethon>=1.45.0",
     "cryptg>=0.5.2",
@@ -29,7 +29,7 @@ dev = [
 ]
 
 [tool.ty.environment]
-python-version = "3.14"
+python-version = "3.15"
 
 [tool.ty.rules]
 unresolved-import = "ignore"
@@ -38,7 +38,7 @@ unresolved-import = "ignore"
 fix = true
 line-length = 100
 src = ["ebook_converter_bot"]
-target-version = "py314"
+target-version = "py315"
 
 [tool.ruff.lint]
 select = ["A", "B", "BLE", "C4", "C90", "DTZ", "E", "ERA", "F", "G", "I", "INP", "ISC", "N", "NPY", "PGH", "PIE", "PLC", "PLE", "PLR", "PLW", "PT", "PTH", "PYI", "RET", "RSE", "RUF", "S", "SIM", "T10", "T20", "TID", "UP", "W", "YTT"]

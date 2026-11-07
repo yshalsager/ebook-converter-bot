@@ -2,7 +2,7 @@ FROM ghcr.io/yshalsager/calibre-with-kfx:20261106-143606@sha256:9091972117b5894f
 
 ARG PANDOC_VERSION=3.11
 
-COPY --from=python:3.14.10-slim-trixie@sha256:ac25e5afbfdb4a94ff99cc24b0345719210133144481480bcba6085efa36a341 /usr/local/ /usr/local/
+COPY --from=python:3.15.2-slim-trixie@sha256:fd2aef5e0d8438208de9fe154ab5b331a2428fc0c9838d41611e611fd7a80d85 /usr/local/ /usr/local/
 COPY --from=ghcr.io/astral-sh/uv:latest@sha256:df4cae8f3a96d175e2e5f992e597550000edbe78fdc2594d5cd8de1a217f504c /uv /uvx /bin/
 USER root
 ENV PATH="/opt/venv/bin:$PATH" \
@@ -15,7 +15,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
 
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends ca-certificates curl; \
+    apt-get install -y --no-install-recommends ca-certificates curl libmpdec4; \
     rm -rf /var/lib/apt/lists/*; \
     curl -fsSL -o /tmp/pandoc.tar.gz "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz"; \
     tar -xzf /tmp/pandoc.tar.gz --strip-components=1 -C /usr/local; \
