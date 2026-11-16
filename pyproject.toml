@@ -32,7 +32,7 @@ dev = [
 python-version = "3.15"
 
 [tool.ty.rules]
-unresolved-import = "ignore"
+import-not-found = "ignore"
 
 [tool.ruff]  # https://github.com/charliermarsh/ruff
 fix = true
