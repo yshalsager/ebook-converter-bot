@@ -545,3 +545,12 @@ msgid ""
 msgstr ""
 "{} sohbete yayın gönderilemedi, büyük olasılıkla bot durduruldu veya gruptan "
 "atıldı."
+
+msgid "Wait for your current conversion to finish."
+msgstr "Mevcut dönüşümün bitmesini bekleyin."
+
+msgid "This route timed out twice. Retry in {} minutes."
+msgstr "Bu dönüşüm iki kez zaman aşımına uğradı. {} dakika sonra tekrar deneyin."
+
+msgid "Queued. Waiting for a conversion slot..."
+msgstr "Sırada. Dönüşüm için yer bekleniyor..."

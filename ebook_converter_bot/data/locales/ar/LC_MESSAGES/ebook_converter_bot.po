@@ -540,3 +540,12 @@ msgid ""
 "Failed to broadcast to {} chats, most likely because bot has been stopped or "
 "kicked out."
 msgstr "فشل الإرسال إلى {} محادثات، غالبا بسبب أن البوت طرد أو أوقف."
+
+msgid "Wait for your current conversion to finish."
+msgstr "انتظر انتهاء التحويل الحالي."
+
+msgid "This route timed out twice. Retry in {} minutes."
+msgstr "انتهت مهلة التحويل بين هاتين الصيغتين مرتين. أعد المحاولة بعد {} دقيقة."
+
+msgid "Queued. Waiting for a conversion slot..."
+msgstr "في الانتظار حتى يتاح مكان للتحويل..."

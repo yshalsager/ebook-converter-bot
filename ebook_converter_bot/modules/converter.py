@@ -1,6 +1,7 @@
 """Converter."""
 
 import asyncio
+from math import ceil
 from pathlib import Path
 from random import sample
 from string import digits
@@ -48,6 +49,15 @@ from ebook_converter_bot.utils.telegram import tg_exceptions_handler
 MAX_ALLOWED_FILE_SIZE = 26214400  # 25 MB
 DOWNLOAD_ROOT = Path("/tmp/ebook_converter_bot")  # noqa: S108
 QUEUE_TTL_SECONDS = 1800  # 30 minutes
+JOB_TIMEOUT_SECONDS = 20 * 60
+JOB_TIMEOUT_ERROR = "Timeout: whole conversion exceeded 20 minutes"
+MAX_CONCURRENT_CONVERSIONS = 8
+ROUTE_COOLDOWN_SECONDS = 60 * 60
+conversion_slots = asyncio.Semaphore(MAX_CONCURRENT_CONVERSIONS)
+ROUTE_TIMEOUT_LIMIT = 2
+active_users: set[int] = set()
+# shortcut: in-memory, resets on restart; move to DB only if needed.
+route_timeouts: dict[tuple[int, str, str], list[float]] = {}
 CB_VIEW = "view"
 CB_OPT = "opt"
 CB_CTX = "ctx"
@@ -96,6 +106,20 @@ def build_request_state_for_user(
 
 def save_request_state_defaults(user_id: int, state: ConversionRequestState) -> None:
     upsert_user_option_defaults(user_id, state_to_persisted_options(state))
+
+
+def recent_route_timeouts(route: tuple[int, str, str]) -> list[float]:
+    now = monotonic()
+    timestamps = [
+        timestamp
+        for timestamp in route_timeouts.get(route, [])
+        if now - timestamp < ROUTE_COOLDOWN_SECONDS
+    ]
+    if timestamps:
+        route_timeouts[route] = timestamps
+    else:
+        route_timeouts.pop(route, None)
+    return timestamps
 
 
 def failed_conversion_message(
@@ -535,34 +559,63 @@ async def format_selected_callback(event: events.CallbackQuery.Event) -> None:
 
 @BOT.on(events.CallbackQuery(pattern=rf"{CB_RUN}\|[\w-]+\|\d+"))
 @tg_exceptions_handler
-async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa: C901,PLR0915
+async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa: C901,PLR0912,PLR0915
     """Converter callback handler."""
     lang = get_lang(event.chat_id)
     converted = False
     _run, output_type, request_id = event.data.decode().split("|")
-    state = await get_request_state(event, request_id, pop=True)
+    is_admin = event.sender_id in BOT_ADMIN_IDS
+    state = await get_request_state(event, request_id)
     if not state:
         return
+    route = (event.sender_id, state.input_ext, output_type)
+    recent = recent_route_timeouts(route)
+    if not is_admin and len(recent) >= ROUTE_TIMEOUT_LIMIT:
+        minutes = ceil((recent[0] + ROUTE_COOLDOWN_SECONDS - monotonic()) / 60)
+        await event.answer(
+            _("This route timed out twice. Retry in {} minutes.", lang).format(minutes),
+            alert=True,
+        )
+        return
+    input_file = Path(state.input_file_path)
+    options = build_conversion_options(state, output_type)
+    input_size_bytes = input_file.stat().st_size if input_file.exists() else None
+    if not is_admin:
+        if event.sender_id in active_users:
+            await event.answer(_("Wait for your current conversion to finish.", lang), alert=True)
+            return
+        active_users.add(event.sender_id)
+    queue.pop(request_id)
     try:
         reply = await event.edit(_("Converting the file to {}...", lang).format(output_type))
     except BaseException:
+        if not is_admin:
+            active_users.discard(event.sender_id)
         cleanup_request_files(state)
         raise
-    input_file = Path(state.input_file_path)
-    options = build_conversion_options(state, output_type)
     output_files = []
     batch_output_files = []
     conversion_error = None
     executed_backend = None
     started_at = monotonic()
-    input_size_bytes = input_file.stat().st_size if input_file.exists() else None
     try:
-        batch_result = await converter.convert_ebook_many(
-            input_file,
-            output_type,
-            options=options,
-            timeout=None if event.sender_id in BOT_ADMIN_IDS else TASK_TIMEOUT,
-        )
+        was_queued = conversion_slots.locked()
+        if was_queued:
+            await reply.edit(_("Queued. Waiting for a conversion slot...", lang))
+        async with conversion_slots:
+            if was_queued:
+                await reply.edit(_("Converting the file to {}...", lang).format(output_type))
+            try:
+                async with asyncio.timeout(None if is_admin else JOB_TIMEOUT_SECONDS):
+                    batch_result = await converter.convert_ebook_many(
+                        input_file,
+                        output_type,
+                        options=options,
+                        timeout=None if is_admin else TASK_TIMEOUT,
+                    )
+            except TimeoutError:
+                conversion_error = JOB_TIMEOUT_ERROR
+                raise
         executed_backend = batch_result.backend
         batch_output_files = batch_result.output_files
         output_files = [file_path for file_path in batch_output_files if file_path.exists()]
@@ -593,11 +646,15 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
                 failed_conversion_message(lang, input_file.name, output_type, conversion_error)
             )
     except Exception as exc:  # noqa: BLE001 - callback boundary must record failed attempts.
-        conversion_error = str(exc)
+        conversion_error = conversion_error or str(exc)
         await reply.edit(
             failed_conversion_message(lang, input_file.name, output_type, conversion_error)
         )
     finally:
+        if not is_admin:
+            active_users.discard(event.sender_id)
+            if conversion_error and conversion_error.startswith("Timeout"):
+                route_timeouts[route] = [*recent_route_timeouts(route), monotonic()]
         duration_ms = int((monotonic() - started_at) * 1000)
         output_size_bytes = sum(file_path.stat().st_size for file_path in output_files) or None
         if getattr(state, "work_dir", None) is None:

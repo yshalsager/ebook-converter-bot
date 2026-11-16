@@ -1148,6 +1148,8 @@ class Converter:
                 await asyncio.wait_for(
                     asyncio.to_thread(bok_to_epub, input_file, epub_file), timeout=timeout
                 )
+        except TimeoutError:
+            return output_file, set_to_rtl, "Timeout while running BOK extraction"
         except Exception as e:  # noqa: BLE001
             return output_file, set_to_rtl, str(e)
 
@@ -1180,6 +1182,8 @@ class Converter:
             markdown = (
                 await conversion if timeout is None else await asyncio.wait_for(conversion, timeout)
             )
+        except TimeoutError:
+            return input_file, "Timeout while running Anydoc extraction"
         except Exception as e:  # noqa: BLE001
             return input_file, str(e) or "Anydoc failed to extract the input file."
         if not markdown.strip():
