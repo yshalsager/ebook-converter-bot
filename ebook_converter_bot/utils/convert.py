@@ -721,6 +721,7 @@ end
         input_type = input_file.suffix.lower()[1:]
         command = [
             "pandoc",
+            "--sandbox",  # untrusted input must not read/fetch other files into the output
             str(input_file),
             "-f",
             self.input_format_by_type[input_type],
@@ -762,6 +763,7 @@ end
             input_type = prepared_input.suffix.lower()[1:]
             command = [
                 "pandoc",
+                "--sandbox",  # untrusted input must not read/fetch other files into the output
                 str(prepared_input),
                 "-f",
                 self.input_format_by_type[input_type],

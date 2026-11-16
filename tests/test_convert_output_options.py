@@ -395,6 +395,7 @@ def test_pandoc_backend_is_used_when_selected_for_shared_document_routes(tmp_pat
         assert commands == [
             [
                 "pandoc",
+                "--sandbox",
                 str(input_file),
                 "-f",
                 "gfm",
@@ -433,6 +434,7 @@ def test_pandoc_toc_and_number_sections_options_add_flags_for_supported_output(
         assert commands == [
             [
                 "pandoc",
+                "--sandbox",
                 str(input_file),
                 "-f",
                 "gfm",
@@ -491,6 +493,7 @@ def test_pandoc_docx_rtl_and_heading_pagebreaks_add_lua_filters(tmp_path: Path) 
         assert result.converted_to_rtl is True
         assert commands[0] == [
             "pandoc",
+            "--sandbox",
             str(input_file),
             "-f",
             "gfm",
@@ -665,6 +668,7 @@ def test_docx_to_md_uses_pandoc_only_route(tmp_path: Path) -> None:
         assert commands == [
             [
                 "pandoc",
+                "--sandbox",
                 str(input_file),
                 "-f",
                 "docx",
@@ -748,7 +752,7 @@ def test_doc_to_md_extracts_with_anydoc_then_uses_pandoc_gfm_input(
             stdout_file: Path | None = None,
         ) -> tuple[int | None, str]:
             commands.append(command)
-            assert Path(command[1]).read_text() == "# Heading\n"
+            assert Path(command[2]).read_text() == "# Heading\n"
             Path(command[-1]).write_text("converted")
             return 0, ""
 
@@ -759,10 +763,10 @@ def test_doc_to_md_extracts_with_anydoc_then_uses_pandoc_gfm_input(
         assert result.output_files == [output_file]
         assert result.conversion_error == ""
         assert output_file.read_text() == "converted"
-        assert commands[0][0] == "pandoc"
-        assert Path(commands[0][1]).suffix == ".md"
-        assert commands[0][2:5] == ["-f", "gfm", "-t"]
-        assert Path(commands[0][1]).exists() is False
+        assert commands[0][:2] == ["pandoc", "--sandbox"]
+        assert Path(commands[0][2]).suffix == ".md"
+        assert commands[0][3:6] == ["-f", "gfm", "-t"]
+        assert Path(commands[0][2]).exists() is False
         assert Path(commands[0][-1]).suffix == ".md"
 
     asyncio.run(run())
@@ -782,6 +786,7 @@ def test_html_to_md_uses_pandoc_markdown_route(tmp_path: Path) -> None:
         assert commands == [
             [
                 "pandoc",
+                "--sandbox",
                 str(input_file),
                 "-f",
                 "html",
@@ -842,7 +847,7 @@ def test_epub_to_md_uses_temporary_preprocessed_copy_and_keeps_source(tmp_path: 
             command: list[str], timeout: int | None = TASK_TIMEOUT
         ) -> tuple[int | None, str]:
             commands.append(command)
-            assert Path(command[1]).read_text() == "prepared"
+            assert Path(command[2]).read_text() == "prepared"
             filter_paths = [
                 Path(item.removeprefix("--lua-filter="))
                 for item in command
@@ -870,7 +875,7 @@ def test_epub_to_md_uses_temporary_preprocessed_copy_and_keeps_source(tmp_path: 
             ),
         )
 
-        prepared_file = Path(commands[0][1])
+        prepared_file = Path(commands[0][2])
         assert result.output_files == [output_file]
         assert result.converted_to_rtl is True
         assert preprocess_calls == [prepared_file]
@@ -878,7 +883,7 @@ def test_epub_to_md_uses_temporary_preprocessed_copy_and_keeps_source(tmp_path: 
         assert prepared_file.exists() is False
         assert input_file.read_text() == "original"
         assert output_file.read_text() == "مرحبا"
-        assert commands[0][2:5] == ["-f", "epub", "-t"]
+        assert commands[0][3:6] == ["-f", "epub", "-t"]
         assert "--lua-filter=" in " ".join(commands[0])
         assert output_file.with_suffix(".empty-blocks.lua").exists() is False
         assert output_file.with_suffix(".arabic-punctuation.lua").exists() is False
@@ -981,6 +986,7 @@ def test_pandoc_epub_force_rtl_uses_lua_wrapper_without_epub_postprocess(
         assert rtl_paths == []
         assert commands[0] == [
             "pandoc",
+            "--sandbox",
             str(input_file),
             "-f",
             "gfm",
@@ -1037,6 +1043,7 @@ def test_pandoc_html_force_rtl_uses_lua_wrapper(tmp_path: Path) -> None:
         assert result.converted_to_rtl is True
         assert commands[0] == [
             "pandoc",
+            "--sandbox",
             str(input_file),
             "-f",
             "docx",
@@ -1076,6 +1083,7 @@ def test_pandoc_backend_is_used_for_pandoc_only_input_routes(tmp_path: Path) -> 
         assert commands == [
             [
                 "pandoc",
+                "--sandbox",
                 str(input_file),
                 "-f",
                 "rst",
@@ -1104,6 +1112,7 @@ def test_pandoc_extended_input_and_output_route_uses_format_mapping(tmp_path: Pa
         assert commands == [
             [
                 "pandoc",
+                "--sandbox",
                 str(input_file),
                 "-f",
                 "asciidoc",
@@ -1136,6 +1145,7 @@ def test_pandoc_backend_selected_for_existing_txt_output_when_requested(tmp_path
         assert commands == [
             [
                 "pandoc",
+                "--sandbox",
                 str(input_file),
                 "-f",
                 "gfm",
