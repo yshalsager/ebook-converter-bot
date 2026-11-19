@@ -110,6 +110,7 @@ dependencies = [
     { name = "access-parser" },
     { name = "alembic" },
     { name = "cryptg" },
+    { name = "ebook-rs" },
     { name = "firecrawl-anydoc" },
     { name = "fonttools" },
     { name = "hachoir" },
@@ -133,6 +134,7 @@ requires-dist = [
     { name = "access-parser", specifier = "==0.0.6" },
     { name = "alembic", specifier = ">=1.18.4" },
     { name = "cryptg", specifier = ">=0.5.2" },
+    { name = "ebook-rs", specifier = "==0.18.7" },
     { name = "firecrawl-anydoc", specifier = "==0.2.4" },
     { name = "fonttools", specifier = ">=4.63.0" },
     { name = "hachoir", specifier = ">=3.2.0" },
@@ -149,6 +151,19 @@ dev = [
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "ruff", specifier = ">=0.14.4" },
     { name = "ty", specifier = ">=0.0.15" },
+]
+
+[[package]]
+name = "ebook-rs"
+version = "0.18.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/3e/84918b5e0ba7fe2518dc32d04ba316af2067871b903fd0b1a5b2ba624b37/ebook_rs-0.18.7.tar.gz", hash = "sha256:4c78f09585584bd7d31215c64fca72d81465a0badf6272269bb05be79d36348f", size = 440985, upload-time = "2026-11-19T16:42:34.086Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/ca/77d5c9cb5ca0d5f7d8e132a496bfd6220047de81d7f198c978a9f24b1d5e/ebook_rs-0.18.7-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:b23346ad65eb0756b84ab25b58acc8cf1c9fb272aed3a448e3c528978de08194", size = 3623902, upload-time = "2026-11-19T16:42:23.786Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/fe/1d6bab175473dd2a0765518957e8d11a017e1840452363c3b1624474f90c/ebook_rs-0.18.7-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:82708bea3d6f4a2b2bc219bd7f386a4e2988fbb7d01aefb94999a89f5fe993e7", size = 3397567, upload-time = "2026-11-19T16:42:25.78Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/dc/22aa8a9d47f904277151589b9cc099dece81ce03b31a33f6e4b32fed441d/ebook_rs-0.18.7-cp38-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:3c23ae89ddbf2e06fc879f9ea5e7dad50e50c86f502b3a4cd3bafbba2894d8ab", size = 3539252, upload-time = "2026-11-19T16:42:27.787Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/03/8c28291d8b5a17b682a950f5c5168d54cde674bb13e5cf3028ef6f04add4/ebook_rs-0.18.7-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:f9cc5a40813c0d34c9ca9b0920f06c05a03ea7b11c60a11c91f7b097fc59c92e", size = 3743386, upload-time = "2026-11-19T16:42:30.244Z" },
+    { url = "https://files.pythonhosted.org/packages/08/76/3a397e35febf376b86355008d1562bc833b4dd8930caa094b4a9020ce09e/ebook_rs-0.18.7-cp38-abi3-win_amd64.whl", hash = "sha256:68cea86fff8b183710e5e77d9b574e4b17044a3753d77922979d6dae1c9173d9", size = 3779994, upload-time = "2026-11-19T16:42:32.206Z" },
 ]
 
 [[package]]

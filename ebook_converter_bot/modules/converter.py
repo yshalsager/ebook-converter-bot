@@ -1,6 +1,7 @@
 """Converter."""
 
 import asyncio
+from contextlib import nullcontext
 from math import ceil
 from pathlib import Path
 from random import sample
@@ -59,6 +60,7 @@ JOB_TIMEOUT_ERROR = "Timeout: whole conversion exceeded 20 minutes"
 MAX_CONCURRENT_CONVERSIONS = 8
 ROUTE_COOLDOWN_SECONDS = 60 * 60
 conversion_slots = asyncio.Semaphore(MAX_CONCURRENT_CONVERSIONS)
+ebook_rs_slots = asyncio.Semaphore(2)
 ROUTE_TIMEOUT_LIMIT = 2
 active_users: set[int] = set()
 # shortcut: in-memory, resets on restart; move to DB only if needed.
@@ -182,6 +184,7 @@ def options_labels(lang: str) -> dict[str, str]:
         "pandoc_label": _("Pandoc", lang),
         "boko_label": "Boko",
         "kfxgen_label": "kfxgen",
+        "ebook-rs_label": "ebook-rs",
         "pandoc_toc_label": _("Table of contents", lang),
         "pandoc_number_sections_label": _("Number sections", lang),
         "pandoc_heading_shift_label": _("Heading levels", lang),
@@ -285,10 +288,14 @@ def render_options_summary(state: ConversionRequestState, lang: str) -> str:
                 ),
             ),
             (
-                state.kfx_doc_type == "book" and state.conversion_backend not in {"boko", "kfxgen"},
+                state.kfx_doc_type == "book"
+                and state.conversion_backend not in {"boko", "kfxgen", "ebook-rs"},
                 _("KFX doc type: EBOK", lang),
             ),
-            (state.kfx_pages == 0, _("KFX pages: Auto", lang)),
+            (
+                state.kfx_pages == 0 and state.conversion_backend != "ebook-rs",
+                _("KFX pages: Auto", lang),
+            ),
         )
         if enabled
     ]
@@ -386,6 +393,8 @@ def render_route_options_screen(
         message_text += "\n\n" + _("Boko: EBOK with automatic page estimates.", lang)
     elif output_type == "kfx" and backend == "kfxgen":
         message_text += "\n\n" + _("kfxgen: PDOC documents only.", lang)
+    elif output_type == "kfx" and backend == "ebook-rs":
+        message_text += "\n\n" + _("ebook-rs: PDOC documents only.", lang)
     buttons = build_route_options_keyboard(request_id, state, output_type, labels)
     return message_text, buttons
 
@@ -619,10 +628,11 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
     executed_backend = None
     started_at = monotonic()
     try:
-        was_queued = conversion_slots.locked()
+        uses_ebook_rs = options.conversion_backend == "ebook-rs"
+        was_queued = conversion_slots.locked() or (uses_ebook_rs and ebook_rs_slots.locked())
         if was_queued:
             await reply.edit(_("Queued. Waiting for a conversion slot...", lang))
-        async with conversion_slots:
+        async with ebook_rs_slots if uses_ebook_rs else nullcontext(), conversion_slots:
             if was_queued:
                 await reply.edit(_("Converting the file to {}...", lang).format(output_type))
             try:

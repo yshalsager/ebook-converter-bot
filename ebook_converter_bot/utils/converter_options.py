@@ -192,7 +192,9 @@ VALUE_OPTION_MAP: dict[str, dict[str, str | int | None]] = {
     "epub_version": {"default": "default", "2": "2", "3": "3"},
     "pdf_paper_size": {"default": "default", "letter": "letter", "a4": "a4"},
     "pdf_font_profile": get_pdf_font_value_map(),
-    "conversion_backend": {name: name for name in ("calibre", "pandoc", "boko", "kfxgen")},
+    "conversion_backend": {
+        name: name for name in ("calibre", "pandoc", "boko", "kfxgen", "ebook-rs")
+    },
     "pandoc_heading_shift": {"default": 0, "promote": -1, "demote": 1},
     "footnote_mode": {value: value for value, _label in FOOTNOTE_VALUE_OPTION[2]},
 }
@@ -384,11 +386,13 @@ def build_options_keyboard(
 
     backend = resolve_backend(state.input_ext, state.options_context, state.conversion_backend)
     for option_key, prefix_label_key, value_specs in CONTEXT_VALUE_OPTIONS[state.options_context]:
-        if backend == "boko" or (backend == "kfxgen" and option_key == "kfx_doc_type"):
+        if backend in {"boko", "ebook-rs"} or (
+            backend == "kfxgen" and option_key == "kfx_doc_type"
+        ):
             continue
         _append_value_row(keyboard_context, option_key, prefix_label_key, value_specs)
     for option_key, label_key in CONTEXT_BOOL_OPTIONS[state.options_context]:
-        if backend == "boko" or (
+        if backend in {"boko", "ebook-rs"} or (
             option_key in EPUB_ONLY_BOOL_OPTIONS and state.input_ext != "epub"
         ):
             continue
@@ -418,7 +422,7 @@ def route_supports_rtl(state: ConversionRequestState, output_type: str) -> bool:
         return output_type in {"docx", "epub", "html", "md"}
     backend = resolve_backend(state.input_ext, output_type, state.conversion_backend)
     return output_type in {"epub", "pdf"} or (
-        backend in {"boko", "kfxgen"}
+        backend in {"boko", "kfxgen", "ebook-rs"}
         and output_type in {"azw3", "kfx"}
         and state.input_ext in {"epub", "bok", "pdf"}
     )
@@ -482,7 +486,7 @@ def route_option_values(
         ),
         "footnote_mode": (state.footnote_mode if is_epub_input or uses_pandoc else "keep"),
     }
-    if uses_pandoc:
+    if backend in {"pandoc", "ebook-rs"}:
         return values
     if backend in {"boko", "kfxgen"}:
         if output_type == "kfx":
@@ -577,7 +581,7 @@ def _append_route_context_options(
     backend = resolve_backend(
         context.state.input_ext, output_type, context.state.conversion_backend
     )
-    if backend in {"pandoc", "boko"} or output_type not in CONTEXT_TYPES:
+    if backend in {"pandoc", "boko", "ebook-rs"} or output_type not in CONTEXT_TYPES:
         return
     for option_key, prefix_label_key, value_specs in CONTEXT_VALUE_OPTIONS[output_type]:
         if backend == "kfxgen" and option_key == "kfx_doc_type":

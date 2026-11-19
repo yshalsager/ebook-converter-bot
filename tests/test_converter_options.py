@@ -61,6 +61,7 @@ LABELS = {
     "pandoc_label": "Pandoc",
     "boko_label": "Boko",
     "kfxgen_label": "kfxgen",
+    "ebook-rs_label": "ebook-rs",
     "pandoc_toc_label": "Table of contents",
     "pandoc_number_sections_label": "Number sections",
     "pandoc_heading_shift_label": "Heading levels",

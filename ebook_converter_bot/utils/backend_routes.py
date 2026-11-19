@@ -69,6 +69,7 @@ CALIBRE_OUTPUT_TYPES = [
 ]
 BOKO_INPUT_TYPES = {"epub", "azw3", "mobi", "azw", "kfx"}
 BOKO_OUTPUT_TYPES = {"epub", "azw3", "kfx", "md"}
+EBOOK_RS_ROUTES = {("epub", "kfx"), ("kfx", "epub")}
 KFX_INPUT_TYPES = {"azw8", "kfx", "kfx-zip"}
 KFX_OUTPUT_INPUT_TYPES = {"epub", "opf", "mobi", "doc", "docx", "kpf", "kfx-zip"}
 FORMAT_ALIASES = {"asciidoc": "adoc", "htm": "html", "xhtml": "html", "typst": "typ"}
@@ -123,6 +124,8 @@ def backend_choices(input_type: str, output_type: str) -> list[str]:
         "kpf"
     }:
         choices.append("kfxgen")
+    if (input_type, output_type) in EBOOK_RS_ROUTES:
+        choices.append("ebook-rs")
     return choices
 
 

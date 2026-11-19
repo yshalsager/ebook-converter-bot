@@ -9,8 +9,10 @@ from os import killpg, setsid
 from pathlib import Path
 from shutil import copy2
 from signal import SIGKILL
+from sys import executable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import ClassVar
+from zipfile import BadZipFile, ZipFile
 
 import anydoc
 
@@ -19,6 +21,7 @@ from ebook_converter_bot.utils.backend_routes import (
     BOKO_INPUT_TYPES,
     BOKO_OUTPUT_TYPES,
     CALIBRE_OUTPUT_TYPES,
+    EBOOK_RS_ROUTES,
     KFX_INPUT_TYPES,
     PANDOC_ONLY_OUTPUT_TYPES,
     backend_choices,
@@ -44,6 +47,7 @@ MAX_SPLIT_OUTPUT_FILES = 35
 DOCX_ARABIC_REFERENCE_DOC = Path(__file__).resolve().parents[1] / "data" / "reference.docx"
 EBOOK_CONVERT_OUTPUT_ARG_INDEX = 2
 MAX_BOKO_WORKERS = 2
+NATIVE_KFX_BACKENDS = {"boko", "kfxgen", "ebook-rs"}
 
 
 def _pdf_font_env_for_command(command: list[str]) -> dict[str, str] | None:
@@ -262,6 +266,73 @@ class KfxgenBackend(ConversionBackend):
                 return error
             if not staged_output.is_file() or not staged_output.stat().st_size:
                 return "kfxgen did not produce an output file."
+            staged_output.replace(output_file)
+        return ""
+
+
+class EbookRsBackend(ConversionBackend):
+    name: ClassVar[str] = "ebook-rs"
+
+    def __init__(self, converter: Converter) -> None:
+        self.converter = converter
+
+    def supports(self, input_type: str, output_type: str, options: ConversionOptions) -> bool:
+        return (input_type, output_type) in EBOOK_RS_ROUTES
+
+    @staticmethod
+    def matches_input_type(input_file: Path, input_type: str) -> bool:
+        with input_file.open("rb") as source:
+            header = source.read(4)
+            if input_type == "kfx":
+                return header == b"CONT"
+            if header != b"PK\x03\x04":
+                return False
+            try:
+                with ZipFile(source) as archive, archive.open("mimetype") as mime:
+                    return (
+                        mime.read(21) == b"application/epub+zip"
+                        and "META-INF/container.xml" in archive.namelist()
+                    )
+            except BadZipFile, KeyError, RuntimeError, NotImplementedError:
+                return False
+
+    async def convert(
+        self,
+        input_file: Path,
+        output_file: Path,
+        output_type: str,
+        options: ConversionOptions,
+        timeout: int | None = TASK_TIMEOUT,
+    ) -> str:
+        if output_type == "kfx" and (
+            options.kfx_doc_type != "doc" or options.kfx_pages is not None
+        ):
+            return "ebook-rs produces PDOC documents without configurable page estimates."
+        exporter = "export_kfx_bytes" if output_type == "kfx" else "export_epub3_bytes"
+        with TemporaryDirectory(dir=output_file.parent, prefix=".ebook-rs-") as directory:
+            staged_output = Path(directory) / output_file.name
+            command = [
+                "env",
+                "RAYON_NUM_THREADS=2",
+                executable,
+                "-I",
+                "-c",
+                (
+                    "from pathlib import Path\n"
+                    "from sys import argv\n"
+                    "from ebook_rs import Book\n"
+                    f"Path(argv[2]).write_bytes(Book.open(argv[1]).{exporter}())"
+                ),
+                str(input_file),
+                str(staged_output),
+            ]
+            _, error = await self.converter._run_command(
+                command, timeout=TASK_TIMEOUT if timeout is None else min(timeout, TASK_TIMEOUT)
+            )
+            if error:
+                return error
+            if not staged_output.is_file() or not staged_output.stat().st_size:
+                return "ebook-rs did not produce an output file."
             staged_output.replace(output_file)
         return ""
 
@@ -864,6 +935,7 @@ class Converter:
         self.pandoc_backend = PandocBackend(self)
         self.boko_backend = BokoBackend(self)
         self.kfxgen_backend = KfxgenBackend(self)
+        self.ebook_rs_backend = EbookRsBackend(self)
         self.backends = {
             backend.name: backend
             for backend in (
@@ -871,6 +943,7 @@ class Converter:
                 self.pandoc_backend,
                 self.boko_backend,
                 self.kfxgen_backend,
+                self.ebook_rs_backend,
             )
         }
 
@@ -1071,7 +1144,7 @@ class Converter:
             backend = self.backends[name]
             source_type = (
                 input_type
-                if name == "boko" and input_type in BOKO_INPUT_TYPES
+                if name == "ebook-rs" or (name == "boko" and input_type in BOKO_INPUT_TYPES)
                 else prepared_input_type(input_type, output_type)
             )
             if backend.supports(source_type, output_type, options):
@@ -1086,7 +1159,7 @@ class Converter:
         output_file: Path | None = None,
     ) -> tuple[int | None, str]:
         output_file = output_file or input_file.with_suffix(".kfx")
-        if options.conversion_backend in {"boko", "kfxgen"}:
+        if options.conversion_backend in NATIVE_KFX_BACKENDS:
             error = await self.backends[options.conversion_backend].convert(
                 input_file, output_file, "kfx", options, timeout=timeout
             )
@@ -1379,7 +1452,10 @@ class Converter:
             )
         )
 
-        if input_type in KFX_INPUT_TYPES and backend is not self.boko_backend:
+        if input_type in KFX_INPUT_TYPES and backend not in (
+            self.boko_backend,
+            self.ebook_rs_backend,
+        ):
             return await self._convert_from_kfx_input(
                 input_file, output_type, options, timeout=timeout
             )
@@ -1570,6 +1646,13 @@ class Converter:
         options = options or ConversionOptions()
         input_type = input_file.suffix.lower()[1:]
         backend = self._select_backend(input_type, output_type, options)
+        if backend is self.ebook_rs_backend and not self.ebook_rs_backend.matches_input_type(
+            input_file, input_type
+        ):
+            expected = "an EPUB" if input_type == "epub" else "a standalone KFX"
+            return ConversionBatchResult(
+                [], None, f"ebook-rs expected {expected} file.", backend=backend.name
+            )
         options = replace(options, conversion_backend=backend.name)
         converted_to_rtl: bool | None = None
 
@@ -1603,7 +1686,7 @@ class Converter:
                 output_file, output_type, timeout=timeout
             )
             conversion_error = self._merge_errors(conversion_error, compression_error)
-        if backend.name in {"boko", "kfxgen"}:
+        if backend.name in NATIVE_KFX_BACKENDS:
             if not conversion_error and (
                 not output_file.is_file() or not output_file.stat().st_size
             ):

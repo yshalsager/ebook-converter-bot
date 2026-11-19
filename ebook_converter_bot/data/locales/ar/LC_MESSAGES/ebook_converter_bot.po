@@ -363,6 +363,9 @@ msgstr "Boko: كتاب EBOK مع تقدير تلقائي للصفحات."
 msgid "kfxgen: PDOC documents only."
 msgstr "kfxgen: مستندات PDOC فقط."
 
+msgid "ebook-rs: PDOC documents only."
+msgstr "ebook-rs: مستندات PDOC فقط."
+
 #: ebook_converter_bot/modules/converter.py:246
 #, python-brace-format
 msgid "Heading levels: {}"

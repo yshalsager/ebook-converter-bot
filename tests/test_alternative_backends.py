@@ -32,14 +32,15 @@ from tests.test_converter_options import LABELS, _flatten_data
 @pytest.mark.parametrize(
     ("input_type", "output_type", "expected"),
     [
-        ("epub", "kfx", ["calibre", "boko", "kfxgen"]),
+        ("epub", "kfx", ["calibre", "boko", "kfxgen", "ebook-rs"]),
         ("epub", "azw3", ["calibre", "boko"]),
         ("epub", "md", ["pandoc", "boko"]),
         ("docx", "epub", ["calibre", "pandoc"]),
         ("docx", "kfx", ["calibre", "kfxgen"]),
         ("mobi", "epub", ["calibre", "boko"]),
         ("mobi", "md", ["boko"]),
-        ("kfx", "epub", ["calibre", "boko"]),
+        ("kfx", "epub", ["calibre", "boko", "ebook-rs"]),
+        ("kfx-zip", "epub", ["calibre"]),
         ("kpf", "kfx", ["calibre"]),
         ("bok", "kfx", ["calibre", "boko", "kfxgen"]),
         ("pdf", "kfx", ["calibre", "boko", "kfxgen"]),
@@ -55,8 +56,8 @@ def test_route_backend_choices(input_type: str, output_type: str, expected: list
 @pytest.mark.parametrize(
     ("output_type", "backend", "expected"),
     [
-        ("kfx", "boko", ["calibre", "boko", "kfxgen"]),
-        ("kfx", "kfxgen", ["calibre", "boko", "kfxgen"]),
+        ("kfx", "boko", ["calibre", "boko", "kfxgen", "ebook-rs"]),
+        ("kfx", "ebook-rs", ["calibre", "boko", "kfxgen", "ebook-rs"]),
         ("azw3", "boko", ["calibre", "boko"]),
         ("md", "boko", ["pandoc", "boko"]),
         ("docx", "kfxgen", ["calibre", "pandoc"]),
@@ -82,7 +83,7 @@ def test_route_chooser_shows_only_available_backends(
     ]
 
 
-@pytest.mark.parametrize("backend", ["boko", "kfxgen"])
+@pytest.mark.parametrize("backend", ["boko", "kfxgen", "ebook-rs"])
 def test_native_kfx_controls_do_not_mutate_saved_preferences(backend: str) -> None:
     state = ConversionRequestState(
         "book.epub",
@@ -111,7 +112,7 @@ def test_native_kfx_controls_do_not_mutate_saved_preferences(backend: str) -> No
     else:
         assert values["kfx_doc_type"] == "doc"
         assert values["kfx_pages"] is None
-        assert b"opt|kfx_pages|auto|12345678" in data
+        assert (b"opt|kfx_pages|auto|12345678" in data) == (backend == "kfxgen")
     assert state_to_persisted_options(state) == saved
     restored = ConversionRequestState("/tmp/new.epub", 0, "epub")  # noqa: S108
     apply_persisted_options(restored, saved)
@@ -141,6 +142,42 @@ def arabic_epub(tmp_path: Path) -> Path:
         include_toc_page=False,
     )
     return source
+
+
+def test_ebook_rs_converts_arabic_epub_and_reads_kfx(arabic_epub: Path) -> None:
+    converter = Converter()
+    options = ConversionOptions(conversion_backend="ebook-rs", force_rtl=True)
+    export = asyncio.run(converter.convert_ebook_many(arabic_epub, "kfx", options))
+    assert not export.conversion_error
+    assert export.backend == "ebook-rs"
+
+    # Use a different stem so the readback cannot accidentally return the original EPUB.
+    source = export.output_files[0].rename(arabic_epub.with_name("readback.kfx"))
+    readback = asyncio.run(converter.convert_ebook_many(source, "epub", options))
+    assert not readback.conversion_error
+    assert readback.backend == "ebook-rs"
+    with ZipFile(readback.output_files[0]) as book:
+        assert any(
+            "مرحبا بالعالم" in book.read(name).decode()
+            for name in book.namelist()
+            if name.endswith(".xhtml")
+        )
+
+
+@pytest.mark.parametrize(
+    ("suffix", "output", "expected"),
+    [("epub", "kfx", "an EPUB"), ("kfx", "epub", "a standalone KFX")],
+)
+def test_ebook_rs_rejects_mislabeled_uploads(
+    arabic_epub: Path, suffix: str, output: str, expected: str
+) -> None:
+    source = arabic_epub.with_name(f"mislabeled.{suffix}")
+    source.write_bytes(b"Plain text" if suffix == "epub" else arabic_epub.read_bytes())
+    options = ConversionOptions(conversion_backend="ebook-rs", force_rtl=True)
+    result = asyncio.run(Converter().convert_ebook_many(source, output, options))
+    assert result.backend == "ebook-rs"
+    assert result.conversion_error == f"ebook-rs expected {expected} file."
+    assert not result.output_files
 
 
 @pytest.mark.skipif(shutil.which("boko") is None, reason="Boko CLI is not installed")
@@ -245,20 +282,20 @@ def test_kfxgen_uses_same_profile_and_respects_pages(
     assert timeouts == [17, 17]
 
 
-@pytest.mark.parametrize("backend", ["boko", "kfxgen"])
+@pytest.mark.parametrize("backend", ["boko", "kfxgen", "ebook-rs"])
 def test_native_failure_does_not_send_stale_output(
-    tmp_path: Path, monkeypatch, backend: str
+    arabic_epub: Path, monkeypatch, backend: str
 ) -> None:
     converter = Converter()
-    source = tmp_path / "book.epub"
-    source.write_bytes(b"source")
+    source = arabic_epub
+    source_bytes = source.read_bytes()
     output = source.with_suffix(".kfx")
     output.write_bytes(b"stale")
     calls = []
 
     async def fake_run(command, timeout=TASK_TIMEOUT):
         calls.append(command)
-        if "boko" in command:
+        if backend != "kfxgen":
             Path(command[-1]).write_bytes(b"partial")
         return -9, "Worker failed"
 
@@ -272,9 +309,9 @@ def test_native_failure_does_not_send_stale_output(
     assert result.backend == backend
     assert result.output_files == []
     assert result.conversion_error == "Worker failed"
-    assert source.read_bytes() == b"source"
+    assert source.read_bytes() == source_bytes
     assert output.read_bytes() == b"stale"
-    assert not list(tmp_path.glob(".boko-*"))
+    assert not list(source.parent.glob(f".{backend}-*"))
     assert len(calls) == 1
 
 

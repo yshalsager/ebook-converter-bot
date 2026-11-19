@@ -58,14 +58,14 @@ Some more features of the bot:
 - Convert `.doc`, `.docm`, `.odp`, `.ods`, `.ppt`, `.xls`, and `.xlsm` files to Markdown with Anydoc, then use the existing Calibre or Pandoc pipeline.
 - Interactive conversion options after selecting the output format.
 - Per-user conversion option defaults are remembered automatically.
-- Optional Pandoc, Boko, and kfxgen backends on supported routes, preserving existing defaults.
+- Optional [Pandoc](https://pandoc.org/), [Boko](https://github.com/zacharydenton/boko), [kfxgen](https://github.com/jloutsch/kfxgen), and [ebook-rs](https://github.com/SV-stark/ebook-rs) backends, preserving existing defaults. ebook-rs supports EPUB → KFX and standalone KFX → EPUB.
 - Markdown-family, HTML, reStructuredText, AsciiDoc, Org, LaTeX, Typst, and plain-text document routes through Pandoc.
 - Global output options: image compression, smart punctuation, text justification, line height, and paragraph spacing cleanup.
 - DOCX options: page size and generated TOC toggle for Calibre; RTL output, H1/H2 heading page breaks, heading level shifts, and Arabic reference styling for Pandoc.
 - EPUB output options: version selection, inline TOC, and background removal.
 - PDF options: paper size, page numbers, cover-page generation, chapter page breaks, and Arabic font selection.
 - Extra PDF fonts can be mounted locally without committing privately licensed font files.
-- KFX options: PDOC/EBOK and pages mode. Boko uses fixed EBOK/automatic pages; kfxgen uses fixed PDOC with optional automatic pages.
+- KFX options: PDOC/EBOK and pages mode. Boko uses fixed EBOK/automatic pages; kfxgen uses fixed PDOC with optional automatic pages; ebook-rs uses fixed PDOC without page settings.
 - Footnote options: standardize EPUB notes, keep only their markers, or remove notes and markers from EPUB and Pandoc routes.
 - EPUB-to-EPUB volume splitting with per-volume output processing (up to 35 split files).
 - Admin stats track users, recent attempts, success/failure rates, active users, and top conversion pairs.

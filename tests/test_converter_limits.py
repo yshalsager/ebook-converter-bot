@@ -195,6 +195,41 @@ def test_global_slots_release_before_delivery(converter_module, monkeypatch):
     asyncio.run(run())
 
 
+def test_ebook_rs_queue_does_not_hold_global_slot(converter_module, monkeypatch):
+    module = converter_module
+    module.conversion_slots = asyncio.Semaphore(1)
+    module.ebook_rs_slots = asyncio.Semaphore(1)
+    ebook_rs, other = UploadEvent("first.kfx"), UploadEvent("second.md")
+    other.chat_id = other.sender_id = other.chat = 43
+    started = []
+
+    async def convert(input_file, *args, **kwargs):
+        started.append(input_file.name)
+        return SimpleNamespace(
+            backend=kwargs["options"].conversion_backend,
+            output_files=[],
+            split_capped=False,
+            conversion_error="Failed",
+        )
+
+    monkeypatch.setattr(module.converter, "convert_ebook_many", convert)
+
+    async def run():
+        request_id = await prepare_request(module, ebook_rs)
+        module.queue[request_id].conversion_backend = "ebook-rs"
+        await prepare_request(module, other)
+        async with module.ebook_rs_slots:
+            waiting = asyncio.create_task(module.converter_callback.__wrapped__(ebook_rs))
+            await asyncio.sleep(0)
+            assert "Queued. Waiting for a conversion slot..." in ebook_rs.edits
+            await asyncio.wait_for(module.converter_callback.__wrapped__(other), timeout=1)
+            assert started == ["second.md"]
+        await waiting
+        assert started == ["second.md", "first.kfx"]
+
+    asyncio.run(run())
+
+
 def test_group_members_have_separate_admission_and_cooldown(converter_module, monkeypatch):
     module = converter_module
     started = []
