@@ -170,3 +170,29 @@ def test_get_broadcast_chats_filters_username_and_active_users(monkeypatch) -> N
         for chat in curd.get_broadcast_chats({"username_only": True, "active_after": active_after})
     ] == [2]
 
+
+def test_get_broadcast_chats_private_only_after_id_and_lang(monkeypatch) -> None:
+    testing_session_local = _configure_test_session(monkeypatch)
+    with testing_session_local() as session:
+        session.add_all(
+            [
+                Chat(user_id=-5, user_name="group", type=1),
+                Chat(user_id=1, user_name="", type=0),
+                Chat(user_id=2, user_name="", type=0),
+                Chat(user_id=3, user_name="", type=0),
+                Preference(user_id=2, language="ar"),
+                Preference(user_id=3, language="en"),
+            ]
+        )
+        session.commit()
+
+    def ids(filters: dict) -> list[int]:
+        return [chat.user_id for chat in curd.get_broadcast_chats(filters)]
+
+    assert ids({"private_only": True}) == [1, 2, 3]
+    assert ids({"after_id": 1}) == [2, 3]
+    assert ids({"lang": "ar"}) == [2]
+    assert ids({"lang": "en"}) == [-5, 1, 3]
+    assert ids({"lang": "tr"}) == []
+    assert ids({"sample_every": 2}) == [-5, 2]
+    assert ids({"sample_every": 2, "after_id": -5}) == [2]  # resume keeps the same sample

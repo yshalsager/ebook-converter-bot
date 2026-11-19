@@ -43,6 +43,10 @@ def test_parse_broadcast_filters_active_and_username_only() -> None:
         ("active_within -1", '"active_within" must be positive.'),
         ("username_only no", None),
         ("unknown option", 'Unrecognized filter: "unknown option".'),
+        ("lang fr", '"lang" must be one of: ar, en, tr.'),
+        ("after_id x", 'Invalid number for "after_id".'),
+        ("sample_every 0", '"sample_every" must be at least 1.'),
+        ("confirm now", 'Unrecognized filter: "confirm now".'),
     ],
 )
 def test_parse_broadcast_filters_errors(raw: str, message: str | None) -> None:
@@ -100,3 +104,46 @@ def test_broadcast_to_chats_retries_flood_and_removes_only_permanent_failures(
         broadcast_mod.SLEEP_AFTER_SEND,
         FLOOD_SECONDS + 1,
     ]
+
+
+def test_parse_broadcast_filters_targeting_and_confirm() -> None:
+    filters, error = broadcast_mod.parse_broadcast_filters(
+        "private_only\nlang AR\nsample_every 3\nafter_id -100\nconfirm"
+    )
+
+    assert error is None
+    assert filters == {
+        "private_only": True,
+        "lang": "ar",
+        "sample_every": 3,
+        "after_id": -100,
+        "confirm": True,
+    }
+
+
+def test_broadcast_reports_progress_and_survives_progress_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_sleep(_seconds: float) -> None:
+        return None
+
+    monkeypatch.setattr(broadcast_mod, "sleep", fake_sleep)
+    monkeypatch.setattr(broadcast_mod, "PROGRESS_EVERY", 2)
+    progress: list[tuple[int, int, int, int]] = []
+
+    async def on_progress(*args: int) -> None:
+        progress.append(args)
+        raise RPCError(None, "MESSAGE_NOT_MODIFIED", 400)
+
+    chats = [Chat(user_id=i, user_name="", type=0) for i in range(1, 6)]
+    sender = Sender({3: [UserIsBlockedError(None)]})
+
+    sent, failed = asyncio.run(
+        broadcast_mod.broadcast_to_chats(
+            sender, cast(Message, object()), chats, lambda _id: None, on_progress
+        )
+    )
+
+    assert (sent, failed) == (4, 1)
+    assert sender.calls == [1, 2, 3, 4, 5]
+    assert progress == [(2, 2, 0, 2), (4, 3, 1, 4)]

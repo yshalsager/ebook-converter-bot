@@ -552,13 +552,25 @@ def get_broadcast_chats(filters: dict[str, Any] | None = None, *, session: Sessi
     if filters:
         if filters.get("username_only"):
             stmt = stmt.where(Chat.user_name != "")
+        if filters.get("private_only"):
+            stmt = stmt.where(Chat.type == 0)
+        if lang := filters.get("lang"):
+            # chats without a saved language get English, like get_lang
+            other = select(Preference.user_id).where(Preference.language != lang)
+            chosen = select(Preference.user_id).where(Preference.language == lang)
+            stmt = stmt.where(
+                Chat.user_id.not_in(other) if lang == "en" else Chat.user_id.in_(chosen)
+            )
         active_after = filters.get("active_after")
         if active_after:
             active_users = select(ConversionEvent.user_id).where(
                 ConversionEvent.created_at >= active_after
             )
             stmt = stmt.where(Chat.user_id.in_(active_users))
-    return list(session.scalars(stmt).all())
+    filters = filters or {}
+    # after_id is applied after sampling so a resumed sampled run continues the same sample
+    chats = list(session.scalars(stmt).all())[:: filters.get("sample_every", 1)]
+    return [chat for chat in chats if chat.user_id > filters.get("after_id", float("-inf"))]
 
 
 @with_session
