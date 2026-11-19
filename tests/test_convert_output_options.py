@@ -269,7 +269,9 @@ def test_force_rtl_pdf_with_epub_input_uses_existing_preprocess(tmp_path: Path) 
             return 0, ""
 
         converter._run_command = fake_run  # type: ignore[method-assign]
-        convert_utils.set_epub_to_rtl = lambda path: rtl_paths.append(path) or True
+        convert_utils.set_epub_to_rtl = lambda path, *, use_html_direction=False: (
+            rtl_paths.append(path) or True
+        )
         try:
             result = await converter.convert_ebook_many(
                 input_file,

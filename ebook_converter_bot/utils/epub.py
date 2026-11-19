@@ -365,7 +365,64 @@ def _rewrite_epub_dedup(
         tmp_path.unlink(missing_ok=True)
 
 
-def set_epub_to_rtl(input_file: Path) -> bool:
+def _force_xhtml_rtl(original: bytes) -> bytes:
+    document = etree.fromstring(original, xml_parser)
+    changed = False
+    for element in document.iter():
+        tag = _local_name(element)
+        direction = (element.get("dir") or "").strip().lower()
+        if direction == "rtl":
+            continue
+        if tag in {"html", "body"} or (
+            direction == "ltr"
+            and tag
+            in {
+                "article",
+                "aside",
+                "blockquote",
+                "dd",
+                "div",
+                "dl",
+                "dt",
+                "figcaption",
+                "figure",
+                "footer",
+                "h1",
+                "h2",
+                "h3",
+                "h4",
+                "h5",
+                "h6",
+                "header",
+                "li",
+                "main",
+                "nav",
+                "ol",
+                "p",
+                "pre",
+                "section",
+                "table",
+                "td",
+                "th",
+                "tr",
+                "ul",
+            }
+        ):
+            element.set("dir", "rtl")
+            changed = True
+    return _serialize_xml(document, original) if changed else original
+
+
+def _rtl_stylesheet_replacements(epub_book: ZipFile, infos: list[ZipInfo]) -> dict[str, bytes]:
+    return {
+        info.filename: b"* {direction: rtl !important;}\n" + css
+        for info in infos
+        if info.filename.endswith(".css")
+        and b"direction: rtl !important" not in (css := epub_book.read(info.filename))[:300].lower()
+    }
+
+
+def set_epub_to_rtl(input_file: Path, *, use_html_direction: bool = False) -> bool:
     with ZipFile(input_file, "r") as epub_book:
         picked = _pick_valid_opf(epub_book)
         if not picked:
@@ -382,22 +439,21 @@ def set_epub_to_rtl(input_file: Path) -> bool:
             spine.set("page-progression-direction", "rtl")
             changed = True
 
-        rtl_prefix = b"* {direction: rtl !important;}\n"
         replacements: dict[str, bytes] = {}
         infos = epub_book.infolist()
         unique_infos = _unique_infos(infos)
         needs_cleanup = _needs_cleanup(epub_book, unique_infos, len(infos))
 
-        for info in unique_infos:
-            if not info.filename.endswith(".css"):
-                continue
-            css = epub_book.read(info.filename)
-            if b"direction: rtl !important" in css[:300].lower():
-                continue
-            replacements[info.filename] = rtl_prefix + css
-            changed = True
+        if use_html_direction:
+            for name in _ordered_xhtml_paths(epub_book, content_opf, root, unique_infos):
+                original = epub_book.read(name)
+                updated = _force_xhtml_rtl(original)
+                if updated != original:
+                    replacements[name] = updated
+        else:
+            replacements = _rtl_stylesheet_replacements(epub_book, unique_infos)
 
-        if not changed and not needs_cleanup:
+        if not changed and not replacements and not needs_cleanup:
             return False
 
         xml_declaration = opf_bytes.lstrip().startswith(b"<?xml")

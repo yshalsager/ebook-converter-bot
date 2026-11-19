@@ -145,22 +145,46 @@ def arabic_epub(tmp_path: Path) -> Path:
 
 
 def test_ebook_rs_converts_arabic_epub_and_reads_kfx(arabic_epub: Path) -> None:
+    mixed = arabic_epub.with_name("mixed.epub")
+    with ZipFile(arabic_epub) as source, ZipFile(mixed, "w") as target:
+        for item in source.infolist():
+            content = source.read(item)
+            if item.filename.endswith(".xhtml") and b"<p>" in content:
+                content = content.replace(b"<body", b'<body dir="ltr"', 1).replace(
+                    "<p>مرحبا بالعالم</p>".encode(),
+                    '<p dir="ltr">مرحبا بالعالم <span dir="ltr">English 123</span></p>'.encode(),
+                )
+            target.writestr(item, content)
+
     converter = Converter()
     options = ConversionOptions(conversion_backend="ebook-rs", force_rtl=True)
-    export = asyncio.run(converter.convert_ebook_many(arabic_epub, "kfx", options))
+    export = asyncio.run(converter.convert_ebook_many(mixed, "kfx", options))
     assert not export.conversion_error
     assert export.backend == "ebook-rs"
+    assert export.converted_to_rtl is True
 
     # Use a different stem so the readback cannot accidentally return the original EPUB.
-    source = export.output_files[0].rename(arabic_epub.with_name("readback.kfx"))
-    readback = asyncio.run(converter.convert_ebook_many(source, "epub", options))
+    source = export.output_files[0].rename(mixed.with_name("readback.kfx"))
+    readback = asyncio.run(
+        converter.convert_ebook_many(
+            source, "epub", ConversionOptions(conversion_backend="ebook-rs")
+        )
+    )
     assert not readback.conversion_error
     assert readback.backend == "ebook-rs"
     with ZipFile(readback.output_files[0]) as book:
-        assert any(
-            "مرحبا بالعالم" in book.read(name).decode()
+        opf = next(name for name in book.namelist() if name.endswith(".opf"))
+        assert etree.fromstring(book.read(opf), xml_parser).xpath(
+            '//*[local-name()="spine" and @page-progression-direction="rtl"]'
+        )
+        chapter = next(
+            book.read(name)
             for name in book.namelist()
-            if name.endswith(".xhtml")
+            if name.endswith(".xhtml") and "مرحبا بالعالم".encode() in book.read(name)
+        )
+        assert etree.fromstring(chapter, xml_parser).xpath(
+            '//*[local-name()="p" and @dir="rtl" and contains(., "مرحبا بالعالم")]'
+            '/*[local-name()="span" and @dir="ltr" and .="English 123"]'
         )
 
 
@@ -457,7 +481,11 @@ def test_native_epub_input_keeps_shared_preprocessing(
     converter = Converter()
     operations = []
     monkeypatch.setattr(
-        convert_utils, "set_epub_to_rtl", lambda path: operations.append(("rtl", path)) or True
+        convert_utils,
+        "set_epub_to_rtl",
+        lambda path, *, use_html_direction: (
+            operations.append(("rtl", path, use_html_direction)) or True
+        ),
     )
     monkeypatch.setattr(
         convert_utils, "fix_content_opf_problems", lambda path: operations.append(("fix", path))
@@ -495,7 +523,7 @@ def test_native_epub_input_keeps_shared_preprocessing(
     assert not result.conversion_error
     assert result.converted_to_rtl
     assert operations == [
-        ("rtl", source),
+        ("rtl", source, False),
         ("fix", source),
         ("toc", source),
         ("notes", source, True),

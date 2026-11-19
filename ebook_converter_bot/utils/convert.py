@@ -1319,7 +1319,9 @@ class Converter:
     def _preprocess_input_epub(input_file: Path, options: ConversionOptions) -> bool | None:
         set_to_rtl: bool | None = None
         if options.force_rtl:
-            set_to_rtl = set_epub_to_rtl(input_file)
+            set_to_rtl = set_epub_to_rtl(
+                input_file, use_html_direction=options.conversion_backend == "ebook-rs"
+            )
         if options.fix_epub:
             fix_content_opf_problems(input_file)
         if options.flat_toc:
