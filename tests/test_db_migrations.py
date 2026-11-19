@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pytest
@@ -25,8 +26,12 @@ def _patch_database(monkeypatch, db_path: Path) -> None:
 
 def test_initialize_database_upgrades_fresh_database(monkeypatch, tmp_path: Path) -> None:
     _patch_database(monkeypatch, tmp_path / "fresh.db")
+    root = logging.getLogger()
+    before = (root.level, list(root.handlers))
 
     db_session.initialize_database()
+
+    assert (root.level, list(root.handlers)) == before  # alembic must not reset bot logging
 
     inspector = inspect(db_session.engine)
     assert {

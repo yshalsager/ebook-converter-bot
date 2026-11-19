@@ -17,7 +17,8 @@ from ebook_converter_bot.db.session import db_connection_string
 config = context.config
 config.set_main_option("sqlalchemy.url", db_connection_string)
 
-if config.config_file_name is not None:
+# the bot sets up its own logging; fileConfig would reset the root logger to WARNING
+if config.config_file_name is not None and config.attributes.get("configure_logger", True):
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
