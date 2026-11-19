@@ -32,6 +32,9 @@ def test_parse_broadcast_filters_active_and_username_only() -> None:
     assert abs(filters["active_after"] - (datetime.now(UTC) - timedelta(days=3))) < timedelta(
         seconds=5
     )
+    filters, error = broadcast_mod.parse_broadcast_filters("skip_active_within 3")
+    assert error is None
+    assert set(filters) == {"skip_active_after"}
 
 
 @pytest.mark.parametrize(
@@ -41,6 +44,7 @@ def test_parse_broadcast_filters_active_and_username_only() -> None:
         ("done", None),
         ("active_within nope", 'Invalid number for "active_within".'),
         ("active_within -1", '"active_within" must be positive.'),
+        ("skip_active_within -1", '"skip_active_within" must be positive.'),
         ("username_only no", None),
         ("unknown option", 'Unrecognized filter: "unknown option".'),
         ("lang fr", '"lang" must be one of: ar, en, tr.'),

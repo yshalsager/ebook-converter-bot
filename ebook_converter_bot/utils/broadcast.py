@@ -101,14 +101,15 @@ def parse_broadcast_filters(raw: str) -> tuple[dict[str, Any], str | None]:  # n
         parts = line.split()
         keyword = parts[0].lower()
 
-        if keyword == "active_within" and len(parts) >= FILTER_VALUE_PARTS:
+        if keyword in {"active_within", "skip_active_within"} and len(parts) >= FILTER_VALUE_PARTS:
             try:
                 days = int(parts[1])
             except ValueError:
-                return {}, 'Invalid number for "active_within".'
+                return {}, f'Invalid number for "{keyword}".'
             if days < 0:
-                return {}, '"active_within" must be positive.'
-            filters["active_after"] = datetime.now(UTC) - timedelta(days=days)
+                return {}, f'"{keyword}" must be positive.'
+            key = "active_after" if keyword == "active_within" else "skip_active_after"
+            filters[key] = datetime.now(UTC) - timedelta(days=days)
             continue
 
         if keyword in {"private_only", "confirm"} and len(parts) == 1:
@@ -160,6 +161,7 @@ def filters_help_text() -> str:
     return (
         "Filters, one per line after /broadcast (without confirm it only counts recipients):\n"
         "- active_within DAYS\n"
+        "- skip_active_within DAYS (only chats not active in that time)\n"
         "- username_only [yes|no]\n"
         "- private_only (skip groups and channels)\n"
         "- lang ar|en|tr (chats without a language count as en)\n"

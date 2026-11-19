@@ -169,6 +169,9 @@ def test_get_broadcast_chats_filters_username_and_active_users(monkeypatch) -> N
         chat.user_id
         for chat in curd.get_broadcast_chats({"username_only": True, "active_after": active_after})
     ] == [2]
+    assert [
+        chat.user_id for chat in curd.get_broadcast_chats({"skip_active_after": active_after})
+    ] == [1, 3]
 
 
 def test_get_broadcast_chats_private_only_after_id_and_lang(monkeypatch) -> None:

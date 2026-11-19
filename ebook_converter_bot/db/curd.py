@@ -567,6 +567,11 @@ def get_broadcast_chats(filters: dict[str, Any] | None = None, *, session: Sessi
                 ConversionEvent.created_at >= active_after
             )
             stmt = stmt.where(Chat.user_id.in_(active_users))
+        if skip_active_after := filters.get("skip_active_after"):
+            recent_users = select(ConversionEvent.user_id).where(
+                ConversionEvent.created_at >= skip_active_after
+            )
+            stmt = stmt.where(Chat.user_id.not_in(recent_users))
     filters = filters or {}
     # after_id is applied after sampling so a resumed sampled run continues the same sample
     chats = list(session.scalars(stmt).all())[:: filters.get("sample_every", 1)]
