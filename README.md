@@ -31,7 +31,7 @@ This bot aims to provide an easy way for telegram users to convert e-books from 
 
 It supports converting from the following formats:
 
-```python
+```text
 ['azw', 'azw3', 'azw4', 'azw8', 'adoc', 'asciidoc', 'bok', 'cb7', 'cbc', 'cbr',
  'cbz', 'chm', 'csv', 'djv', 'djvu', 'doc', 'docm', 'docx', 'epub', 'fb2', 'fbz',
  'htm', 'html', 'htmlz', 'ipynb', 'kepub', 'kfx', 'kfx-zip', 'kpf', 'lit', 'lrf',
@@ -43,7 +43,7 @@ It supports converting from the following formats:
 
 To the following formats:
 
-```python
+```text
 ['azw3', 'adoc', 'docx', 'epub', 'fb2', 'html', 'htmlz', 'kepub', 'kfx', 'lit',
  'lrf', 'md', 'mobi', 'odt', 'oeb', 'org', 'pdb', 'pdf', 'pmlz', 'pptx', 'rb',
  'rst', 'rtf', 'snb', 'tcr', 'tex', 'txt', 'txtz', 'typ', 'typst', 'zip']
