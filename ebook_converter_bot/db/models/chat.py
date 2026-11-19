@@ -13,6 +13,8 @@ class Chat(Base):
     user_name: Mapped[str] = mapped_column(VARCHAR(), nullable=False)
     type: Mapped[int] = mapped_column(INT(), nullable=False)  # 0=user, 1=group, 2=channel
     paywall_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # set when a broadcast finds the chat blocked/deleted; kept for history, skipped by broadcasts
+    unreachable_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     usage_times: Mapped[int] = mapped_column(INT(), nullable=False, default=0)
 
     def __repr__(self) -> str:

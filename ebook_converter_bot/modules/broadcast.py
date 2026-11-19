@@ -5,7 +5,7 @@ from telethon.tl.types import Message
 
 from ebook_converter_bot import TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
-from ebook_converter_bot.db.curd import get_broadcast_chats, get_lang, remove_chat
+from ebook_converter_bot.db.curd import get_broadcast_chats, get_lang, mark_chat_unreachable
 from ebook_converter_bot.utils.broadcast import (
     broadcast_to_chats,
     extract_filters_text,
@@ -43,7 +43,7 @@ async def broadcast_handler(event: events.NewMessage.Event) -> None:
         BOT.send_message,
         message_to_send,
         chats,
-        remove_chat,
+        mark_chat_unreachable,
     )
     broadcast_status_message: str = _(
         "Broadcasting completed! Message was sent to {} chats\n",

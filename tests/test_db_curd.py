@@ -66,7 +66,7 @@ def test_update_format_analytics_increments_input_and_output(monkeypatch) -> Non
 
 
 def test_chat_lifecycle_helpers(monkeypatch) -> None:
-    testing_session_local = _configure_test_session(monkeypatch)
+    _configure_test_session(monkeypatch)
 
     curd.add_chat_to_db(1, "first", 0)
     curd.add_chat_to_db(1, "ignored", 1)
@@ -79,13 +79,19 @@ def test_chat_lifecycle_helpers(monkeypatch) -> None:
         (1, "first", 0, 1),
         (2, "second", 1, 0),
     ]
-    assert curd.remove_chat(2) is True
-    assert curd.remove_chat(2) is False
+    assert curd.mark_chat_unreachable(2) is True
+    assert curd.mark_chat_unreachable(404) is False
 
-    with testing_session_local() as session:
-        remaining_user_ids = session.scalars(select(Chat.user_id)).all()
+    # kept for history, skipped by broadcasts, counted in stats
+    assert sorted(chat.user_id for chat in curd.get_all_chats()) == [1, 2]
+    assert [chat.user_id for chat in curd.get_broadcast_chats()] == [1]
+    assert curd.get_stats_snapshot()["users"]["unreachable"] == 1
 
-    assert remaining_user_ids == [1]
+    curd.add_chat_to_db(2, "second", 1)  # /start again clears it
+    assert [chat.user_id for chat in curd.get_broadcast_chats()] == [1, 2]
+    curd.mark_chat_unreachable(2)
+    curd.increment_usage(2)  # so does a successful conversion
+    assert [chat.user_id for chat in curd.get_broadcast_chats()] == [1, 2]
 
 
 def test_language_helpers_default_create_and_update(monkeypatch) -> None:
@@ -163,3 +169,4 @@ def test_get_broadcast_chats_filters_username_and_active_users(monkeypatch) -> N
         chat.user_id
         for chat in curd.get_broadcast_chats({"username_only": True, "active_after": active_after})
     ] == [2]
+

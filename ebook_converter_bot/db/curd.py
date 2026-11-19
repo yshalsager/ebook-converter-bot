@@ -57,17 +57,20 @@ def update_format_analytics(file_format: str, output: bool = False, *, session: 
 
 @with_session
 def add_chat_to_db(user_id: int, user_name: str, chat_type: int, *, session: Session) -> None:
-    if not session.scalar(select(Chat).where(Chat.user_id == user_id)):
+    chat = session.scalar(select(Chat).where(Chat.user_id == user_id))
+    if not chat:
         session.add(Chat(user_id=user_id, user_name=user_name, type=chat_type))
-        session.commit()
+    else:
+        chat.unreachable_at = None  # they came back
+    session.commit()
 
 
 @with_session
-def remove_chat(user_id: int, *, session: Session) -> bool:
+def mark_chat_unreachable(user_id: int, *, session: Session) -> bool:
     chat = session.scalar(select(Chat).where(Chat.user_id == user_id))
     if not chat:
         return False
-    session.delete(chat)
+    chat.unreachable_at = chat.unreachable_at or datetime.now(UTC)
     session.commit()
     return True
 
@@ -78,6 +81,7 @@ def increment_usage(user_id: int, *, session: Session) -> None:
     if not chat:
         return
     chat.usage_times += 1
+    chat.unreachable_at = None
     session.commit()
 
 
@@ -432,6 +436,9 @@ def get_stats_snapshot(
     recent_cutoff = now - timedelta(days=recent_days)
     week_cutoff = now - timedelta(days=7)
     all_users = session.scalar(select(func.count()).select_from(Chat)) or 0
+    unreachable_users = (
+        session.scalar(select(func.count()).where(Chat.unreachable_at.is_not(None))) or 0
+    )
     converted_users = session.scalar(select(func.count()).where(Chat.usage_times > 0)) or 0
     repeat_users = (
         session.scalar(select(func.count()).where(Chat.usage_times >= REPEAT_USER_MIN_USAGE)) or 0
@@ -506,6 +513,7 @@ def get_stats_snapshot(
             "all": all_users,
             "converted": converted_users,
             "inactive": all_users - converted_users,
+            "unreachable": unreachable_users,
             "repeat": repeat_users,
             "power": power_users,
             "converted_percent": _percent(converted_users, all_users),
@@ -540,7 +548,7 @@ def get_all_chats(*, session: Session) -> list[Chat]:
 
 @with_session
 def get_broadcast_chats(filters: dict[str, Any] | None = None, *, session: Session) -> list[Chat]:
-    stmt = select(Chat).order_by(Chat.user_id)
+    stmt = select(Chat).where(Chat.unreachable_at.is_(None)).order_by(Chat.user_id)
     if filters:
         if filters.get("username_only"):
             stmt = stmt.where(Chat.user_name != "")

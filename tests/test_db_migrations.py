@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import OperationalError
 
 BASELINE_REVISION = "20260518_0001"
-HEAD_REVISION = "20261118_0003"
+HEAD_REVISION = "20261119_0004"
 
 
 def _patch_database(monkeypatch, db_path: Path) -> None:

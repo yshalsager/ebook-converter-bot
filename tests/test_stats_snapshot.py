@@ -89,6 +89,7 @@ def test_record_conversion_event_and_stats_snapshot(monkeypatch: Any) -> None:
         "all": 3,
         "converted": 2,
         "inactive": 1,
+        "unreachable": 0,
         "repeat": 2,
         "power": 1,
         "converted_percent": 66.7,

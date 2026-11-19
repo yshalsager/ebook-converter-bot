@@ -41,6 +41,7 @@ async def stats(event: events.NewMessage.Event) -> None:
         f"All: {users['all']}\n"
         f"Converted ever: {users['converted']} ({users['converted_percent']}%)\n"
         f"Inactive: {users['inactive']}\n"
+        f"Unreachable (blocked/deleted): {users['unreachable']}\n"
         f"Repeat: {users['repeat']} ({users['repeat_percent']}% of converted)\n"
         f"Power (10+): {users['power']}\n"
         f"Active 7d: {users['active_7d']}\n"
