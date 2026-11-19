@@ -137,6 +137,8 @@ cython_debug/
 
 # project files
 .mise.local.toml
+mise.local.toml
+mise.*.local.toml
 config.json
 *.db
 *.log*

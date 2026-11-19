@@ -1,0 +1,7 @@
+# Copy to mise.local.toml (gitignored) and fill in. mise loads these into the environment.
+[env]
+TG_BOT_TOKEN = "11111111:xxxxxxxxxxxxxxxxxx"
+API_KEY = "1121221"
+API_HASH = "xxxxxxxxxxxxxxxxxxxx"
+TG_BOT_ADMINS = "2222222"  # comma-separated user ids
+# TEST_DC = "true"  # use Telegram's test environment

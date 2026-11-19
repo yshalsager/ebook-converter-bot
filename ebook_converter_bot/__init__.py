@@ -3,19 +3,19 @@
 import json
 import logging
 from logging.handlers import TimedRotatingFileHandler
+from os import environ
 from pathlib import Path
 from sys import stderr, stdout
 
 WORK_DIR = Path(__file__).resolve().parent
 PARENT_DIR = WORK_DIR.parent
 
-# read bot config
-CONFIG = json.loads((PARENT_DIR / "config.json").read_text())
-API_KEY = CONFIG["api_key"]
-API_HASH = CONFIG["api_hash"]
-BOT_TOKEN = CONFIG["tg_bot_token"]
-BOT_ID = CONFIG["tg_bot_id"]
-TG_BOT_ADMINS = CONFIG["tg_bot_admins"]
+# read bot config from the environment (mise.local.toml locally, passed through by docker compose)
+API_KEY = int(environ["API_KEY"])
+API_HASH = environ["API_HASH"]
+BOT_TOKEN = environ["TG_BOT_TOKEN"]
+TG_BOT_ADMINS = [int(i) for i in environ.get("TG_BOT_ADMINS", "").split(",") if i.strip()]
+TEST_DC = environ.get("TEST_DC", "").lower() in {"1", "true", "yes"}
 
 # locale
 LOCALE_PATH = WORK_DIR / "data/locales"

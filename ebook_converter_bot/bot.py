@@ -9,7 +9,7 @@ from typing import cast
 from telethon import TelegramClient
 from telethon.tl.types import User
 
-from ebook_converter_bot import API_HASH, API_KEY, BOT_TOKEN
+from ebook_converter_bot import API_HASH, API_KEY, BOT_TOKEN, TEST_DC
 from ebook_converter_bot.db.curd import generate_analytics_columns
 from ebook_converter_bot.db.session import initialize_database
 from ebook_converter_bot.modules import ALL_MODULES
@@ -21,9 +21,12 @@ _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
 
 LOGGER = logging.getLogger(__name__)
-BOT = TelegramClient("ebook_converter_bot", API_KEY, API_HASH, loop=_loop).start(
-    bot_token=BOT_TOKEN
+BOT = TelegramClient(
+    "ebook_converter_bot_test" if TEST_DC else "ebook_converter_bot", API_KEY, API_HASH, loop=_loop
 )
+if TEST_DC and BOT.session:  # Telegram test environment, for payment testing
+    BOT.session.set_dc(2, "149.154.167.40", 443)
+BOT.start(bot_token=BOT_TOKEN)
 BOT.parse_mode = "markdown"
 BOT_INFO = {}
 

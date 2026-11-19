@@ -93,17 +93,15 @@ Admin-only commands:
 
 ## Before setting up the bot
 
-- Copy `config.json.example` file to `config.json` and fill the required information:
-  ```json
-  {
-    "tg_bot_token": "11111111:xxxxxxxxxxxxxxxxxx",
-    "tg_bot_id": 111111111,
-    "api_key": 1121221,
-    "api_hash": "xxxxxxxxxxxxxxxxxxxx",
-    "tg_bot_admins": [
-      2222222
-    ]
-  }
+- Copy `mise.local.toml.example` to `mise.local.toml` and fill in the required values. The bot reads its config from
+  environment variables; [mise](https://mise.jdx.dev) loads them from this file (run `mise trust` once):
+  ```toml
+  [env]
+  TG_BOT_TOKEN = "11111111:xxxxxxxxxxxxxxxxxx"
+  API_KEY = "1121221"
+  API_HASH = "xxxxxxxxxxxxxxxxxxxx"
+  TG_BOT_ADMINS = "2222222"  # comma-separated user ids
+  # TEST_DC = "true"  # use Telegram's test environment
   ```
 - Compile the translation files using the following command:
   ```bash
@@ -119,8 +117,11 @@ Before all, clone this repository.
 - Simply, run the following command:
 
 ```bash
-docker compose up --build -d
+mise exec -- docker compose up --build -d
 ```
+
+`mise exec` puts the values from `mise.local.toml` into the environment; the compose file passes them into the
+container.
 
 The Docker setup uses uv for Python dependencies, installs runtime dependencies into `/opt/venv`, and runs the bot from
 the repository mounted at `/app`.

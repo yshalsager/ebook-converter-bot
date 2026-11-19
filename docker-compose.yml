@@ -13,6 +13,12 @@ services:
       - PGID=1000
       - TZ=Africa/Cairo
       - PDF_EXTRA_FONTS_DIR=/data/pdf-fonts
+      # bot config, passed through from the host env (mise.local.toml via `mise exec`)
+      - API_KEY
+      - API_HASH
+      - TG_BOT_TOKEN
+      - TG_BOT_ADMINS
+      - TEST_DC
     security_opt:
       - seccomp=/etc/docker/seccomp-profile-v0.2.1.json
     restart: unless-stopped
