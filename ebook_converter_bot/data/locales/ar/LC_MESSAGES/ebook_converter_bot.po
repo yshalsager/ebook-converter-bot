@@ -549,3 +549,69 @@ msgstr "انتهت مهلة التحويل بين هاتين الصيغتين م
 
 msgid "Queued. Waiting for a conversion slot..."
 msgstr "في الانتظار حتى يتاح مكان للتحويل..."
+
+msgid "Free: {} left this month. Plan: {} left. Pack credits: {}."
+msgstr "المجاني: {} تحويل متبقٍ هذا الشهر. الاشتراك: {}. رصيد الحزم: {}."
+
+msgid "{} conversions — {} ⭐"
+msgstr "{} تحويل — {} ⭐"
+
+msgid "Plus: {}/month — {} ⭐"
+msgstr "بلس: {} تحويل شهريا — {} ⭐"
+
+msgid "Pro: {}/month — {} ⭐"
+msgstr "برو: {} تحويل شهريا — {} ⭐"
+
+msgid "Support the bot. By paying you accept /terms."
+msgstr "ادعم البوت. بالدفع توافق على الشروط /terms."
+
+msgid "Failed conversions are never charged. Pack credits never expire; ask for a refund of an unused pack.\nSubscriptions renew every 30 days until cancelled in Telegram: Settings → My Stars → Subscriptions. Unused allowance does not roll over. No partial refunds for a started period.\nDonations are only refundable by mistake, case by case. Telegram support cannot help with purchases in this bot. For help or refunds, contact the developer: @yshalsager."
+msgstr "لا تُحتسب التحويلات الفاشلة. رصيد الحزم لا تنتهي صلاحيته؛ يمكنك طلب استرداد حزمة لم تستخدمها.\nتتجدد الاشتراكات كل 30 يوما حتى تلغيها في تيليجرام: الإعدادات ← نجومي ← الاشتراكات. لا يُرحّل الرصيد المتبقي، ولا تُرد قيمة جزء من فترة بدأت.\nتُراجع طلبات استرداد التبرعات المدفوعة بالخطأ كل حالة على حدة. دعم تيليجرام لا يعالج مشتريات هذا البوت. للمساعدة أو الاسترداد تواصل مع المطور: @yshalsager."
+
+msgid "Plans are not available. You can still /donate."
+msgstr "الخطط غير متاحة حاليا. يمكنك التبرع عبر /donate."
+
+msgid "By paying you accept /terms."
+msgstr "بالدفع توافق على الشروط /terms."
+
+msgid "Payment not found. Use /refund <provider_charge_id>."
+msgstr "لم أجد الدفعة. استخدم /refund <provider_charge_id>."
+
+msgid "Refunded."
+msgstr "أُعيد المبلغ."
+
+msgid "{} active until {}."
+msgstr "{} فعّال حتى {}."
+
+msgid "Donate {} ⭐"
+msgstr "تبرع بـ {} ⭐"
+
+msgid "Thank you for the support!"
+msgstr "شكرا لدعمك!"
+
+msgid "Warning: {} of {} credits from this pack were used."
+msgstr "تنبيه: استُخدم {} من أصل {} تحويل في هذه الحزمة."
+
+msgid "Warning: {} of {} used in this period."
+msgstr "تنبيه: استُخدم {} من أصل {} تحويل في هذه الفترة."
+
+msgid "Subscription cancellation failed; cancel it in Telegram."
+msgstr "تعذر إلغاء الاشتراك؛ ألغِه من تيليجرام."
+
+msgid "Thanks!"
+msgstr "شكرا لك!"
+
+msgid "Price changed or invalid payment, send /buy or /donate again."
+msgstr "تغير السعر أو بيانات الدفع غير صالحة. أرسل /buy أو /donate مجددا."
+
+msgid "This group used its 30 free conversions this month. Send the file to me in private, or use your own plan there."
+msgstr "استهلكت المجموعة تحويلاتها المجانية الـ30 هذا الشهر. أرسل الملف إليّ في الخاص، أو استخدم خطتك الخاصة هناك."
+
+msgid "{} free conversions left this month. /buy"
+msgstr "بقي لك {} تحويل مجاني هذا الشهر. /buy"
+
+msgid "{} conversions left in your plan."
+msgstr "بقي في خطتك {} تحويل."
+
+msgid "Plans: /buy. Support the bot: /donate."
+msgstr "الخطط: /buy. لدعم البوت: /donate."

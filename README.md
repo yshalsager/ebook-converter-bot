@@ -91,6 +91,14 @@ Admin-only commands:
 - `/update` updates the bot from a GitHub source archive without requiring git in the runtime container.
 - `/restart` restarts the bot.
 
+## Telegram Stars
+
+`PAYMENTS_ENABLED` defaults to `false` (unlimited free conversions). Set it to `true` for 30 successful
+conversions per chat per rolling 30 days, then subscription allowance or non-expiring pack credits from `/buy`.
+Packs: 50/100 ⭐ or 300/450 ⭐; Plus: 300/250 ⭐ per 30 days; Pro: 1500/750 ⭐ per 30 days.
+`/donate` works even when plans are disabled. `/terms`, `/support` and `/paysupport` explain purchases and refunds;
+admins can use `/refund <provider_charge_id>`. Failed conversions never count; admins are always free.
+
 ## Before setting up the bot
 
 - Copy `mise.local.toml.example` to `mise.local.toml` and fill in the required values. The bot reads its config from
@@ -101,6 +109,7 @@ Admin-only commands:
   API_KEY = "1121221"
   API_HASH = "xxxxxxxxxxxxxxxxxxxx"
   TG_BOT_ADMINS = "2222222"  # comma-separated user ids
+  PAYMENTS_ENABLED = "false"
   # TEST_DC = "true"  # use Telegram's test environment
   ```
 - Compile the translation files using the following command:

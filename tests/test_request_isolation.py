@@ -27,6 +27,7 @@ def converter_module(tmp_path: Path, monkeypatch):
     spec.loader.exec_module(module)
     monkeypatch.setattr(module, "DOWNLOAD_ROOT", tmp_path / "uploads")
     monkeypatch.setattr(module, "get_lang", lambda _: "en")
+    monkeypatch.setattr(module, "decide_charge", lambda *args: "free")
     monkeypatch.setattr(module, "get_user_option_defaults", lambda _: None)
     monkeypatch.setattr(module, "record_conversion_event", lambda _: None)
     monkeypatch.setattr(module, "increment_usage", lambda _: None)
@@ -39,6 +40,7 @@ def converter_module(tmp_path: Path, monkeypatch):
 class UploadEvent:
     def __init__(self, filename: str, content: bytes = b"book", failure: str = ""):
         self.chat_id = self.sender_id = self.chat = 42
+        self.is_private = True
         self.pattern_match = None
         self.filename = filename
         self.content = content
@@ -62,7 +64,7 @@ class UploadEvent:
         self.edits.append(text)
         return self
 
-    async def answer(self, text, **kwargs):
+    async def answer(self, text="", **kwargs):
         self.answers.append(text)
 
     async def send_file(self, chat, path, **kwargs):

@@ -11,17 +11,22 @@ from typing import cast
 
 from telethon import Button, events
 
-from ebook_converter_bot import TG_BOT_ADMINS
+from ebook_converter_bot import PAYMENTS_ENABLED, TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
 from ebook_converter_bot.db.curd import (
+    credits_left,
+    free_used,
     get_lang,
     get_user_option_defaults,
     increment_usage,
+    mark_paywall,
     record_conversion_event,
+    sub_left,
     update_format_analytics,
     upsert_user_option_defaults,
 )
 from ebook_converter_bot.db.models.conversion_event import ConversionEvent
+from ebook_converter_bot.modules.payments import FREE_QUOTA, decide_charge, show_buy
 from ebook_converter_bot.utils.backend_routes import resolve_backend
 from ebook_converter_bot.utils.convert import (
     MAX_SPLIT_OUTPUT_FILES,
@@ -577,6 +582,21 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
             alert=True,
         )
         return
+    charge = decide_charge(event.chat_id, event.sender_id, event.is_private)
+    if charge == "paywall":
+        await event.answer()
+        mark_paywall(event.chat_id)
+        await show_buy(event)
+        return
+    if charge == "group_limit":
+        await event.answer()
+        await event.reply(
+            _(
+                "This group used its 30 free conversions this month. Send the file to me in private, or use your own plan there.",
+                lang,
+            )
+        )
+        return
     input_file = Path(state.input_file_path)
     options = build_conversion_options(state, output_type)
     input_size_bytes = input_file.stat().st_size if input_file.exists() else None
@@ -664,6 +684,8 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
         record_conversion_event(
             ConversionEvent(
                 user_id=event.chat_id,
+                charge=charge,
+                payer_id=event.sender_id if charge != "free" else None,
                 input_format=state.input_ext,
                 output_format=output_type,
                 success=converted,
@@ -678,3 +700,18 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
         increment_usage(event.chat_id)
         update_format_analytics(state.input_ext)
         update_format_analytics(output_type, output=True)
+        if PAYMENTS_ENABLED and not is_admin:
+            left = (
+                max(0, FREE_QUOTA - free_used(event.chat_id))
+                if charge == "free"
+                else (
+                    sub_left(event.sender_id) if charge == "sub" else credits_left(event.sender_id)
+                )
+            )
+            if charge != "free" or left <= 5:  # noqa: PLR2004 - low allowance reminder
+                line = (
+                    _("{} free conversions left this month. /buy", lang)
+                    if charge == "free"
+                    else _("{} conversions left in your plan.", lang)
+                )
+                await reply.edit(message_text + "\n" + line.format(max(0, left)))

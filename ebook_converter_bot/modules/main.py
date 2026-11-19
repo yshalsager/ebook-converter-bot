@@ -35,6 +35,8 @@ async def start(event: events.NewMessage.Event) -> None:
             input_count,
             output_count,
         )
+        + "\n\n"
+        + _("Plans: /buy. Support the bot: /donate.", lang)
     )
 
 

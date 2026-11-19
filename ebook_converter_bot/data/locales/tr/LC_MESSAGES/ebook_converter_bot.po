@@ -554,3 +554,69 @@ msgstr "Bu dönüşüm iki kez zaman aşımına uğradı. {} dakika sonra tekrar
 
 msgid "Queued. Waiting for a conversion slot..."
 msgstr "Sırada. Dönüşüm için yer bekleniyor..."
+
+msgid "Free: {} left this month. Plan: {} left. Pack credits: {}."
+msgstr "Bu ay kalan ücretsiz dönüşüm: {}. Planda kalan: {}. Paket kredisi: {}."
+
+msgid "{} conversions — {} ⭐"
+msgstr "{} dönüşüm — {} ⭐"
+
+msgid "Plus: {}/month — {} ⭐"
+msgstr "Plus: ayda {} dönüşüm — {} ⭐"
+
+msgid "Pro: {}/month — {} ⭐"
+msgstr "Pro: ayda {} dönüşüm — {} ⭐"
+
+msgid "Support the bot. By paying you accept /terms."
+msgstr "Bota destek olun. Ödeme yaparak /terms koşullarını kabul edersiniz."
+
+msgid "Failed conversions are never charged. Pack credits never expire; ask for a refund of an unused pack.\nSubscriptions renew every 30 days until cancelled in Telegram: Settings → My Stars → Subscriptions. Unused allowance does not roll over. No partial refunds for a started period.\nDonations are only refundable by mistake, case by case. Telegram support cannot help with purchases in this bot. For help or refunds, contact the developer: @yshalsager."
+msgstr "Başarısız dönüşümler ücretlendirilmez. Paket kredileri süresizdir; kullanılmamış bir paket için iade isteyebilirsiniz.\nAbonelikler Telegram'dan iptal edilene kadar her 30 günde yenilenir: Ayarlar → Yıldızlarım → Abonelikler. Kullanılmayan haklar devretmez. Başlamış dönem için kısmi iade yapılmaz.\nYanlışlıkla yapılan bağışların iadesi duruma göre değerlendirilir. Telegram desteği bu bottaki alışverişlerle ilgilenmez. Yardım veya iade için geliştiriciye ulaşın: @yshalsager."
+
+msgid "Plans are not available. You can still /donate."
+msgstr "Planlar şu anda kullanılamıyor. /donate ile destek olabilirsiniz."
+
+msgid "By paying you accept /terms."
+msgstr "Ödeme yaparak /terms koşullarını kabul edersiniz."
+
+msgid "Payment not found. Use /refund <provider_charge_id>."
+msgstr "Ödeme bulunamadı. /refund <provider_charge_id> kullanın."
+
+msgid "Refunded."
+msgstr "İade edildi."
+
+msgid "{} active until {}."
+msgstr "{} aboneliği {} tarihine kadar geçerli."
+
+msgid "Donate {} ⭐"
+msgstr "{} ⭐ bağış yap"
+
+msgid "Thank you for the support!"
+msgstr "Desteğiniz için teşekkürler!"
+
+msgid "Warning: {} of {} credits from this pack were used."
+msgstr "Uyarı: Bu paketteki {} / {} kredi kullanılmış."
+
+msgid "Warning: {} of {} used in this period."
+msgstr "Uyarı: Bu dönemde {} / {} hak kullanılmış."
+
+msgid "Subscription cancellation failed; cancel it in Telegram."
+msgstr "Abonelik iptal edilemedi; Telegram'dan iptal edin."
+
+msgid "Thanks!"
+msgstr "Teşekkürler!"
+
+msgid "Price changed or invalid payment, send /buy or /donate again."
+msgstr "Fiyat değişti veya ödeme geçersiz. Yeniden /buy veya /donate gönderin."
+
+msgid "This group used its 30 free conversions this month. Send the file to me in private, or use your own plan there."
+msgstr "Bu grup bu ayki 30 ücretsiz dönüşümünü kullandı. Dosyayı bana özelden gönderin veya kendi planınızı orada kullanın."
+
+msgid "{} free conversions left this month. /buy"
+msgstr "Bu ay {} ücretsiz dönüşümünüz kaldı. /buy"
+
+msgid "{} conversions left in your plan."
+msgstr "Planınızda {} dönüşüm kaldı."
+
+msgid "Plans: /buy. Support the bot: /donate."
+msgstr "Planlar: /buy. Bota destek: /donate."

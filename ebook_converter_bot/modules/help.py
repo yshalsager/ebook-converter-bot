@@ -20,4 +20,6 @@ The bot works in groups too. Reply with /convert to any file then do the same st
 You can change the preferences of the bot such as language using /settings or /preferences commands.""",
             get_lang(event.chat_id),
         )
+        + "\n\n"
+        + _("Plans: /buy. Support the bot: /donate.", get_lang(event.chat_id))
     )

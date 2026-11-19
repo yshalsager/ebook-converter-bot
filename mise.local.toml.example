@@ -4,4 +4,5 @@ TG_BOT_TOKEN = "11111111:xxxxxxxxxxxxxxxxxx"
 API_KEY = "1121221"
 API_HASH = "xxxxxxxxxxxxxxxxxxxx"
 TG_BOT_ADMINS = "2222222"  # comma-separated user ids
+PAYMENTS_ENABLED = "false"
 # TEST_DC = "true"  # use Telegram's test environment

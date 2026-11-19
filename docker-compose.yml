@@ -18,6 +18,7 @@ services:
       - API_HASH
       - TG_BOT_TOKEN
       - TG_BOT_ADMINS
+      - PAYMENTS_ENABLED
       - TEST_DC
     security_opt:
       - seccomp=/etc/docker/seccomp-profile-v0.2.1.json

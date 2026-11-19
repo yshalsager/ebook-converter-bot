@@ -5,13 +5,16 @@ from datetime import UTC, datetime, timedelta
 from functools import wraps
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import sum as sql_sum
 
+from ebook_converter_bot import SUB_PERIOD
 from ebook_converter_bot.db.models.analytics import Analytics
 from ebook_converter_bot.db.models.chat import Chat
 from ebook_converter_bot.db.models.conversion_event import ConversionEvent
+from ebook_converter_bot.db.models.payment import Payment
 from ebook_converter_bot.db.models.preference import Preference
 from ebook_converter_bot.db.models.user_option_default import UserOptionDefault
 from ebook_converter_bot.db.session import get_session
@@ -101,6 +104,279 @@ def record_conversion_event(event: ConversionEvent, *, session: Session) -> None
         event.error_message = event.error_message[:2000]
     session.add(event)
     session.commit()
+
+
+@with_session
+def free_used(chat_id: int, *, session: Session) -> int:
+    return (
+        session.scalar(
+            select(func.count()).where(
+                ConversionEvent.user_id == chat_id,
+                ConversionEvent.success.is_(True),
+                ConversionEvent.charge == "free",
+                ConversionEvent.created_at >= datetime.now(UTC) - timedelta(days=30),
+            )
+        )
+        or 0
+    )
+
+
+@with_session
+def active_subs(user_id: int, *, session: Session) -> list[Payment]:
+    return list(
+        session.scalars(
+            select(Payment).where(
+                Payment.user_id == user_id,
+                Payment.kind == "sub",
+                Payment.status == "paid",
+                Payment.subscription_until > datetime.now(UTC),
+            )
+        )
+    )
+
+
+@with_session
+def sub_left(user_id: int, *, session: Session) -> int:
+    rows = active_subs(user_id)
+    if not rows:
+        return 0
+    start = min(row.subscription_until - timedelta(seconds=SUB_PERIOD) for row in rows)
+    used = (
+        session.scalar(
+            select(func.count()).where(
+                ConversionEvent.payer_id == user_id,
+                ConversionEvent.success.is_(True),
+                ConversionEvent.charge == "sub",
+                ConversionEvent.created_at >= start,
+            )
+        )
+        or 0
+    )
+    return sum(row.credits for row in rows) - used
+
+
+@with_session
+def credits_left(user_id: int, *, session: Session) -> int:
+    bought = (
+        session.scalar(
+            select(sql_sum(Payment.credits)).where(
+                Payment.user_id == user_id,
+                Payment.kind == "pack",
+                Payment.status == "paid",
+            )
+        )
+        or 0
+    )
+    used = (
+        session.scalar(
+            select(func.count()).where(
+                ConversionEvent.payer_id == user_id,
+                ConversionEvent.success.is_(True),
+                ConversionEvent.charge == "credit",
+            )
+        )
+        or 0
+    )
+    return bought - used
+
+
+@with_session
+def find_payment(*charge_ids: str, session: Session) -> Payment | None:
+    return session.scalar(
+        select(Payment).where(
+            or_(
+                Payment.charge_id.in_(charge_ids),
+                Payment.provider_charge_id.in_(charge_ids),
+            )
+        )
+    )
+
+
+@with_session
+def add_payment(payment: Payment, *, session: Session) -> bool:
+    existing = find_payment(payment.charge_id, payment.provider_charge_id)
+    if existing:
+        if (
+            existing.charge_id == existing.provider_charge_id
+            and payment.charge_id != payment.provider_charge_id
+        ):
+            existing.charge_id, existing.provider_charge_id = (
+                payment.charge_id,
+                payment.provider_charge_id,
+            )
+            existing.recurring, existing.subscription_until = (
+                payment.recurring,
+                payment.subscription_until,
+            )
+            session.add(existing)
+            session.commit()
+        return False
+    session.add(payment)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        if find_payment(payment.charge_id, payment.provider_charge_id):
+            return False
+        raise
+    return True
+
+
+@with_session
+def mark_refunded(charge_id: str, *, session: Session) -> None:
+    row = find_payment(charge_id)
+    if row:
+        row.status, row.refunded_at = "refunded", datetime.now(UTC)
+        session.add(row)
+        session.commit()
+
+
+@with_session
+def find_recent_payment(
+    user_id: int, product: str, date: datetime, *, session: Session
+) -> Payment | None:
+    return session.scalar(
+        select(Payment)
+        .where(
+            Payment.user_id == user_id,
+            Payment.product == product,
+            Payment.status == "paid",
+            Payment.created_at >= date - timedelta(seconds=60),
+            Payment.created_at <= date + timedelta(seconds=60),
+        )
+        .limit(1)
+    )
+
+
+@with_session
+def payment_usage(payment: Payment, *, session: Session) -> int:
+    if payment.kind == "donation":
+        return 0
+    usage = select(func.count()).where(
+        ConversionEvent.payer_id == payment.user_id,
+        ConversionEvent.success.is_(True),
+        ConversionEvent.charge == ("sub" if payment.kind == "sub" else "credit"),
+    )
+    if payment.kind == "sub":
+        assert payment.subscription_until is not None
+        return (
+            session.scalar(
+                usage.where(
+                    ConversionEvent.created_at
+                    >= payment.subscription_until - timedelta(seconds=SUB_PERIOD),
+                    ConversionEvent.created_at < payment.subscription_until,
+                )
+            )
+            or 0
+        )
+    earlier = (
+        session.scalar(
+            select(func.sum(Payment.credits)).where(
+                Payment.user_id == payment.user_id,
+                Payment.kind == "pack",
+                Payment.status == "paid",
+                or_(
+                    Payment.created_at < payment.created_at,
+                    (Payment.created_at == payment.created_at) & (Payment.id < payment.id),
+                ),
+            )
+        )
+        or 0
+    )
+    return max(0, min(payment.credits, (session.scalar(usage) or 0) - earlier))
+
+
+@with_session
+def first_subscription_charge(payment: Payment, *, session: Session) -> str:
+    return (
+        session.scalar(
+            select(Payment.provider_charge_id)
+            .where(
+                Payment.user_id == payment.user_id,
+                Payment.product == payment.product,
+                Payment.status == "paid",
+                Payment.recurring.is_(False),
+                Payment.created_at <= payment.created_at,
+            )
+            .order_by(Payment.created_at.desc(), Payment.id.desc())
+            .limit(1)
+        )
+        or payment.provider_charge_id
+    )
+
+
+RENEWAL_WINDOW = min(timedelta(days=1), timedelta(seconds=SUB_PERIOD // 2))
+
+
+@with_session
+def is_subscription_renewal(
+    user_id: int, product: str, date: datetime, *, session: Session
+) -> bool:
+    return bool(
+        session.scalar(
+            select(Payment.id)
+            .where(
+                Payment.user_id == user_id,
+                Payment.product == product,
+                Payment.status == "paid",
+                Payment.subscription_until >= date - RENEWAL_WINDOW,
+                Payment.subscription_until <= date + RENEWAL_WINDOW,
+            )
+            .limit(1)
+        )
+    )
+
+
+@with_session
+def mark_paywall(chat_id: int, *, session: Session) -> None:
+    row = session.scalar(select(Chat).where(Chat.user_id == chat_id))
+    if row and row.paywall_seen_at is None:
+        row.paywall_seen_at = datetime.now(UTC)
+        session.commit()
+
+
+@with_session
+def payment_stats(*, session: Session) -> dict[str, Any]:
+    cutoff = datetime.now(UTC) - timedelta(days=30)
+    over = (
+        select(ConversionEvent.user_id)
+        .where(ConversionEvent.success.is_(True), ConversionEvent.created_at >= cutoff)
+        .group_by(ConversionEvent.user_id)
+        .having(func.count() > 30)  # noqa: PLR2004 - monthly free quota
+        .subquery()
+    )
+    return {
+        "over": session.scalar(select(func.count()).select_from(over)),
+        "seen": session.scalar(select(func.count()).where(Chat.paywall_seen_at >= cutoff)),
+        "payers": session.scalar(
+            select(func.count(func.distinct(Payment.user_id))).where(
+                Payment.created_at >= cutoff, Payment.status == "paid"
+            )
+        ),
+        "stars": session.execute(
+            select(Payment.kind, Payment.status, func.sum(Payment.stars))
+            .where(Payment.created_at >= cutoff)
+            .group_by(Payment.kind, Payment.status)
+        ).all(),
+        "subs": session.scalar(
+            select(func.count()).where(
+                Payment.kind == "sub",
+                Payment.status == "paid",
+                Payment.subscription_until > datetime.now(UTC),
+            )
+        ),
+        "sold": session.scalar(
+            select(func.sum(Payment.credits)).where(
+                Payment.kind == "pack", Payment.status == "paid"
+            )
+        )
+        or 0,
+        "used": session.scalar(
+            select(func.count()).where(
+                ConversionEvent.charge == "credit", ConversionEvent.success.is_(True)
+            )
+        ),
+    }
 
 
 def _percent(part: int, total: int) -> float:

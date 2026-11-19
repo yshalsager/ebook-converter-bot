@@ -2,9 +2,10 @@
 
 from telethon import events
 
-from ebook_converter_bot import TG_BOT_ADMINS
+from ebook_converter_bot import PAYMENTS_ENABLED, TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
-from ebook_converter_bot.db.curd import get_stats_snapshot
+from ebook_converter_bot.db.curd import get_stats_snapshot, payment_stats
+from ebook_converter_bot.modules.payments import shadow_decisions
 
 
 def _format_format_rows(rows: list[dict[str, int | str]]) -> str:
@@ -63,4 +64,17 @@ async def stats(event: events.NewMessage.Event) -> None:
         f"{_format_format_rows(formats['input'])}"
     )
 
+    paid = payment_stats()
+    stars = "; ".join(
+        f"{kind}: {sum(amount for key, _, amount in paid['stars'] if key == kind)}/"
+        f"{sum(amount for key, status, amount in paid['stars'] if key == kind and status == 'refunded')}"
+        for kind in ("pack", "sub", "donation")
+    )
+    message += (
+        f"\n\nPayments 30d — chats over quota: {paid['over']}; paywall seen: {paid['seen']}; payers: {paid['payers']}."
+        f"\nActive subscriptions: {paid['subs']}. Pack credits sold/used (all time): {paid['sold']}/{paid['used']}."
+        f"\nStars gross/refunded (30d): {stars}"
+    )
+    if not PAYMENTS_ENABLED:
+        message += f"\nShadow decisions: {dict(shadow_decisions)}"
     await stats_message.edit(message)
