@@ -1,7 +1,8 @@
 from ebook_converter_bot.db.models.analytics import Analytics
 from ebook_converter_bot.db.models.chat import Chat
 from ebook_converter_bot.db.models.conversion_event import ConversionEvent
+from ebook_converter_bot.db.models.payment import Payment
 from ebook_converter_bot.db.models.preference import Preference
 from ebook_converter_bot.db.models.user_option_default import UserOptionDefault
 
-__all__ = ["Analytics", "Chat", "ConversionEvent", "Preference", "UserOptionDefault"]
+__all__ = ["Analytics", "Chat", "ConversionEvent", "Payment", "Preference", "UserOptionDefault"]

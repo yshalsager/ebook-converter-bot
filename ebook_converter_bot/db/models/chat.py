@@ -1,4 +1,6 @@
-from sqlalchemy import BIGINT, INT, VARCHAR
+from datetime import datetime
+
+from sqlalchemy import BIGINT, INT, VARCHAR, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ebook_converter_bot.db.base import Base
@@ -10,6 +12,7 @@ class Chat(Base):
     user_id: Mapped[int] = mapped_column(BIGINT(), unique=True, nullable=False)
     user_name: Mapped[str] = mapped_column(VARCHAR(), nullable=False)
     type: Mapped[int] = mapped_column(INT(), nullable=False)  # 0=user, 1=group, 2=channel
+    paywall_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     usage_times: Mapped[int] = mapped_column(INT(), nullable=False, default=0)
 
     def __repr__(self) -> str:

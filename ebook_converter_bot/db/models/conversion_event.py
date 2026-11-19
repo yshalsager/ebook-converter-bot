@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import BIGINT, BOOLEAN, INT, TEXT, VARCHAR, DateTime
+from sqlalchemy import BIGINT, BOOLEAN, INT, TEXT, VARCHAR, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ebook_converter_bot.db.base import Base
@@ -9,6 +9,12 @@ from ebook_converter_bot.db.base import Base
 class ConversionEvent(Base):
     __tablename__ = "conversion_events"
 
+    __table_args__ = (
+        Index("ix_conversion_events_user_created", "user_id", "created_at"),
+        Index("ix_conversion_events_payer_charge", "payer_id", "charge"),
+    )
+    charge: Mapped[str] = mapped_column(VARCHAR(), default="free", server_default="free")
+    payer_id: Mapped[int | None] = mapped_column(BIGINT())
     id: Mapped[int] = mapped_column(INT(), primary_key=True, autoincrement=True, nullable=False)
     user_id: Mapped[int] = mapped_column(BIGINT(), nullable=False, index=True)
     input_format: Mapped[str] = mapped_column(VARCHAR(), nullable=False, index=True)

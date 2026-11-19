@@ -7,6 +7,7 @@ from ebook_converter_bot.db import (  # noqa: F401
     Analytics,
     Chat,
     ConversionEvent,
+    Payment,
     Preference,
     UserOptionDefault,
 )

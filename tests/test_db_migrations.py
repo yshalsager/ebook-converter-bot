@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import OperationalError
 
 BASELINE_REVISION = "20260518_0001"
-HEAD_REVISION = "20260518_0002"
+HEAD_REVISION = "20261118_0003"
 
 
 def _patch_database(monkeypatch, db_path: Path) -> None:
@@ -35,6 +35,7 @@ def test_initialize_database_upgrades_fresh_database(monkeypatch, tmp_path: Path
         "chats",
         "conversion_events",
         "preferences",
+        "payments",
         "user_option_defaults",
     }.issubset(inspector.get_table_names())
     with db_session.engine.connect() as connection:
