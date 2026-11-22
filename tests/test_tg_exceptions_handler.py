@@ -2,7 +2,7 @@ import asyncio
 
 import ebook_converter_bot.utils.telegram as telegram_mod
 from ebook_converter_bot.utils.telegram import tg_exceptions_handler
-from telethon.errors import FloodWaitError, SlowModeWaitError
+from telethon.errors import FloodWaitError, QueryIdInvalidError, SlowModeWaitError
 
 expected_calls = 2
 
@@ -49,3 +49,11 @@ def test_tg_exceptions_handler_retries_on_flood_wait(monkeypatch) -> None:
     assert asyncio.run(f()) == "ok"
     assert slept == [5]
     assert calls["n"] == expected_calls
+
+
+def test_tg_exceptions_handler_ignores_late_callback_answer() -> None:
+    @tg_exceptions_handler
+    async def f() -> str:
+        raise QueryIdInvalidError(None)
+
+    assert asyncio.run(f()) is None

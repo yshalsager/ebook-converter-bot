@@ -593,18 +593,18 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
         return
     charge = decide_charge(event.chat_id, event.sender_id, event.is_private)
     if charge == "paywall":
-        await event.answer()
         mark_paywall(event.chat_id)
         await show_buy(event)
+        await event.answer()
         return
     if charge == "group_limit":
-        await event.answer()
         await event.reply(
             _(
                 "This group used its 30 free conversions this month. Send the file to me in private, or use your own plan there.",
                 lang,
             )
         )
+        await event.answer()
         return
     input_file = Path(state.input_file_path)
     options = build_conversion_options(state, output_type)

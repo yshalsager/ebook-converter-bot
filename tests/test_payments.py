@@ -557,7 +557,7 @@ def test_converter_gate_keeps_the_request(converter_module, monkeypatch, charge)
     monkeypatch.setattr(module, "mark_paywall", shown.append)
 
     async def show_buy(event):
-        assert event.answers == [""]
+        assert event.answers == []  # the message goes out before the late-prone answer
         shown.append("buy")
 
     monkeypatch.setattr(module, "show_buy", show_buy)

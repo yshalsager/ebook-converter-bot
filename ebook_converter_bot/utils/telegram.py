@@ -12,6 +12,7 @@ from telethon.errors import (
     InterdcCallErrorError,
     MessageIdInvalidError,
     MessageNotModifiedError,
+    QueryIdInvalidError,
     SlowModeWaitError,
     UserIsBlockedError,
 )
@@ -32,6 +33,7 @@ def tg_exceptions_handler(func: Callable[..., Any]) -> Callable[..., Any]:
                 MessageNotModifiedError,
                 InputUserDeactivatedError,
                 MessageIdInvalidError,
+                QueryIdInvalidError,  # button answered too late; only the spinner is lost
             ):
                 return None
             except (SlowModeWaitError, FloodWaitError) as error:
