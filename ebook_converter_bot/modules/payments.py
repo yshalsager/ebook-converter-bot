@@ -258,7 +258,10 @@ def reconcile_transaction(transaction) -> None:
     if transaction.amount.nanos:
         raise ValueError("Fractional Stars payment")
     item = PRODUCTS[product]
-    if not find_recent_payment(user_id, product, transaction.date):
+    if find_recent_payment(user_id, product, transaction.date):
+        # shortcut: remove this time-based fallback once logs show charge IDs always match
+        LOGGER.warning("Stars transaction %s matched by time, not charge ID", transaction.id)
+    else:
         add_payment(
             Payment(
                 user_id=user_id,
@@ -301,6 +304,7 @@ async def reconciliation_loop() -> None:
                 if not result.next_offset or result.next_offset == offset:
                     break
                 offset = result.next_offset
+            LOGGER.info("Stars reconciliation finished")
         except Exception:
             LOGGER.exception("Stars reconciliation failed")
         await asyncio.sleep(86400)
