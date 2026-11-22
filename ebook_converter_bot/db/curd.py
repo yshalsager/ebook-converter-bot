@@ -76,13 +76,14 @@ def mark_chat_unreachable(user_id: int, *, session: Session) -> bool:
 
 
 @with_session
-def increment_usage(user_id: int, *, session: Session) -> None:
+def increment_usage(user_id: int, *, session: Session) -> int:
     chat = session.scalar(select(Chat).where(Chat.user_id == user_id))
     if not chat:
-        return
+        return 0
     chat.usage_times += 1
     chat.unreachable_at = None
     session.commit()
+    return chat.usage_times
 
 
 @with_session
@@ -182,6 +183,15 @@ def credits_left(user_id: int, *, session: Session) -> int:
         or 0
     )
     return bought - used
+
+
+@with_session
+def has_paid(user_id: int, *, session: Session) -> bool:
+    return bool(
+        session.scalar(
+            select(Payment.id).where(Payment.user_id == user_id, Payment.status == "paid").limit(1)
+        )
+    )
 
 
 @with_session

@@ -19,6 +19,7 @@ from ebook_converter_bot.db.curd import (
     free_used,
     get_lang,
     get_user_option_defaults,
+    has_paid,
     increment_usage,
     mark_paywall,
     record_conversion_event,
@@ -62,6 +63,8 @@ ROUTE_COOLDOWN_SECONDS = 60 * 60
 conversion_slots = asyncio.Semaphore(MAX_CONCURRENT_CONVERSIONS)
 ebook_rs_slots = asyncio.Semaphore(2)
 ROUTE_TIMEOUT_LIMIT = 2
+DONATE_FIRST_AT = 3  # donate prompt on the 3rd successful conversion, then every 20th
+DONATE_EVERY = 20
 active_users: set[int] = set()
 # shortcut: in-memory, resets on restart; move to DB only if needed.
 route_timeouts: dict[tuple[int, str, str], list[float]] = {}
@@ -708,9 +711,10 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
             )
         )
     if converted:
-        increment_usage(event.chat_id)
+        usage = increment_usage(event.chat_id)
         update_format_analytics(state.input_ext)
         update_format_analytics(output_type, output=True)
+        footer, buttons = "", None
         if PAYMENTS_ENABLED and not is_admin:
             left = (
                 max(0, FREE_QUOTA - free_used(event.chat_id))
@@ -725,4 +729,15 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
                     if charge == "free"
                     else _("{} conversions left in your plan.", lang)
                 )
-                await reply.edit(message_text + "\n" + line.format(max(0, left)))
+                footer += "\n" + line.format(max(0, left))
+        if (
+            not is_admin
+            and event.is_private
+            and usage >= DONATE_FIRST_AT
+            and (usage - DONATE_FIRST_AT) % DONATE_EVERY == 0
+            and not has_paid(event.sender_id)
+        ):
+            footer += "\n" + _("Enjoying the bot? Support it ❤️", lang)
+            buttons = Button.inline(_("⭐ Donate", lang), b"donate")
+        if footer:
+            await reply.edit(message_text + footer, buttons=buttons)

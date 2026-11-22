@@ -169,6 +169,13 @@ async def donate(event) -> None:
     await event.reply(_("Support the bot. By paying you accept /terms.", lang), buttons=buttons)
 
 
+@BOT.on(events.CallbackQuery(data=b"donate"))
+@tg_exceptions_handler
+async def donate_button(event) -> None:
+    await donate.__wrapped__(event)
+    await event.answer()
+
+
 @BOT.on(events.NewMessage(pattern=r"^/(?:terms|support|paysupport)(?:@\w+)?$"))
 @tg_exceptions_handler
 async def terms(event) -> None:

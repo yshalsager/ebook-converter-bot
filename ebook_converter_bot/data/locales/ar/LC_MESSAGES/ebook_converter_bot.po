@@ -618,3 +618,9 @@ msgstr "بقي في خطتك {} تحويل."
 
 msgid "Plans: /buy. Support the bot: /donate."
 msgstr "الخطط: /buy. لدعم البوت: /donate."
+
+msgid "Enjoying the bot? Support it ❤️"
+msgstr "هل أعجبك البوت؟ ادعمه ❤️"
+
+msgid "⭐ Donate"
+msgstr "⭐ تبرّع"

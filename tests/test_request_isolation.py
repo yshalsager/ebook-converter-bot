@@ -30,7 +30,7 @@ def converter_module(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(module, "decide_charge", lambda *args: "free")
     monkeypatch.setattr(module, "get_user_option_defaults", lambda _: None)
     monkeypatch.setattr(module, "record_conversion_event", lambda _: None)
-    monkeypatch.setattr(module, "increment_usage", lambda _: None)
+    monkeypatch.setattr(module, "increment_usage", lambda _: 1)
     monkeypatch.setattr(module, "update_format_analytics", lambda *args, **kwargs: None)
     yield module
     for state in module.queue.values():

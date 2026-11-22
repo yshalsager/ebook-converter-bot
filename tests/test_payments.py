@@ -823,3 +823,46 @@ def test_migration_backfills_existing_events(monkeypatch, tmp_path):
         constraint["column_names"] == ["provider_charge_id"]
         for constraint in inspector.get_unique_constraints("payments")
     )
+
+
+@pytest.mark.parametrize(
+    ("usage", "paid", "shown"),
+    [(2, False, False), (3, False, True), (4, False, False), (23, False, True), (23, True, False)],
+)
+def test_converter_asks_for_donation_on_milestones(
+    converter_module, monkeypatch, usage, paid, shown
+):
+    module = converter_module
+    event = UploadEvent("book.md")
+    edits = []
+    monkeypatch.setattr(module, "increment_usage", lambda _: usage)
+    monkeypatch.setattr(module, "has_paid", lambda _: paid)
+
+    async def convert(input_file, *args, **kwargs):
+        output = input_file.with_suffix(".epub")
+        output.write_bytes(b"converted")
+        return SimpleNamespace(
+            backend="calibre",
+            output_files=[output],
+            split_capped=False,
+            conversion_error=None,
+            converted_to_rtl=False,
+        )
+
+    async def edit(text, **kwargs):
+        edits.append((text, kwargs.get("buttons")))
+        return event
+
+    monkeypatch.setattr(module.converter, "convert_ebook_many", convert)
+    monkeypatch.setattr(event, "edit", edit)
+
+    async def run():
+        await module.file_converter.__wrapped__(event)
+        request_id = next(iter(module.queue))
+        event.data = f"run|epub|{request_id}".encode()
+        await module.converter_callback.__wrapped__(event)
+
+    asyncio.run(run())
+    text, buttons = edits[-1]
+    assert ("Support it" in text) is shown
+    assert (buttons is not None and buttons.type.data == b"donate") is shown

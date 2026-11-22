@@ -623,3 +623,9 @@ msgstr "Planınızda {} dönüşüm kaldı."
 
 msgid "Plans: /buy. Support the bot: /donate."
 msgstr "Planlar: /buy. Bota destek: /donate."
+
+msgid "Enjoying the bot? Support it ❤️"
+msgstr "Botu beğendiniz mi? Destek olun ❤️"
+
+msgid "⭐ Donate"
+msgstr "⭐ Bağış yap"
