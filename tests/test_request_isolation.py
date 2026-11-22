@@ -222,3 +222,9 @@ def test_queued_request_cleanup_removes_only_its_directory(converter_module, act
     assert request_id not in module.queue
     assert not first.directory.exists()
     assert other_source.exists()
+
+
+def test_failed_conversion_message_fits_telegram_limit(converter_module) -> None:
+    text = converter_module.failed_conversion_message("en", "a.epub", "pdf", "x" * 10000 + "END")
+    assert len(text) < 4096  # noqa: PLR2004 - Telegram message limit
+    assert text.endswith("END`")

@@ -138,7 +138,8 @@ def failed_conversion_message(
     message = _("Failed to convert the file (`{}`) to {} :(", lang).format(
         input_file_name, output_type
     )
-    return f"{message}\n\n`{conversion_error}`" if conversion_error else message
+    # Telegram rejects messages over 4096 chars; the end of a calibre error is the useful part
+    return f"{message}\n\n`{conversion_error[-3000:]}`" if conversion_error else message
 
 
 def options_labels(lang: str) -> dict[str, str]:
