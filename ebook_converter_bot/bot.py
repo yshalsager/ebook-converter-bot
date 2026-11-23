@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import cast
 
 from telethon import TelegramClient
+from telethon.errors import QueryIdInvalidError
 from telethon.tl.types import User
 
 from ebook_converter_bot import API_HASH, API_KEY, BOT_TOKEN, TEST_DC
@@ -19,6 +20,14 @@ from ebook_converter_bot.utils.pdf_fonts import log_pdf_font_profiles, prepare_p
 
 _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
+# Telethon's edit/reply on a button fire an unawaited answer(); a late one is harmless noise
+_loop.set_exception_handler(
+    lambda loop, context: (
+        None
+        if isinstance(context.get("exception"), QueryIdInvalidError)
+        else loop.default_exception_handler(context)
+    )
+)
 
 LOGGER = logging.getLogger(__name__)
 BOT = TelegramClient(
