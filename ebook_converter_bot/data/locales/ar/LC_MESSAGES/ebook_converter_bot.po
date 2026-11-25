@@ -624,3 +624,42 @@ msgstr "هل أعجبك البوت؟ ادعمه ❤️"
 
 msgid "⭐ Donate"
 msgstr "⭐ تبرّع"
+
+msgid "Start the bot"
+msgstr "بدء البوت"
+
+msgid "Reply to a file to convert it"
+msgstr "ردّ على ملف لتحويله"
+
+msgid "Bot language"
+msgstr "لغة البوت"
+
+msgid "Plans and your balance"
+msgstr "الباقات ورصيدك"
+
+msgid "Support the bot"
+msgstr "ادعم البوت"
+
+msgid "Help"
+msgstr "المساعدة"
+
+msgid "Purchase terms and support"
+msgstr "شروط الشراء والدعم"
+
+msgid "Bot statistics"
+msgstr "إحصائيات البوت"
+
+msgid "Broadcast the replied message"
+msgstr "بث الرسالة المردود عليها"
+
+msgid "Refund a payment or revoke a gift"
+msgstr "استرداد دفعة أو سحب هدية"
+
+msgid "Give free conversions"
+msgstr "منح تحويلات مجانية"
+
+msgid "Restart the bot"
+msgstr "إعادة تشغيل البوت"
+
+msgid "Update and restart the bot"
+msgstr "تحديث البوت وإعادة تشغيله"

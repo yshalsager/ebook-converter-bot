@@ -629,3 +629,42 @@ msgstr "Botu beğendiniz mi? Destek olun ❤️"
 
 msgid "⭐ Donate"
 msgstr "⭐ Bağış yap"
+
+msgid "Start the bot"
+msgstr "Botu başlat"
+
+msgid "Reply to a file to convert it"
+msgstr "Dönüştürmek için bir dosyayı yanıtla"
+
+msgid "Bot language"
+msgstr "Bot dili"
+
+msgid "Plans and your balance"
+msgstr "Paketler ve bakiyeniz"
+
+msgid "Support the bot"
+msgstr "Bota destek ol"
+
+msgid "Help"
+msgstr "Yardım"
+
+msgid "Purchase terms and support"
+msgstr "Satın alma koşulları ve destek"
+
+msgid "Bot statistics"
+msgstr "Bot istatistikleri"
+
+msgid "Broadcast the replied message"
+msgstr "Yanıtlanan mesajı yayınla"
+
+msgid "Refund a payment or revoke a gift"
+msgstr "Ödemeyi iade et veya hediyeyi geri al"
+
+msgid "Give free conversions"
+msgstr "Ücretsiz dönüştürme ver"
+
+msgid "Restart the bot"
+msgstr "Botu yeniden başlat"
+
+msgid "Update and restart the bot"
+msgstr "Botu güncelle ve yeniden başlat"

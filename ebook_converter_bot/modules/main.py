@@ -4,6 +4,7 @@ from telethon import events
 
 from ebook_converter_bot.bot import BOT, BOT_INFO
 from ebook_converter_bot.db.curd import add_chat_to_db, get_lang
+from ebook_converter_bot.modules.commands import set_chat_commands
 from ebook_converter_bot.utils.convert import Converter
 from ebook_converter_bot.utils.i18n import translate as _
 from ebook_converter_bot.utils.telegram import (
@@ -19,6 +20,8 @@ async def start(event: events.NewMessage.Event) -> None:
     """Send a message when the command /start is sent."""
     add_chat_to_db(event.chat_id, get_chat_name(event), get_chat_type(event))
     lang = get_lang(event.chat_id)
+    if event.is_private and lang != "en":  # existing users who chose a language before menus
+        await set_chat_commands(event.chat_id, lang)
     input_count = len(Converter.supported_input_types)
     output_count = len(Converter.supported_output_types)
     await event.reply(
