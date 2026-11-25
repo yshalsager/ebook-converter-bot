@@ -18,6 +18,7 @@ services:
       - API_HASH
       - TG_BOT_TOKEN
       - TG_BOT_ADMINS
+      - FREE_USERS
       - PAYMENTS_ENABLED
       - TEST_DC
     security_opt:

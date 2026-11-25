@@ -189,7 +189,9 @@ def credits_left(user_id: int, *, session: Session) -> int:
 def has_paid(user_id: int, *, session: Session) -> bool:
     return bool(
         session.scalar(
-            select(Payment.id).where(Payment.user_id == user_id, Payment.status == "paid").limit(1)
+            select(Payment.id)
+            .where(Payment.user_id == user_id, Payment.status == "paid", Payment.stars > 0)
+            .limit(1)
         )
     )
 
@@ -364,7 +366,7 @@ def payment_stats(*, session: Session) -> dict[str, Any]:
         "seen": session.scalar(select(func.count()).where(Chat.paywall_seen_at >= cutoff)),
         "payers": session.scalar(
             select(func.count(func.distinct(Payment.user_id))).where(
-                Payment.created_at >= cutoff, Payment.status == "paid"
+                Payment.created_at >= cutoff, Payment.status == "paid", Payment.stars > 0
             )
         ),
         "stars": session.execute(

@@ -98,6 +98,8 @@ conversions per chat per rolling 30 days, then subscription allowance or non-exp
 Packs: 50/100 ⭐ or 300/450 ⭐; Plus: 300/250 ⭐ per 30 days; Pro: 1500/750 ⭐ per 30 days.
 `/donate` works even when plans are disabled. `/terms`, `/support` and `/paysupport` explain purchases and refunds;
 admins can use `/refund <provider_charge_id>`. Failed conversions never count; admins are always free.
+`FREE_USERS` lists user ids with no monthly limit. `/grant <user_id> <conversions>` gives free pack credits;
+revoke them with `/refund <gift id>`.
 
 ## Before setting up the bot
 
@@ -109,6 +111,7 @@ admins can use `/refund <provider_charge_id>`. Failed conversions never count; a
   API_KEY = "1121221"
   API_HASH = "xxxxxxxxxxxxxxxxxxxx"
   TG_BOT_ADMINS = "2222222"  # comma-separated user ids
+  FREE_USERS = ""  # comma-separated user ids with no monthly limit
   PAYMENTS_ENABLED = "false"
   # TEST_DC = "true"  # use Telegram's test environment
   ```

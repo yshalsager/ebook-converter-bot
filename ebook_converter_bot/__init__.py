@@ -15,6 +15,8 @@ API_KEY = int(environ["API_KEY"])
 API_HASH = environ["API_HASH"]
 BOT_TOKEN = environ["TG_BOT_TOKEN"]
 TG_BOT_ADMINS = [int(i) for i in environ.get("TG_BOT_ADMINS", "").split(",") if i.strip()]
+# user ids with no monthly limit
+FREE_USERS = {int(i) for i in environ.get("FREE_USERS", "").split(",") if i.strip()}
 PAYMENTS_ENABLED = environ.get("PAYMENTS_ENABLED", "").lower() in {"1", "true", "yes"}
 TEST_DC = environ.get("TEST_DC", "").lower() in {"1", "true", "yes"}
 SUB_PERIOD = 300 if TEST_DC else 2592000  # seconds; test servers only accept 60 or 300

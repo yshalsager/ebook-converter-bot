@@ -79,7 +79,7 @@ def payment(  # noqa: PLR0913 - mirrors the payment fields under test
     )
 
 
-def test_gate_tiers_and_failed_jobs(payments, sessions):
+def test_gate_tiers_and_failed_jobs(payments, sessions, monkeypatch):
     with sessions() as session:
         session.add_all([conversion() for _ in range(29)])
         session.add(conversion(success=False))
@@ -88,6 +88,9 @@ def test_gate_tiers_and_failed_jobs(payments, sessions):
     curd.record_conversion_event(conversion())
     assert payments.decide_charge(1, 1, True) == "paywall"
     assert payments.decide_charge(1, 1, False) == "group_limit"
+    monkeypatch.setattr(payments, "FREE_USERS", {1})
+    assert payments.decide_charge(1, 1, True) == "free"
+    monkeypatch.setattr(payments, "FREE_USERS", set())
     curd.add_payment(payment())
     assert payments.decide_charge(1, 1, True) == "credit"
     assert payments.decide_charge(1, 1, False) == "credit"
@@ -866,3 +869,62 @@ def test_converter_asks_for_donation_on_milestones(
     text, buttons = edits[-1]
     assert ("Support it" in text) is shown
     assert (buttons is not None and buttons.type.data == b"donate") is shown
+
+
+def test_grant_gives_credits_and_refund_revokes_them(payments, sessions, monkeypatch):
+    replies = []
+
+    async def reply(text):
+        replies.append(text)
+
+    async def telegram(_request):
+        raise AssertionError("a gift must not call Telegram")
+
+    monkeypatch.setattr(payments, "BOT", telegram)
+    groups = {1: "7", 2: "40"}
+    event = SimpleNamespace(
+        chat_id=999, pattern_match=SimpleNamespace(group=groups.get), reply=reply
+    )
+    asyncio.run(payments.grant.__wrapped__(event))
+    assert curd.credits_left(7) == 40
+    assert not curd.has_paid(7)  # gifts don't count as paying (donation prompt, /stats)
+    gift_id = replies[0].split("`")[1]
+
+    curd.record_conversion_event(conversion(user_id=7, charge="credit"))
+    event.pattern_match = SimpleNamespace(group=lambda _: gift_id)
+    asyncio.run(payments.refund.__wrapped__(event))
+    assert curd.credits_left(7) == -1
+    assert (
+        replies[1]
+        == "Gift revoked. Credits left: 0. Warning: 1 of 40 gift credits were already used."
+    )
+
+
+def test_unlimited_user_gets_no_free_quota_reminder(converter_module, monkeypatch):
+    module = converter_module
+    event = UploadEvent("book.md")
+    monkeypatch.setattr(module, "PAYMENTS_ENABLED", True)
+    monkeypatch.setattr(module, "FREE_USERS", {event.sender_id})
+    monkeypatch.setattr(module, "free_used", lambda _: 40)
+
+    async def convert(input_file, *args, **kwargs):
+        output = input_file.with_suffix(".epub")
+        output.write_bytes(b"converted")
+        return SimpleNamespace(
+            backend="calibre",
+            output_files=[output],
+            split_capped=False,
+            conversion_error=None,
+            converted_to_rtl=False,
+        )
+
+    monkeypatch.setattr(module.converter, "convert_ebook_many", convert)
+
+    async def run():
+        await module.file_converter.__wrapped__(event)
+        request_id = next(iter(module.queue))
+        event.data = f"run|epub|{request_id}".encode()
+        await module.converter_callback.__wrapped__(event)
+
+    asyncio.run(run())
+    assert "free conversions left" not in event.edits[-1]

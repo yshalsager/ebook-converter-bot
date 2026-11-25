@@ -5,10 +5,11 @@ import logging
 from collections import Counter
 from datetime import timedelta
 from typing import NamedTuple
+from uuid import uuid4
 
 from telethon import Button, events, functions, types, utils
 
-from ebook_converter_bot import PAYMENTS_ENABLED, SUB_PERIOD, TG_BOT_ADMINS
+from ebook_converter_bot import FREE_USERS, PAYMENTS_ENABLED, SUB_PERIOD, TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
 from ebook_converter_bot.db.curd import (
     active_subs,
@@ -55,7 +56,7 @@ shadow_decisions: Counter[str] = Counter()
 
 
 def decide_charge(chat_id: int, sender_id: int, is_private: bool) -> str:
-    if sender_id in BOT_ADMIN_IDS:
+    if sender_id in BOT_ADMIN_IDS or sender_id in FREE_USERS:
         return "free"
     if free_used(chat_id) < FREE_QUOTA:
         charge = "free"
@@ -325,6 +326,14 @@ async def refund(event) -> None:
     if not row:
         await event.reply(_("Payment not found. Use /refund <provider_charge_id>.", lang))
         return
+    if row.product == "gift":  # nothing was charged; used gift credits come out of paid packs
+        used = payment_usage(row)
+        mark_refunded(row.provider_charge_id)
+        text = f"Gift revoked. Credits left: {max(0, credits_left(row.user_id))}."
+        if used:
+            text += f" Warning: {used} of {row.credits} gift credits were already used."
+        await event.reply(text)
+        return
     cancel_id = first_subscription_charge(row) if row.kind == "sub" else row.provider_charge_id
     user = utils.get_input_user(await BOT.get_input_entity(row.user_id))
     await BOT(functions.payments.RefundStarsChargeRequest(user, row.provider_charge_id))
@@ -345,6 +354,33 @@ async def refund(event) -> None:
             LOGGER.exception("Subscription cancellation failed")
             text += "\n" + _("Subscription cancellation failed; cancel it in Telegram.", lang)
     await event.reply(text)
+
+
+@BOT.on(
+    events.NewMessage(from_users=TG_BOT_ADMINS, pattern=r"^/grant(?:@\w+)?(?:\s+(\d+)\s+(\d+))?$")
+)
+@tg_exceptions_handler
+async def grant(event) -> None:
+    if not event.pattern_match.group(1):
+        await event.reply("Use /grant <user_id> <conversions>. Revoke with /refund <gift id>.")
+        return
+    user_id, count = int(event.pattern_match.group(1)), int(event.pattern_match.group(2))
+    gift_id = f"gift-{uuid4().hex}"
+    add_payment(
+        Payment(
+            user_id=user_id,
+            product="gift",
+            kind="pack",
+            stars=0,
+            credits=count,
+            charge_id=gift_id,
+            provider_charge_id=gift_id,
+        )
+    )
+    await event.reply(
+        f"Granted {count} conversions to {user_id} (`{gift_id}`). "
+        f"Credits left: {credits_left(user_id)}."
+    )
 
 
 reconciliation_task = BOT.loop.create_task(reconciliation_loop())

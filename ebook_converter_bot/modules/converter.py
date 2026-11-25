@@ -12,7 +12,7 @@ from typing import cast
 
 from telethon import Button, events
 
-from ebook_converter_bot import PAYMENTS_ENABLED, TG_BOT_ADMINS
+from ebook_converter_bot import FREE_USERS, PAYMENTS_ENABLED, TG_BOT_ADMINS
 from ebook_converter_bot.bot import BOT
 from ebook_converter_bot.db.curd import (
     credits_left,
@@ -715,7 +715,7 @@ async def converter_callback(event: events.CallbackQuery.Event) -> None:  # noqa
         update_format_analytics(state.input_ext)
         update_format_analytics(output_type, output=True)
         footer, buttons = "", None
-        if PAYMENTS_ENABLED and not is_admin:
+        if PAYMENTS_ENABLED and not is_admin and event.sender_id not in FREE_USERS:
             left = (
                 max(0, FREE_QUOTA - free_used(event.chat_id))
                 if charge == "free"
