@@ -16,8 +16,8 @@ dependencies = [
     "pymupdf>=1.26.0",
     "alembic>=1.18.4",
     "fonttools>=4.63.0",
-    "firecrawl-anydoc==0.2.4",
-    "ebook-rs==0.18.7",
+    "firecrawl-anydoc==0.2.5",
+    "ebook-rs==0.19.4",
 ]
 
 [dependency-groups]
